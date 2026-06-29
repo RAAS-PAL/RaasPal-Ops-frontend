@@ -21,6 +21,7 @@ import {
   ExternalLink,
   FlaskConical,
   Loader2,
+  Mail,
   MapPin,
   RefreshCw,
   Search,
@@ -116,6 +117,11 @@ export function ReportPreviewPanel() {
     },
   });
 
+  // Email the report link to the customer's contact email.
+  const emailMutation = useMutation({
+    mutationFn: () => reportApi.sendEmail(robotSn!, month).then((r) => r.data),
+  });
+
   const report: MonthlyPerformanceReport | null | undefined =
     selection?.kind === 'sample'
       ? { ...sampleGausiumReport, periodLabel: monthYearLabel(month) }
@@ -170,6 +176,18 @@ export function ReportPreviewPanel() {
                 Open shareable link
               </button>
             )}
+            {isRobot && (
+              <button
+                type="button"
+                onClick={() => emailMutation.mutate()}
+                disabled={emailMutation.isPending}
+                title="Email this report link to the customer's contact email"
+                className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+              >
+                {emailMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                {emailMutation.isPending ? 'Sending…' : 'Send report email'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -183,6 +201,19 @@ export function ReportPreviewPanel() {
           <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             {errorMessage(syncMutation.error, 'Sync failed — check Gausium credentials and that the robot is bound to your account.')}
+          </p>
+        )}
+
+        {isRobot && emailMutation.isSuccess && (
+          <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            {emailMutation.data?.message ?? 'Report email sent.'}
+          </p>
+        )}
+        {isRobot && emailMutation.isError && (
+          <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            {errorMessage(emailMutation.error, 'Email failed — check SMTP credentials and the customer\'s contact email.')}
           </p>
         )}
 

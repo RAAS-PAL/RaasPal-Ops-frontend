@@ -289,6 +289,14 @@ export const reportApi = {
   /** Public, no-auth report for a shared token (used by /report/{token}). */
   publicReport: (token: string) =>
     api.get<ApiResponse<MonthlyPerformanceReport>>(`/api/v1/reports/public/${encodeURIComponent(token)}`),
+
+  /** Email the report link for a robot+month to its customer's contact email. */
+  sendEmail: (serialNumber: string, month: string) =>
+    api.post<ApiResponse<{ recipient: string; customerName: string; url: string }>>(
+      '/api/v1/reports/email',
+      null,
+      { params: { serialNumber, month } },
+    ),
 };
 
 // Telemetry — on-demand sync from the brand API (e.g. Gausium) into robot_task_reports

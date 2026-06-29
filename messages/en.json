@@ -10,6 +10,7 @@
     "operationalPerformance": "Operational Performance",
     "consumablesStatus": "Consumables Status",
     "recommendations": "Recommendations",
+    "downloadPdf": "Download PDF",
     "totalTasksCompleted": "Total Tasks Completed",
     "totalOperatingHours": "Total Operating Hours",
     "totalAreaCleaned": "Total Area Cleaned",
