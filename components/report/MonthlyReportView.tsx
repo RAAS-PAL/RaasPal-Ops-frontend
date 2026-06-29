@@ -193,8 +193,9 @@ export function MonthlyReportView({ report }: { report: MonthlyPerformanceReport
               className="h-8 w-auto sm:h-9"
             />
             <div className="mt-2 flex flex-wrap items-baseline gap-3">
-              <h1 className="text-2xl font-bold leading-tight text-[#16243a] sm:text-[28px]">{t('title')}</h1>
-              <p className="text-xl font-bold text-[#16243a]">{report.periodLabel}</p>
+              <h1 className="text-2xl font-bold leading-tight text-[#16243a] sm:text-[28px]">
+                {t('title')} : {report.periodLabel}
+              </h1>
             </div>
           </div>
         </div>
