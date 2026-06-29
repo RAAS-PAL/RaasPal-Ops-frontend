@@ -184,18 +184,18 @@ export function MonthlyReportView({ report }: { report: MonthlyPerformanceReport
         {/* ── Header ───────────────────────────────────────────────────────── */}
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Image
-                src="/raas-pal-wordmark.png"
-                alt="RAAS PAL"
-                width={240}
-                height={60}
-                priority
-                className="h-8 w-auto sm:h-9"
-              />
+            <Image
+              src="/raas-pal-wordmark.png"
+              alt="RAAS PAL"
+              width={240}
+              height={60}
+              priority
+              className="h-8 w-auto sm:h-9"
+            />
+            <div className="mt-2 flex flex-wrap items-baseline gap-3">
               <h1 className="text-2xl font-bold leading-tight text-[#16243a] sm:text-[28px]">{t('title')}</h1>
+              <p className="text-xl font-bold text-[#16243a]">{report.periodLabel}</p>
             </div>
-            <p className="mt-1 text-xl font-bold text-[#16243a]">{report.periodLabel}</p>
           </div>
         </div>
 
@@ -256,10 +256,8 @@ export function MonthlyReportView({ report }: { report: MonthlyPerformanceReport
           </div>
         </div>
 
-        {/* Footer disclaimer */}
-        <p className="mt-8 border-t border-[#dbe4f3] pt-3 text-xs text-[#6b7785]">
-          {t('disclaimer')} © {new Date().getFullYear()} RAASPAL.
-        </p>
+        {/* Footer */}
+        <p className="mt-8 border-t border-[#dbe4f3] pt-3 text-center text-xs text-[#6b7785]">RAAS PAL CO., LTD</p>
       </div>
     </main>
   );

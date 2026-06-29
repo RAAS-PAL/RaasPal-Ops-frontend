@@ -25,8 +25,7 @@
     "cleaningCoverageRate": "清洁覆盖率",
     "brush": "刷子",
     "filter": "滤网",
-    "squeegee": "刮水板",
-    "disclaimer": "数据由机器人遥测在报告周期内自动生成。最终确认及任何服务操作需经 RAASPAL 核实和/或现场勘查。"
+    "squeegee": "刮水板"
   },
   "customers": {
     "searchPlaceholder": "搜索客户…",
