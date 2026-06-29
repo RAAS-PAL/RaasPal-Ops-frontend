@@ -25,8 +25,7 @@
     "cleaningCoverageRate": "Cleaning Coverage Rate",
     "brush": "Brush",
     "filter": "Filter",
-    "squeegee": "Squeegee",
-    "disclaimer": "Figures are generated automatically from robot telemetry for the reporting period. Final confirmation and any service action require RAASPAL verification and/or an on-site survey."
+    "squeegee": "Squeegee"
   },
   "customers": {
     "searchPlaceholder": "Search customers…",
