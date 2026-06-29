@@ -4,18 +4,21 @@
  * PublicReportClient — renders the public report for a shared token.
  *
  * Standalone, close-only page (no in-app navigation): the customer opens the
- * link, reads the report, and closes the tab. A language switcher is the only
- * control. Token "example" shows the sample layout; any other token fetches the
- * real aggregated report from the public (no-auth) endpoint.
+ * link, reads the report, optionally downloads a PDF, and closes the tab. The
+ * top bar (language switcher + Download PDF) is hidden when printing so the PDF
+ * shows only the report. Token "example" shows the sample layout; any other
+ * token fetches the real aggregated report from the public (no-auth) endpoint.
  */
 import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { Download, Loader2 } from 'lucide-react';
 import { reportApi } from '@/lib/api';
 import { MonthlyReportView } from '@/components/report/MonthlyReportView';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { sampleGausiumReport } from '@/lib/reports/gausium';
 
 export function PublicReportClient({ token }: { token: string }) {
+  const t = useTranslations('report');
   const isExample = token === 'example';
 
   const { data, isLoading, isError } = useQuery({
@@ -27,8 +30,19 @@ export function PublicReportClient({ token }: { token: string }) {
   const report = isExample ? sampleGausiumReport : data;
 
   return (
-    <div className="min-h-dvh bg-[#eef1f6]">
-      <div className="mx-auto flex max-w-5xl justify-end px-4 pt-4 sm:px-6">
+    <div className="min-h-dvh bg-[#eef1f6] print:bg-white">
+      {/* Page chrome — hidden in the printed/saved PDF */}
+      <div className="mx-auto flex max-w-5xl items-center justify-end gap-3 px-4 pt-4 sm:px-6 print:hidden">
+        {report && (
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-3 py-2 text-sm font-semibold text-[var(--app-text)] shadow-sm transition hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)]"
+          >
+            <Download className="h-4 w-4 text-[var(--app-brand)]" />
+            {t('downloadPdf')}
+          </button>
+        )}
         <LanguageSwitcher />
       </div>
 
