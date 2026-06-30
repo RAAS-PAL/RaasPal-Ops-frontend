@@ -48,6 +48,7 @@
     "empty": "No customers yet. Add your first one.",
     "noMatch": "No customers match your search.",
     "robotCount": "{count, plural, one {# robot} other {# robots}}",
+    "loadMore": "Load more ({count} remaining)",
     "deleteConfirm": "Delete \"{name}\"? This cannot be undone.",
     "editAria": "Edit {name}",
     "deleteAria": "Delete {name}"
@@ -546,42 +547,8 @@
       "preview": "Report Preview",
       "customers": "Customers",
       "robots": "Robots"
-    }
-  },
-  "reports": {
-    "panel": {
-      "heading": "Monthly report automation",
-      "description": "Each robot's monthly cleaning report is generated as an Excel file, hosted, and delivered to the customer over LINE — one message per customer with a download link for each robot."
     },
-    "autoNote": "If automatic sending is enabled on the server, reports go out on their own after each month ends. You don't need to do anything here unless you want to send early or re-send.",
-    "cadenceLabel": "Report period",
-    "cadenceMonthly": "Monthly",
-    "cadenceWeekly": "Weekly",
-    "weekStartLabel": "Week starting",
-    "monthLabel": "Report month",
-    "previewButton": "Generate & preview",
-    "previewing": "Generating…",
-    "sendButton": "Send now to LINE",
-    "sending": "Sending…",
-    "confirmTitle": "Send live to customers?",
-    "confirmBody": "This generates each robot's report for {month} and sends a real LINE message to every customer with a recipient set. LINE push messages may incur cost.",
-    "confirmYes": "Yes, send now",
-    "confirmCancel": "Cancel",
-    "resultTitle": "Results for {month}",
-    "testModeBadge": "Preview (not sent)",
-    "liveModeBadge": "Sent live",
-    "stats": {
-      "customers": "Customers",
-      "robots": "Report files",
-      "messages": "Messages sent",
-      "skipped": "No recipient"
-    },
-    "errorCounts": "{robotErrors} file error(s), {sendErrors} send error(s) — see server logs.",
-    "previewsTitle": "Generated reports",
-    "noRecipient": "No LINE recipient set",
-    "downloadLabel": "Download",
-    "emptyResult": "No robot task reports found for {month}. Nothing to generate.",
-    "errorGeneric": "The report run failed. Please try again."
+    "automationComingSoon": "Scheduled report automation is coming soon."
   },
   "userMenu": {
     "profile": "Profile",

@@ -64,7 +64,6 @@ import type {
   GenerateProposalRequest,
   GeneratedProposalResponse,
   LoginRequest,
-  MonthlyReportSummary,
   PagedResponse,
   RegisterRequest,
   RecommendationResponse,
@@ -252,28 +251,7 @@ export const cvteApi = {
     api.post<ApiResponse<CvteDeviceResponse>>(`/api/v1/cvte/devices/${deviceId}/poll-now`),
 };
 
-// Monthly report automation (generate per-robot xlsx → Supabase → n8n → LINE)
 export const reportApi = {
-  /**
-   * Runs the monthly report for `month` ("YYYY-MM", defaults to previous month
-   * when omitted). With `testMode` true (default), files are generated, uploaded,
-   * and signed download URLs returned WITHOUT sending anything to n8n/LINE.
-   */
-  runMonthly: (month: string | undefined, testMode: boolean) =>
-    api.post<ApiResponse<MonthlyReportSummary>>('/api/v1/reports/monthly/run', null, {
-      params: { ...(month ? { month } : {}), testMode },
-    }),
-
-  /**
-   * Runs the weekly report for the ISO week containing `weekStart` ("YYYY-MM-DD",
-   * defaults to the previous full week when omitted). Same testMode semantics as
-   * runMonthly. The summary's `reportMonth` field carries the week label (e.g. "2026-W25").
-   */
-  runWeekly: (weekStart: string | undefined, testMode: boolean) =>
-    api.post<ApiResponse<MonthlyReportSummary>>('/api/v1/reports/weekly/run', null, {
-      params: { ...(weekStart ? { weekStart } : {}), testMode },
-    }),
-
   /** Aggregated monthly report for one robot, computed from its synced task reports. */
   preview: (serialNumber: string, month: string) =>
     api.get<ApiResponse<MonthlyPerformanceReport>>('/api/v1/reports/preview', {

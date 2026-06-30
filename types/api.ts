@@ -436,34 +436,3 @@ export interface RegisterRobotRequest {
   site?: string | null;
   reportCadence?: ReportCadence | null;
 }
-
-/* ─── Monthly report automation ───────────────────────────────────────────── */
-/* Mirrors report/service/MonthlyReportSummary + report/delivery/MonthlyReportPayload. */
-
-export interface RobotReportLink {
-  robotName: string | null;
-  serialNumber: string;
-  downloadUrl: string;
-}
-
-export interface MonthlyReportPayload {
-  customerId: string;
-  customerName: string;
-  /** LINE push target (user/group/room id); null when the customer has no recipient set. */
-  lineUserId: string | null;
-  reportMonth: string;
-  robots: RobotReportLink[];
-}
-
-export interface MonthlyReportSummary {
-  reportMonth: string;
-  testMode: boolean;
-  customersProcessed: number;
-  robotsReported: number;
-  messagesSent: number;
-  recipientsSkipped: number;
-  robotErrors: number;
-  sendErrors: number;
-  /** Populated in test mode: the payloads (incl. signed download URLs) that would be sent. */
-  previews: MonthlyReportPayload[];
-}
