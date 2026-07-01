@@ -48,6 +48,7 @@
     "empty": "暂无客户。添加第一个客户。",
     "noMatch": "没有符合搜索条件的客户。",
     "robotCount": "{count} 台机器人",
+    "loadMore": "加载更多（还剩 {count} 个）",
     "deleteConfirm": "删除“{name}”？此操作无法撤销。",
     "editAria": "编辑 {name}",
     "deleteAria": "删除 {name}"
@@ -546,42 +547,8 @@
       "preview": "报告预览",
       "customers": "客户",
       "robots": "机器人"
-    }
-  },
-  "reports": {
-    "panel": {
-      "heading": "每月报告自动化",
-      "description": "每台机器人的每月清洁报告会生成为 Excel 文件并托管，然后通过 LINE 发送给客户——每位客户一条消息，其中包含每台机器人的下载链接。"
     },
-    "autoNote": "如果服务器上已启用自动发送，报告会在每月结束后自动发出。除非您想提前发送或重新发送，否则无需在此操作。",
-    "cadenceLabel": "报告周期",
-    "cadenceMonthly": "每月",
-    "cadenceWeekly": "每周",
-    "weekStartLabel": "起始周",
-    "monthLabel": "报告月份",
-    "previewButton": "生成并预览",
-    "previewing": "正在生成…",
-    "sendButton": "立即发送到 LINE",
-    "sending": "正在发送…",
-    "confirmTitle": "确认正式发送给客户？",
-    "confirmBody": "这将生成 {month} 每台机器人的报告，并向每位已设置接收人的客户发送真实的 LINE 消息。LINE 推送消息可能产生费用。",
-    "confirmYes": "是的，立即发送",
-    "confirmCancel": "取消",
-    "resultTitle": "{month} 的结果",
-    "testModeBadge": "预览（未发送）",
-    "liveModeBadge": "已正式发送",
-    "stats": {
-      "customers": "客户",
-      "robots": "报告文件",
-      "messages": "已发送消息",
-      "skipped": "无接收人"
-    },
-    "errorCounts": "{robotErrors} 个文件错误，{sendErrors} 个发送错误——请查看服务器日志。",
-    "previewsTitle": "已生成的报告",
-    "noRecipient": "未设置 LINE 接收人",
-    "downloadLabel": "下载",
-    "emptyResult": "未找到 {month} 的机器人任务报告，无可生成内容。",
-    "errorGeneric": "报告运行失败，请重试。"
+    "automationComingSoon": "定时报告自动化即将上线。"
   },
   "userMenu": {
     "profile": "个人资料",

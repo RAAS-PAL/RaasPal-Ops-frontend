@@ -64,7 +64,6 @@ import type {
   GenerateProposalRequest,
   GeneratedProposalResponse,
   LoginRequest,
-  MonthlyReportSummary,
   PagedResponse,
   RegisterRequest,
   RecommendationResponse,
@@ -78,6 +77,7 @@ import type {
   RobotUnitResponse,
   RegisterRobotRequest,
   ReportCadence,
+  ReportSend,
   TestStatus,
   TranslationResponse,
   UserResponse,
@@ -252,28 +252,7 @@ export const cvteApi = {
     api.post<ApiResponse<CvteDeviceResponse>>(`/api/v1/cvte/devices/${deviceId}/poll-now`),
 };
 
-// Monthly report automation (generate per-robot xlsx → Supabase → n8n → LINE)
 export const reportApi = {
-  /**
-   * Runs the monthly report for `month` ("YYYY-MM", defaults to previous month
-   * when omitted). With `testMode` true (default), files are generated, uploaded,
-   * and signed download URLs returned WITHOUT sending anything to n8n/LINE.
-   */
-  runMonthly: (month: string | undefined, testMode: boolean) =>
-    api.post<ApiResponse<MonthlyReportSummary>>('/api/v1/reports/monthly/run', null, {
-      params: { ...(month ? { month } : {}), testMode },
-    }),
-
-  /**
-   * Runs the weekly report for the ISO week containing `weekStart` ("YYYY-MM-DD",
-   * defaults to the previous full week when omitted). Same testMode semantics as
-   * runMonthly. The summary's `reportMonth` field carries the week label (e.g. "2026-W25").
-   */
-  runWeekly: (weekStart: string | undefined, testMode: boolean) =>
-    api.post<ApiResponse<MonthlyReportSummary>>('/api/v1/reports/weekly/run', null, {
-      params: { ...(weekStart ? { weekStart } : {}), testMode },
-    }),
-
   /** Aggregated monthly report for one robot, computed from its synced task reports. */
   preview: (serialNumber: string, month: string) =>
     api.get<ApiResponse<MonthlyPerformanceReport>>('/api/v1/reports/preview', {
@@ -290,6 +269,18 @@ export const reportApi = {
   publicReport: (token: string) =>
     api.get<ApiResponse<MonthlyPerformanceReport>>(`/api/v1/reports/public/${encodeURIComponent(token)}`),
 
+  /** Public, no-auth bundle for a customer token — all their robots for one month. */
+  publicBundle: (token: string) =>
+    api.get<ApiResponse<{ customerName: string; periodLabel: string; robots: MonthlyPerformanceReport[] }>>(
+      `/api/v1/reports/public/customer/${encodeURIComponent(token)}`,
+    ),
+
+  /** Mint (or reuse) a customer-level bundle link token. */
+  createCustomerLink: (customerProfileId: string, month: string) =>
+    api.post<ApiResponse<{ token: string }>>('/api/v1/reports/links/customer', null, {
+      params: { customerProfileId, month },
+    }),
+
   /** Email the report link for a robot+month to its customer's contact email. */
   sendEmail: (serialNumber: string, month: string) =>
     api.post<ApiResponse<{ recipient: string; customerName: string; url: string }>>(
@@ -297,6 +288,26 @@ export const reportApi = {
       null,
       { params: { serialNumber, month } },
     ),
+
+  /** Run the automated whole-month delivery now (idempotent — skips already-sent). */
+  runDelivery: (month: string) =>
+    api.post<ApiResponse<{ month: string; sent: number; skipped: number; failed: number }>>(
+      '/api/v1/reports/delivery/run',
+      null,
+      { params: { month } },
+    ),
+
+  /** Send (or resend) one customer's bundle for the month. */
+  sendCustomerBundle: (customerProfileId: string, month: string) =>
+    api.post<ApiResponse<ReportSend>>('/api/v1/reports/delivery/send', null, {
+      params: { customerProfileId, month },
+    }),
+
+  /** Delivery history for a month, newest first. */
+  deliveryHistory: (month: string) =>
+    api.get<ApiResponse<ReportSend[]>>('/api/v1/reports/delivery/history', {
+      params: { month },
+    }),
 };
 
 // Telemetry — on-demand sync from the brand API (e.g. Gausium) into robot_task_reports

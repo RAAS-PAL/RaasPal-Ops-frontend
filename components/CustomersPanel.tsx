@@ -8,7 +8,7 @@
  * login account in this MVP, so this is plain record management. Labels are
  * translated via next-intl ('customers' namespace).
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import {
@@ -54,10 +54,13 @@ function toForm(c: CustomerResponse): CustomerRequest {
 const inputClass =
   'h-10 w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]';
 
+const PAGE_SIZE = 10;
+
 export function CustomersPanel() {
   const t = useTranslations('customers');
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   /** null = list view; 'new' = add form; object = edit form. */
   const [editing, setEditing] = useState<CustomerResponse | 'new' | null>(null);
   const [form, setForm] = useState<CustomerRequest>(EMPTY_FORM);
@@ -79,6 +82,13 @@ export function CustomersPanel() {
         .includes(q),
     );
   }, [customers, query]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [query]);
+
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
 
   function refresh() {
     queryClient.invalidateQueries({ queryKey: ['customers'] });
@@ -235,7 +245,7 @@ export function CustomersPanel() {
       )}
 
       <ul className="space-y-2">
-        {filtered.map((c) => (
+        {visible.map((c) => (
           <li
             key={c.id}
             className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4"
@@ -283,6 +293,18 @@ export function CustomersPanel() {
           </li>
         ))}
       </ul>
+
+      {hasMore && (
+        <div className="flex justify-center pt-2">
+          <Button
+            type="button"
+            onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+            className="border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text)] hover:border-[var(--app-brand)]"
+          >
+            {t('loadMore', { count: filtered.length - visibleCount })}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

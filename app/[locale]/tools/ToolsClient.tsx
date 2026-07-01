@@ -8,8 +8,8 @@ import { AppTopBar } from '@/components/AppTopBar';
 import { CvteMonitorPanel } from '@/components/CvteMonitorPanel';
 import { CustomersPanel } from '@/components/CustomersPanel';
 import { RobotsPanel } from '@/components/RobotsPanel';
-import { ReportAutomationPanel } from '@/components/ReportAutomationPanel';
 import { ReportPreviewPanel } from '@/components/ReportPreviewPanel';
+import { ReportAutomationPanel } from '@/components/ReportAutomationPanel';
 
 type ToolTab = 'monitor' | 'reports' | 'preview' | 'customers' | 'robots';
 

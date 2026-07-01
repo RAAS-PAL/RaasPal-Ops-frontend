@@ -1,25 +1,29 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+/**
+ * ReportAutomationPanel — "Manage report automation" tab.
+ *
+ * The monthly bundle email is sent automatically by the backend scheduler on
+ * the 2nd of each month (for the previous month). This panel lets the team:
+ *   - see the delivery history for any month (who was sent, skipped, or failed),
+ *   - run a month now (idempotent — already-sent customers are skipped),
+ *   - resend a single customer whose delivery failed.
+ */
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
-  CalendarDays,
   CheckCircle2,
-  Download,
-  FileSpreadsheet,
   Loader2,
-  Send,
-  Users,
+  Mail,
+  Play,
+  RefreshCw,
+  SkipForward,
 } from 'lucide-react';
 import { reportApi } from '@/lib/api';
-import { Button } from '@/components/ui/button';
-import type { ApiResponse, MonthlyReportSummary } from '@/types/api';
+import type { ReportSend } from '@/types/api';
 
-type Cadence = 'monthly' | 'weekly';
-
-/** Returns the previous calendar month as "YYYY-MM" (the usual report period). */
+/** Previous calendar month as "YYYY-MM". */
 function previousMonth(): string {
   const d = new Date();
   d.setDate(1);
@@ -27,317 +31,187 @@ function previousMonth(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-function toDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-/** Monday of the previous full week as "YYYY-MM-DD" (the backend snaps any day to its ISO Monday). */
-function previousWeekStart(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 7);
-  const mondayOffset = (d.getDay() + 6) % 7; // 0 = Monday
-  d.setDate(d.getDate() - mondayOffset);
-  return toDateStr(d);
-}
-
 function errorMessage(e: unknown, fallback: string): string {
   const ax = e as { response?: { data?: { message?: string } } };
   return ax?.response?.data?.message ?? fallback;
 }
 
-/* ─── Result summary ──────────────────────────────────────────────────────── */
-
-function StatChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
-  return (
-    <div className="flex items-center gap-2.5 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 py-2.5">
-      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
-        {icon}
-      </span>
-      <div>
-        <p className="text-lg font-semibold leading-none text-[var(--app-text)]">{value}</p>
-        <p className="mt-1 text-xs text-[var(--app-muted)]">{label}</p>
-      </div>
-    </div>
-  );
+function formatSentAt(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
 }
 
-function ResultView({ response }: { response: ApiResponse<MonthlyReportSummary> }) {
-  const t = useTranslations('reports');
-  const summary = response.data;
+const STATUS_STYLE: Record<ReportSend['status'], string> = {
+  SENT: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300',
+  FAILED: 'border-red-200 bg-red-50 text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400',
+  SKIPPED: 'border-[var(--app-border)] bg-[var(--app-panel-alt)] text-[var(--app-muted)]',
+};
 
-  if (summary.customersProcessed === 0 && summary.robotsReported === 0) {
-    return (
-      <div className="rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-panel)] py-10 text-center">
-        <FileSpreadsheet className="mx-auto h-8 w-8 text-[var(--app-muted)]" />
-        <p className="mt-3 text-sm text-[var(--app-muted)]">{t('emptyResult', { month: summary.reportMonth })}</p>
-      </div>
-    );
-  }
+const STATUS_ICON: Record<ReportSend['status'], React.ReactNode> = {
+  SENT: <CheckCircle2 className="h-3.5 w-3.5" />,
+  FAILED: <AlertTriangle className="h-3.5 w-3.5" />,
+  SKIPPED: <SkipForward className="h-3.5 w-3.5" />,
+};
 
-  return (
-    <div className="space-y-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-[var(--app-text)]">
-          {t('resultTitle', { month: summary.reportMonth })}
-        </p>
-        <span
-          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-            summary.testMode
-              ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
-              : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-          }`}
-        >
-          {summary.testMode ? t('testModeBadge') : t('liveModeBadge')}
-        </span>
-      </div>
-
-      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-        <StatChip icon={<Users className="h-4 w-4" />} label={t('stats.customers')} value={summary.customersProcessed} />
-        <StatChip icon={<FileSpreadsheet className="h-4 w-4" />} label={t('stats.robots')} value={summary.robotsReported} />
-        <StatChip icon={<Send className="h-4 w-4" />} label={t('stats.messages')} value={summary.messagesSent} />
-        <StatChip icon={<AlertTriangle className="h-4 w-4" />} label={t('stats.skipped')} value={summary.recipientsSkipped} />
-      </div>
-
-      {(summary.robotErrors > 0 || summary.sendErrors > 0) && (
-        <p className="text-xs text-red-600 dark:text-red-400">
-          {t('errorCounts', { robotErrors: summary.robotErrors, sendErrors: summary.sendErrors })}
-        </p>
-      )}
-
-      {summary.previews.length > 0 && (
-        <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">{t('previewsTitle')}</p>
-          {summary.previews.map((customer) => (
-            <div key={customer.customerId} className="rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-[var(--app-text)]">{customer.customerName}</p>
-                {!customer.lineUserId && (
-                  <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                    <AlertTriangle className="h-3.5 w-3.5" />
-                    {t('noRecipient')}
-                  </span>
-                )}
-              </div>
-              <ul className="mt-2 space-y-1.5">
-                {customer.robots.map((robot) => (
-                  <li key={robot.serialNumber} className="flex items-center justify-between gap-3">
-                    <span className="min-w-0 truncate text-sm text-[var(--app-text)]">
-                      {robot.robotName ?? robot.serialNumber}
-                      <span className="ml-2 text-xs text-[var(--app-muted)]">{robot.serialNumber}</span>
-                    </span>
-                    <a
-                      href={robot.downloadUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 py-1 text-xs font-semibold text-[var(--app-brand-dark)] transition hover:border-[var(--app-brand)]"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      {t('downloadLabel')}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ─── Panel ───────────────────────────────────────────────────────────────── */
-
-/**
- * Manage the monthly report sending system: pick a month, preview the generated
- * files (test mode, no LINE spend), or send them live to customers via n8n/LINE.
- */
 export function ReportAutomationPanel() {
-  const t = useTranslations('reports');
-  const [cadence, setCadence] = useState<Cadence>('monthly');
   const [month, setMonth] = useState(previousMonth);
-  const [weekStart, setWeekStart] = useState(previousWeekStart);
-  const [confirmLive, setConfirmLive] = useState(false);
-  const [result, setResult] = useState<ApiResponse<MonthlyReportSummary> | null>(null);
+  const maxMonth = previousMonth();
+  const queryClient = useQueryClient();
 
-  const maxMonth = useMemo(previousMonth, []);
-  const today = useMemo(() => toDateStr(new Date()), []);
-
-  /** Human-readable period for confirm/result copy. */
-  const periodLabel = cadence === 'weekly' ? (weekStart || previousWeekStart()) : (month || maxMonth);
-
-  const runMutation = useMutation({
-    mutationFn: ({ testMode }: { testMode: boolean }) =>
-      (cadence === 'weekly'
-        ? reportApi.runWeekly(weekStart || undefined, testMode)
-        : reportApi.runMonthly(month || undefined, testMode)
-      ).then((r) => r.data),
-    onSuccess: (res) => setResult(res),
+  const {
+    data: history = [],
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ['report-delivery-history', month],
+    queryFn: () => reportApi.deliveryHistory(month).then((r) => r.data.data ?? []),
   });
 
-  function selectCadence(next: Cadence) {
-    setCadence(next);
-    setConfirmLive(false);
-  }
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ['report-delivery-history', month] });
 
-  const previewPending = runMutation.isPending && runMutation.variables?.testMode === true;
-  const livePending = runMutation.isPending && runMutation.variables?.testMode === false;
+  const runMutation = useMutation({
+    mutationFn: () => reportApi.runDelivery(month).then((r) => r.data.data),
+    onSuccess: invalidate,
+  });
 
-  function runPreview() {
-    setConfirmLive(false);
-    runMutation.mutate({ testMode: true });
-  }
-
-  function runLive() {
-    setConfirmLive(false);
-    runMutation.mutate({ testMode: false });
-  }
+  const resendMutation = useMutation({
+    mutationFn: (customerProfileId: string) =>
+      reportApi.sendCustomerBundle(customerProfileId, month).then((r) => r.data.data),
+    onSuccess: invalidate,
+  });
 
   return (
     <div className="space-y-5">
-      {/* Intro / how it works */}
+      {/* How it works */}
       <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4">
-        <p className="text-sm font-semibold text-[var(--app-text)]">{t('panel.heading')}</p>
-        <p className="mt-1 text-xs text-[var(--app-muted)]">{t('panel.description')}</p>
-        <div className="mt-3 flex items-start gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 py-2.5">
-          <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-[var(--app-brand-dark)]" />
-          <p className="text-xs text-[var(--app-muted)]">{t('autoNote')}</p>
-        </div>
+        <p className="text-sm font-semibold text-[var(--app-text)]">Automated monthly report delivery</p>
+        <p className="mt-1 text-xs text-[var(--app-muted)]">
+          Each customer is emailed one link covering all of their robots for the month. The scheduler runs
+          automatically on the 2nd of each month for the previous month. You can also run a month now, or
+          resend a customer whose delivery failed. Running again is safe — customers already sent are skipped.
+        </p>
       </div>
 
       {/* Controls */}
-      <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4">
-        {/* Cadence toggle */}
-        <div className="mb-4 space-y-1.5">
-          <p className="text-xs font-semibold text-[var(--app-muted)]">{t('cadenceLabel')}</p>
-          <div className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] p-1">
-            {(['monthly', 'weekly'] as const).map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => selectCadence(c)}
-                disabled={runMutation.isPending}
-                className={`rounded-md px-4 py-1.5 text-sm font-semibold transition disabled:opacity-50 ${
-                  cadence === c
-                    ? 'bg-[var(--app-brand)] text-white shadow-sm'
-                    : 'text-[var(--app-muted)] hover:text-[var(--app-text)]'
-                }`}
-              >
-                {t(c === 'monthly' ? 'cadenceMonthly' : 'cadenceWeekly')}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-end gap-4">
-          {cadence === 'monthly' ? (
-            <div className="space-y-1.5">
-              <label htmlFor="report-month" className="text-xs font-semibold text-[var(--app-muted)]">
-                {t('monthLabel')}
-              </label>
-              <input
-                id="report-month"
-                type="month"
-                value={month}
-                max={maxMonth}
-                onChange={(e) => {
-                  setMonth(e.target.value);
-                  setConfirmLive(false);
-                }}
-                className="block h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
-              />
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              <label htmlFor="report-week" className="text-xs font-semibold text-[var(--app-muted)]">
-                {t('weekStartLabel')}
-              </label>
-              <input
-                id="report-week"
-                type="date"
-                value={weekStart}
-                max={today}
-                onChange={(e) => {
-                  setWeekStart(e.target.value);
-                  setConfirmLive(false);
-                }}
-                className="block h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
-              />
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              onClick={runPreview}
-              disabled={runMutation.isPending}
-              className="border border-[var(--app-border)] bg-[var(--app-panel-alt)] text-[var(--app-text)] hover:border-[var(--app-brand)]"
-            >
-              {previewPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
-              {previewPending ? t('previewing') : t('previewButton')}
-            </Button>
-
-            <Button
-              type="button"
-              onClick={() => setConfirmLive(true)}
-              disabled={runMutation.isPending}
-              className="bg-[var(--app-brand)] text-white hover:opacity-90"
-            >
-              {livePending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              {livePending ? t('sending') : t('sendButton')}
-            </Button>
-          </div>
-        </div>
-
-        {confirmLive && (
-          <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-950/30">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">{t('confirmTitle')}</p>
-                <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-                  {t('confirmBody', { month: periodLabel })}
-                </p>
-                <div className="mt-3 flex items-center gap-2">
-                  <Button
-                    type="button"
-                    onClick={runLive}
-                    className="bg-amber-600 text-white hover:bg-amber-700"
-                  >
-                    <Send className="h-4 w-4" />
-                    {t('confirmYes')}
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => setConfirmLive(false)}
-                    className="border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text)] hover:border-[var(--app-brand)]"
-                  >
-                    {t('confirmCancel')}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
+        <label className="flex items-center gap-2 text-sm text-[var(--app-muted)]">
+          Report month
+          <input
+            type="month"
+            value={month}
+            max={maxMonth}
+            onChange={(e) => setMonth(e.target.value)}
+            className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => runMutation.mutate()}
+          disabled={runMutation.isPending}
+          title="Send this month's bundle to every eligible customer (already-sent are skipped)"
+          className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+        >
+          {runMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+          {runMutation.isPending ? 'Running…' : 'Run delivery now'}
+        </button>
       </div>
 
+      {runMutation.isSuccess && runMutation.data && (
+        <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          Run complete — {runMutation.data.sent} sent, {runMutation.data.skipped} skipped, {runMutation.data.failed} failed.
+        </p>
+      )}
       {runMutation.isError && (
-        <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
+        <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{errorMessage(runMutation.error, t('errorGeneric'))}</span>
-        </div>
+          {errorMessage(runMutation.error, 'Delivery run failed — check SMTP credentials and the backend logs.')}
+        </p>
       )}
 
-      {result && (
-        <>
-          {result.message && (
-            <p className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="h-4 w-4" />
-              {result.message}
-            </p>
-          )}
-          <ResultView response={result} />
-        </>
-      )}
+      {/* History */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-[var(--app-text)]">Delivery history</p>
+          <button
+            type="button"
+            onClick={invalidate}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 py-1.5 text-xs font-semibold text-[var(--app-brand-dark)] transition hover:border-[var(--app-brand)]"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Refresh
+          </button>
+        </div>
+
+        {isLoading && (
+          <div className="flex items-center gap-2 py-8 text-sm text-[var(--app-muted)]">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading history…
+          </div>
+        )}
+
+        {isError && (
+          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
+            Could not load delivery history. Check that you are signed in and the backend is running.
+          </p>
+        )}
+
+        {!isLoading && !isError && history.length === 0 && (
+          <div className="rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-panel)] py-10 text-center text-sm text-[var(--app-muted)]">
+            No deliveries recorded for this month yet. Use “Run delivery now” to send.
+          </div>
+        )}
+
+        {history.length > 0 && (
+          <ul className="space-y-2">
+            {history.map((row) => (
+              <li
+                key={row.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${STATUS_STYLE[row.status]}`}
+                    >
+                      {STATUS_ICON[row.status]}
+                      {row.status}
+                    </span>
+                    <span className="truncate">{row.customerName}</span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--app-muted)]">
+                    {row.recipientEmail && (
+                      <span className="inline-flex items-center gap-1">
+                        <Mail className="h-3.5 w-3.5" />
+                        {row.recipientEmail}
+                      </span>
+                    )}
+                    <span>{formatSentAt(row.sentAt)}</span>
+                    {row.errorMessage && (
+                      <span className="text-red-600 dark:text-red-400">{row.errorMessage}</span>
+                    )}
+                  </div>
+                </div>
+                {row.status !== 'SENT' && (
+                  <button
+                    type="button"
+                    onClick={() => resendMutation.mutate(row.customerProfileId)}
+                    disabled={resendMutation.isPending}
+                    className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm font-semibold text-[var(--app-brand-dark)] transition hover:border-[var(--app-brand)] disabled:opacity-50"
+                  >
+                    {resendMutation.isPending && resendMutation.variables === row.customerProfileId ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Mail className="h-4 w-4" />
+                    )}
+                    Resend
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
