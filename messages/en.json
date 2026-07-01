@@ -74,6 +74,7 @@
     "loadError": "Could not load robots. Check that you are signed in and the backend is running.",
     "empty": "No robots registered yet. Register your first one.",
     "noMatch": "No robots match your search.",
+    "loadMore": "Load more ({count} remaining)",
     "unassigned": "Unassigned",
     "inactive": "Inactive",
     "deactivateConfirm": "Deactivate \"{name}\" at {customer}? It will stop being reported on.",
