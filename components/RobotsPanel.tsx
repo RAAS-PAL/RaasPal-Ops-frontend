@@ -7,7 +7,7 @@
  * report cadence, and manage the list (change cadence inline, or deactivate).
  * Pairs with CustomersPanel. Labels are translated via next-intl ('robots').
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import {
@@ -25,7 +25,8 @@ import { Button } from '@/components/ui/button';
 import type { RegisterRobotRequest, ReportCadence, RobotUnitResponse } from '@/types/api';
 
 const BRANDS = ['GAUSIUM', 'KEENON', 'CENOBOT'];
-const CADENCES: ReportCadence[] = ['MONTHLY', 'WEEKLY', 'OFF'];
+// Weekly is intentionally omitted — automated report delivery only sends MONTHLY.
+const CADENCES: ReportCadence[] = ['MONTHLY', 'OFF'];
 const CADENCE_KEY: Record<ReportCadence, string> = {
   MONTHLY: 'cadenceMonthly',
   WEEKLY: 'cadenceWeekly',
@@ -44,6 +45,8 @@ function robotDisplayName(r: RobotUnitResponse): string {
 const inputClass =
   'h-10 w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]';
 
+const PAGE_SIZE = 10;
+
 const EMPTY_FORM: RegisterRobotRequest = {
   serialNumber: '',
   brand: 'GAUSIUM',
@@ -58,6 +61,7 @@ export function RobotsPanel() {
   const t = useTranslations('robotsPanel');
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState<RegisterRobotRequest>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
@@ -85,6 +89,13 @@ export function RobotsPanel() {
         .includes(q),
     );
   }, [robots, query]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [query]);
+
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
 
   function refresh() {
     queryClient.invalidateQueries({ queryKey: ['robot-units'] });
@@ -241,7 +252,7 @@ export function RobotsPanel() {
       )}
 
       <ul className="space-y-2">
-        {filtered.map((r) => (
+        {visible.map((r) => (
           <li
             key={r.id}
             className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4"
@@ -300,6 +311,18 @@ export function RobotsPanel() {
           </li>
         ))}
       </ul>
+
+      {hasMore && (
+        <div className="flex justify-center pt-2">
+          <Button
+            type="button"
+            onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+            className="border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text)] hover:border-[var(--app-brand)]"
+          >
+            {t('loadMore', { count: filtered.length - visibleCount })}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

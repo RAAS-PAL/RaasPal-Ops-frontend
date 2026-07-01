@@ -74,6 +74,7 @@
     "loadError": "无法加载机器人。请检查是否已登录且后端正在运行。",
     "empty": "暂无已注册的机器人。注册第一个机器人。",
     "noMatch": "没有符合搜索条件的机器人。",
+    "loadMore": "加载更多（还剩 {count} 个）",
     "unassigned": "未分配",
     "inactive": "未启用",
     "deactivateConfirm": "停用“{customer}”的“{name}”？它将不再被纳入报告。",
