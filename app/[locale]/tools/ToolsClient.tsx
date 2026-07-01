@@ -9,6 +9,7 @@ import { CvteMonitorPanel } from '@/components/CvteMonitorPanel';
 import { CustomersPanel } from '@/components/CustomersPanel';
 import { RobotsPanel } from '@/components/RobotsPanel';
 import { ReportPreviewPanel } from '@/components/ReportPreviewPanel';
+import { ReportAutomationPanel } from '@/components/ReportAutomationPanel';
 
 type ToolTab = 'monitor' | 'reports' | 'preview' | 'customers' | 'robots';
 
@@ -55,11 +56,7 @@ export function ToolsClient({ initialTab = 'monitor' }: { initialTab?: ToolTab }
             </div>
 
             {tab === 'monitor' && <CvteMonitorPanel />}
-            {tab === 'reports' && (
-              <div className="rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-panel)] py-16 text-center text-sm text-[var(--app-muted)]">
-                {t('automationComingSoon')}
-              </div>
-            )}
+            {tab === 'reports' && <ReportAutomationPanel />}
             {tab === 'preview' && <ReportPreviewPanel />}
             {tab === 'customers' && <CustomersPanel />}
             {tab === 'robots' && <RobotsPanel />}

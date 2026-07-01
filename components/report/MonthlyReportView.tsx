@@ -135,15 +135,20 @@ function ConsumableRow({ item }: { item: ConsumableStatus }) {
 
 /* ─── Sub-sections ────────────────────────────────────────────────────────── */
 
+/** Formats a number with thousands separators (e.g. 76349.79 -> "76,349.79"). */
+function formatNumber(n: number): string {
+  return n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+
 function ExecutiveSummaryBlock({ s }: { s: ExecutiveSummary }) {
   const t = useTranslations('report');
   return (
     <div className="px-2 text-[15px]">
-      <SummaryRow label={t('totalTasksCompleted')} value={String(s.totalTasksCompleted)} />
+      <SummaryRow label={t('totalTasksCompleted')} value={formatNumber(s.totalTasksCompleted)} />
       <SummaryRow label={t('totalOperatingHours')} value={s.totalOperatingTime} />
-      <SummaryRow label={t('totalAreaCleaned')} value={`${s.totalAreaCleanedSqm} sqm`} />
-      <SummaryRow label={t('averageProductivity')} value={`${s.averageProductivitySqmH} sqm/h`} />
-      <SummaryRow label={t('waterConsumption')} value={`${s.waterConsumptionL} L`} />
+      <SummaryRow label={t('totalAreaCleaned')} value={`${formatNumber(s.totalAreaCleanedSqm)} sqm`} />
+      <SummaryRow label={t('averageProductivity')} value={`${formatNumber(s.averageProductivitySqmH)} sqm/h`} />
+      <SummaryRow label={t('waterConsumption')} value={`${formatNumber(s.waterConsumptionL)} L`} />
       <SummaryRow label={t('batteryConsumption')} value={s.batteryConsumption} />
     </div>
   );

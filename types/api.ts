@@ -436,3 +436,17 @@ export interface RegisterRobotRequest {
   site?: string | null;
   reportCadence?: ReportCadence | null;
 }
+
+// Automated report delivery history (report_sends)
+export type ReportSendStatus = 'SENT' | 'FAILED' | 'SKIPPED';
+
+export interface ReportSend {
+  id: string;
+  customerProfileId: string;
+  customerName: string;
+  reportMonth: string;
+  status: ReportSendStatus;
+  recipientEmail: string | null;
+  errorMessage: string | null;
+  sentAt: string;
+}
