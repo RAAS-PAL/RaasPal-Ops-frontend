@@ -24,6 +24,7 @@ import {
 import { customerApi, robotUnitApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import type {
+  CustomerResponse,
   RegisterRobotRequest,
   ReportCadence,
   RobotUnitResponse,
@@ -46,6 +47,14 @@ function errorMessage(e: unknown, fallback: string): string {
 
 function robotDisplayName(r: RobotUnitResponse): string {
   return r.name ?? [r.brand, r.model].filter(Boolean).join(' ') ?? r.serialNumber;
+}
+
+/**
+ * Dropdown label for a customer. Appends the branch when present so multiple
+ * branches of the same company (e.g. two "Mitsubishi Motors") are distinguishable.
+ */
+function customerLabel(c: CustomerResponse): string {
+  return c.branch && c.branch.trim() ? `${c.companyName} — ${c.branch}` : c.companyName;
 }
 
 const inputClass =
@@ -248,7 +257,7 @@ export function RobotsPanel() {
             <select className={inputClass} value={form.customerProfileId} onChange={(e) => field('customerProfileId', e.target.value)}>
               <option value="">{t('selectCustomer')}</option>
               {customers.map((c) => (
-                <option key={c.id} value={c.id}>{c.companyName}</option>
+                <option key={c.id} value={c.id}>{customerLabel(c)}</option>
               ))}
             </select>
           </div>
