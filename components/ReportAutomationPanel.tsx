@@ -18,10 +18,16 @@ import {
   Mail,
   Play,
   RefreshCw,
+  Send,
   SkipForward,
 } from 'lucide-react';
-import { reportApi } from '@/lib/api';
-import type { ReportSend } from '@/types/api';
+import { customerApi, reportApi } from '@/lib/api';
+import type { CustomerResponse, ReportSend } from '@/types/api';
+
+/** Dropdown label: append the branch so same-company branches are distinguishable. */
+function customerLabel(c: CustomerResponse): string {
+  return c.branch && c.branch.trim() ? `${c.companyName} — ${c.branch}` : c.companyName;
+}
 
 /** Previous calendar month as "YYYY-MM". */
 function previousMonth(): string {
@@ -55,6 +61,7 @@ const STATUS_ICON: Record<ReportSend['status'], React.ReactNode> = {
 
 export function ReportAutomationPanel() {
   const [month, setMonth] = useState(previousMonth);
+  const [customerId, setCustomerId] = useState('');
   const maxMonth = previousMonth();
   const queryClient = useQueryClient();
 
@@ -67,6 +74,11 @@ export function ReportAutomationPanel() {
     queryFn: () => reportApi.deliveryHistory(month).then((r) => r.data.data ?? []),
   });
 
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers'],
+    queryFn: () => customerApi.list().then((r) => r.data.data ?? []),
+  });
+
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ['report-delivery-history', month] });
 
@@ -75,7 +87,10 @@ export function ReportAutomationPanel() {
     onSuccess: invalidate,
   });
 
-  const resendMutation = useMutation({
+  // Send one customer's bundle for the month. Used by the single-customer picker
+  // (testing) AND the per-row resend. Both hit /delivery/send, which records the
+  // send in report_sends — so the later bulk "Run delivery now" skips them.
+  const sendMutation = useMutation({
     mutationFn: (customerProfileId: string) =>
       reportApi.sendCustomerBundle(customerProfileId, month).then((r) => r.data.data),
     onSuccess: invalidate,
@@ -116,6 +131,53 @@ export function ReportAutomationPanel() {
           {runMutation.isPending ? 'Running…' : 'Run delivery now'}
         </button>
       </div>
+
+      {/* Send to one customer — for testing before the full run. Recorded in
+          history, so "Run delivery now" later skips anyone already sent here. */}
+      <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
+        <p className="mb-2 text-sm font-semibold text-[var(--app-text)]">Send to one customer (test)</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={customerId}
+            onChange={(e) => setCustomerId(e.target.value)}
+            className="h-9 min-w-64 flex-1 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
+          >
+            <option value="">Select a customer…</option>
+            {customers.map((c) => (
+              <option key={c.id} value={c.id}>{customerLabel(c)}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => customerId && sendMutation.mutate(customerId)}
+            disabled={!customerId || sendMutation.isPending}
+            title="Email this customer their bundle for the selected month (recorded so the full run skips them)"
+            className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+          >
+            {sendMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {sendMutation.isPending ? 'Sending…' : 'Send report'}
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-[var(--app-muted)]">
+          Sends one customer their report for the selected month. This is recorded in the history below, so a
+          later “Run delivery now” will skip anyone already sent — no duplicate emails.
+        </p>
+      </div>
+
+      {sendMutation.isSuccess && sendMutation.data && (
+        <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          {sendMutation.data.status === 'SENT'
+            ? `Sent to ${sendMutation.data.customerName} (${sendMutation.data.recipientEmail}).`
+            : `Send to ${sendMutation.data.customerName} recorded as ${sendMutation.data.status}.`}
+        </p>
+      )}
+      {sendMutation.isError && (
+        <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          {errorMessage(sendMutation.error, 'Send failed — check the customer has a contact email and SMTP is configured.')}
+        </p>
+      )}
 
       {runMutation.isSuccess && runMutation.data && (
         <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
@@ -195,11 +257,11 @@ export function ReportAutomationPanel() {
                 {row.status !== 'SENT' && (
                   <button
                     type="button"
-                    onClick={() => resendMutation.mutate(row.customerProfileId)}
-                    disabled={resendMutation.isPending}
+                    onClick={() => sendMutation.mutate(row.customerProfileId)}
+                    disabled={sendMutation.isPending}
                     className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm font-semibold text-[var(--app-brand-dark)] transition hover:border-[var(--app-brand)] disabled:opacity-50"
                   >
-                    {resendMutation.isPending && resendMutation.variables === row.customerProfileId ? (
+                    {sendMutation.isPending && sendMutation.variables === row.customerProfileId ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Mail className="h-4 w-4" />
