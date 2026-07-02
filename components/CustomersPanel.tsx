@@ -151,7 +151,8 @@ export function CustomersPanel() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-[var(--app-muted)]">{t('contactEmail')}</label>
-              <input className={inputClass} type="email" value={form.contactEmail ?? ''} onChange={(e) => field('contactEmail', e.target.value)} placeholder="reports@customer.com" />
+              <input className={inputClass} type="text" value={form.contactEmail ?? ''} onChange={(e) => field('contactEmail', e.target.value)} placeholder="reports@customer.com, ops@customer.com" />
+              <p className="text-xs text-[var(--app-muted)]">{t('contactEmailHint')}</p>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-[var(--app-muted)]">{t('contactPhone')}</label>

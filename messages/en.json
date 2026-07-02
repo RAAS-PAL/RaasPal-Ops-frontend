@@ -33,6 +33,7 @@
     "editCustomer": "Edit {name}",
     "companyName": "Company name",
     "contactEmail": "Contact email",
+    "contactEmailHint": "Separate multiple emails with commas — all recipients are on the same email.",
     "contactPhone": "Contact phone",
     "industry": "Industry",
     "branch": "Branch",
