@@ -76,6 +76,7 @@ import type {
   RobotType,
   RobotUnitResponse,
   RegisterRobotRequest,
+  UpdateRobotRequest,
   ReportCadence,
   ReportSend,
   TestStatus,
@@ -147,6 +148,9 @@ export const robotUnitApi = {
 
   register: (body: RegisterRobotRequest) =>
     api.post<ApiResponse<RobotUnitResponse>>('/api/v1/robot-units', body),
+
+  update: (id: string, body: UpdateRobotRequest) =>
+    api.put<ApiResponse<RobotUnitResponse>>(`/api/v1/robot-units/${id}`, body),
 
   updateCadence: (deploymentId: string, reportCadence: ReportCadence) =>
     api.patch<ApiResponse<RobotUnitResponse>>(`/api/v1/robot-units/deployments/${deploymentId}/cadence`, { reportCadence }),

@@ -29,7 +29,6 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 const LANGUAGES: { locale: Locale; label: string; nativeLabel: string }[] = [
   { locale: 'en', label: 'English',  nativeLabel: 'English' },
   { locale: 'th', label: 'Thai',     nativeLabel: 'ไทย'    },
-  { locale: 'zh', label: 'Chinese',  nativeLabel: '中文'   },
 ];
 
 /* ─── Component ──────────────────────────────────────────────────────────── */

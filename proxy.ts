@@ -39,7 +39,7 @@ const PUBLIC_PATHS = ['/login', '/register', '/report'];
 /** Returns true if the path (locale stripped) is a public route. */
 function isPublic(pathname: string): boolean {
   // Strip locale prefix: /en/login → /login
-  const stripped = pathname.replace(/^\/(?:en|th|zh)/, '') || '/';
+  const stripped = pathname.replace(/^\/(?:en|th)/, '') || '/';
   return PUBLIC_PATHS.some((p) => stripped === p || stripped.startsWith(`${p}/`));
 }
 
@@ -63,7 +63,7 @@ export function proxy(request: NextRequest) {
   const token = request.cookies.get('raaspal_token')?.value;
   if (!token) {
     // Determine target locale from the pathname prefix.
-    const localeMatch = pathname.match(/^\/(en|th|zh)/);
+    const localeMatch = pathname.match(/^\/(en|th)/);
     const locale = localeMatch ? localeMatch[1] : routing.defaultLocale;
     const loginUrl = new URL(`/${locale}/login`, request.url);
     return NextResponse.redirect(loginUrl);

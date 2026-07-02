@@ -254,13 +254,14 @@ export function MonthlyReportView({ report }: { report: MonthlyPerformanceReport
             <OperationalBlock o={report.operational} />
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             <SectionBar heading={`${t('part')} 3 : ${t('consumablesStatus')}`} />
             <div className="px-2 text-[15px]">
               {report.consumables.map((c) => (
                 <ConsumableRow key={c.label} item={c} />
               ))}
             </div>
+            <p className="px-2 pt-1 text-xs italic text-[#6b7785]">* {t('manufacturerNote')}</p>
           </div>
 
           <div className="space-y-3">

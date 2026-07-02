@@ -10,6 +10,7 @@
     "operationalPerformance": "Operational Performance",
     "consumablesStatus": "Consumables Status",
     "recommendations": "Recommendations",
+    "manufacturerNote": "Based on manufacturer recommendations.",
     "recAction": "Schedule {part} replacement soon — residual at {value}%.",
     "recMonitor": "Monitor {part} wear — residual at {value}%.",
     "recCompletion": "Investigate incomplete tasks — average completion is {value}%.",
@@ -62,6 +63,10 @@
   "robotsPanel": {
     "searchPlaceholder": "Search by serial number, robot, or customer…",
     "registerRobot": "Register robot",
+    "editRobot": "Edit robot",
+    "saveChanges": "Save changes",
+    "editAria": "Edit {name}",
+    "serialImmutable": "Serial number cannot be changed",
     "noCustomers": "No customers yet — add one in the Customers tab first, then register a robot to them.",
     "serialNumber": "Serial number",
     "brand": "Brand",
@@ -569,8 +574,7 @@
   "language": {
     "select": "Language",
     "en": "English",
-    "th": "Thai",
-    "zh": "Chinese"
+    "th": "Thai"
   },
   "home": {
     "heroTitle": "Find the Right Robot for Your Business",
