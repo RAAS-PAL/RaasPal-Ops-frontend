@@ -21,6 +21,7 @@ import type {
   ConsumableStatus,
   ExecutiveSummary,
   OperationalPerformance,
+  Recommendation,
 } from '@/lib/reports/types';
 
 /* ─── Palette (matches the approved PowerPoint) ──────────────────────────── */
@@ -44,6 +45,26 @@ const CONSUMABLE_KEYS: Record<string, string> = {
   Filter: 'filter',
   Squeegee: 'squeegee',
 };
+
+/** Builds a localized recommendation sentence from the structured item. */
+function recommendationText(
+  rec: Recommendation,
+  t: (key: string, values?: Record<string, string | number>) => string,
+): string {
+  const part = rec.part && CONSUMABLE_KEYS[rec.part] ? t(CONSUMABLE_KEYS[rec.part]) : rec.part ?? '';
+  switch (rec.type) {
+    case 'action':
+      return t('recAction', { part, value: rec.value ?? 0 });
+    case 'monitor':
+      return t('recMonitor', { part, value: rec.value ?? 0 });
+    case 'completion':
+      return t('recCompletion', { value: rec.value ?? 0 });
+    case 'noData':
+      return t('recNoData');
+    default:
+      return t('recHealthy');
+  }
+}
 
 /* ─── Building blocks ─────────────────────────────────────────────────────── */
 
@@ -249,7 +270,7 @@ export function MonthlyReportView({ report }: { report: MonthlyPerformanceReport
                 {report.recommendations.map((rec, i) => (
                   <li key={i} className="flex gap-2">
                     <span aria-hidden>•</span>
-                    <span>{rec}</span>
+                    <span>{recommendationText(rec, t)}</span>
                   </li>
                 ))}
               </ul>

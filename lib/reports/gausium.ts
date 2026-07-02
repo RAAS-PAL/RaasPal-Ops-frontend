@@ -51,7 +51,7 @@ export const sampleGausiumReport: GausiumMonthlyReport = {
   ],
 
   recommendations: [
-    'Continue the current operation plan — performance is within a healthy range.',
-    'Monitor brush wear next month and replace when it nears 80%.',
+    { type: 'monitor', part: 'Brush', value: 78 },
+    { type: 'healthy', part: null, value: null },
   ],
 };

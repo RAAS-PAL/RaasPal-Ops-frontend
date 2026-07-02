@@ -30,6 +30,21 @@ export interface ConsumableStatus {
   state: HealthState;
 }
 
+/** Recommendation kind — the frontend builds the localized sentence from this. */
+export type RecommendationType = 'action' | 'monitor' | 'completion' | 'healthy' | 'noData';
+
+/**
+ * A structured recommendation. `part` is the consumable label ("Brush" /
+ * "Filter" / "Squeegee") for action/monitor, else null; `value` is the residual %
+ * (action/monitor) or average completion % (completion), else null. Kept
+ * structured — not a pre-built sentence — so the report renders in any locale.
+ */
+export interface Recommendation {
+  type: RecommendationType;
+  part: string | null;
+  value: number | null;
+}
+
 /** Part 1 — Executive Summary figures (pre-formatted for display). */
 export interface ExecutiveSummary {
   totalTasksCompleted: number;
@@ -72,5 +87,5 @@ export interface MonthlyPerformanceReport {
   executive: ExecutiveSummary;
   operational: OperationalPerformance;
   consumables: ConsumableStatus[];
-  recommendations: string[];
+  recommendations: Recommendation[];
 }
