@@ -33,6 +33,7 @@
     "editCustomer": "แก้ไข {name}",
     "companyName": "ชื่อบริษัท",
     "contactEmail": "อีเมลติดต่อ",
+    "contactEmailHint": "คั่นหลายอีเมลด้วยเครื่องหมายจุลภาค — ผู้รับทั้งหมดจะอยู่ในอีเมลฉบับเดียวกัน",
     "contactPhone": "โทรศัพท์ติดต่อ",
     "industry": "อุตสาหกรรม",
     "branch": "สาขา",

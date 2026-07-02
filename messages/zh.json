@@ -33,6 +33,7 @@
     "editCustomer": "编辑 {name}",
     "companyName": "公司名称",
     "contactEmail": "联系邮箱",
+    "contactEmailHint": "多个邮箱用逗号分隔——所有收件人都在同一封邮件中。",
     "contactPhone": "联系电话",
     "industry": "行业",
     "branch": "分支",
