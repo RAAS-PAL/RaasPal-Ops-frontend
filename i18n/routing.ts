@@ -10,15 +10,14 @@
  *   /       → proxy.ts redirects → /en
  *   /en     → home in English
  *   /th     → home in Thai
- *   /zh     → home in Chinese
  */
 import { defineRouting } from 'next-intl/routing';
 
 export const routing = defineRouting({
-  locales: ['en', 'th', 'zh'],
+  locales: ['en', 'th'],
   defaultLocale: 'en',
-  localePrefix: 'always', // /en /th /zh — explicit, no ambiguity
+  localePrefix: 'always', // /en /th — explicit, no ambiguity
 });
 
-/** Convenience type: 'en' | 'th' | 'zh' */
+/** Convenience type: 'en' | 'th' */
 export type Locale = (typeof routing.locales)[number];

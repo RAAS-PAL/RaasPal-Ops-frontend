@@ -16,13 +16,19 @@ import {
   Building2,
   Loader2,
   MapPin,
+  Pencil,
   Plus,
   Search,
   Trash2,
 } from 'lucide-react';
 import { customerApi, robotUnitApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import type { RegisterRobotRequest, ReportCadence, RobotUnitResponse } from '@/types/api';
+import type {
+  RegisterRobotRequest,
+  ReportCadence,
+  RobotUnitResponse,
+  UpdateRobotRequest,
+} from '@/types/api';
 
 const BRANDS = ['GAUSIUM', 'KEENON', 'CENOBOT'];
 // Weekly is intentionally omitted — automated report delivery only sends MONTHLY.
@@ -57,12 +63,27 @@ const EMPTY_FORM: RegisterRobotRequest = {
   reportCadence: 'MONTHLY',
 };
 
+/** Prefill the form from an existing robot (for the edit flow). */
+function toForm(r: RobotUnitResponse): RegisterRobotRequest {
+  return {
+    serialNumber: r.serialNumber,
+    brand: r.brand,
+    model: r.model ?? '',
+    name: r.name ?? '',
+    customerProfileId: r.deployment?.customerProfileId ?? '',
+    site: r.deployment?.site ?? '',
+    reportCadence: r.deployment?.reportCadence ?? 'MONTHLY',
+  };
+}
+
 export function RobotsPanel() {
   const t = useTranslations('robotsPanel');
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [adding, setAdding] = useState(false);
+  /** The robot being edited, or null when not editing. */
+  const [editing, setEditing] = useState<RobotUnitResponse | null>(null);
   const [form, setForm] = useState<RegisterRobotRequest>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -111,6 +132,17 @@ export function RobotsPanel() {
     onError: (e) => setFormError(errorMessage(e, t('registerError'))),
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateRobotRequest }) =>
+      robotUnitApi.update(id, body).then((r) => r.data),
+    onSuccess: () => {
+      refresh();
+      setEditing(null);
+      setForm(EMPTY_FORM);
+    },
+    onError: (e) => setFormError(errorMessage(e, t('registerError'))),
+  });
+
   const cadenceMutation = useMutation({
     mutationFn: ({ deploymentId, cadence }: { deploymentId: string; cadence: ReportCadence }) =>
       robotUnitApi.updateCadence(deploymentId, cadence).then((r) => r.data),
@@ -122,24 +154,61 @@ export function RobotsPanel() {
     onSuccess: refresh,
   });
 
-  function submit() {
+  function openAdd() {
+    setEditing(null);
+    setForm(EMPTY_FORM);
     setFormError(null);
-    if (!form.serialNumber.trim()) return setFormError(t('serialRequired'));
-    if (!form.brand?.trim()) return setFormError(t('brandRequired'));
-    if (!form.customerProfileId) return setFormError(t('customerRequired'));
-    registerMutation.mutate(form);
+    setAdding(true);
   }
 
-  /* ── Register form ─────────────────────────────────────────────────────── */
-  if (adding) {
+  function openEdit(r: RobotUnitResponse) {
+    setAdding(false);
+    setForm(toForm(r));
+    setFormError(null);
+    setEditing(r);
+  }
+
+  function closeForm() {
+    setAdding(false);
+    setEditing(null);
+    setFormError(null);
+  }
+
+  function submit() {
+    setFormError(null);
+    if (!editing && !form.serialNumber.trim()) return setFormError(t('serialRequired'));
+    if (!form.brand?.trim()) return setFormError(t('brandRequired'));
+    if (!form.customerProfileId) return setFormError(t('customerRequired'));
+    if (editing) {
+      updateMutation.mutate({
+        id: editing.id,
+        body: {
+          brand: form.brand,
+          model: form.model,
+          name: form.name,
+          customerProfileId: form.customerProfileId,
+          site: form.site,
+          reportCadence: form.reportCadence,
+        },
+      });
+    } else {
+      registerMutation.mutate(form);
+    }
+  }
+
+  /* ── Register / edit form ──────────────────────────────────────────────── */
+  if (adding || editing) {
     const field = (key: keyof RegisterRobotRequest, value: string) =>
       setForm((f) => ({ ...f, [key]: value }));
+    const busy = registerMutation.isPending || updateMutation.isPending;
 
     return (
       <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-5">
-        <p className="text-sm font-semibold text-[var(--app-text)]">{t('registerRobot')}</p>
+        <p className="text-sm font-semibold text-[var(--app-text)]">
+          {editing ? t('editRobot') : t('registerRobot')}
+        </p>
 
-        {customers.length === 0 && (
+        {!editing && customers.length === 0 && (
           <p className="mt-3 flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
             <AlertTriangle className="h-4 w-4 shrink-0" />
             {t('noCustomers')}
@@ -149,7 +218,14 @@ export function RobotsPanel() {
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-[var(--app-muted)]">{t('serialNumber')} *</label>
-            <input className={inputClass} value={form.serialNumber} onChange={(e) => field('serialNumber', e.target.value)} placeholder="GS401-XXXX-0001" />
+            <input
+              className={`${inputClass} disabled:cursor-not-allowed disabled:opacity-60`}
+              value={form.serialNumber}
+              onChange={(e) => field('serialNumber', e.target.value)}
+              placeholder="GS401-XXXX-0001"
+              disabled={!!editing}
+              title={editing ? t('serialImmutable') : undefined}
+            />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-[var(--app-muted)]">{t('brand')} *</label>
@@ -197,14 +273,14 @@ export function RobotsPanel() {
         )}
 
         <div className="mt-5 flex items-center gap-3">
-          <Button type="button" onClick={submit} disabled={registerMutation.isPending} className="bg-[var(--app-brand)] text-white hover:opacity-90">
-            {registerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {t('registerRobot')}
+          <Button type="button" onClick={submit} disabled={busy} className="bg-[var(--app-brand)] text-white hover:opacity-90">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {editing ? t('saveChanges') : t('registerRobot')}
           </Button>
           <Button
             type="button"
-            onClick={() => { setAdding(false); setFormError(null); }}
-            disabled={registerMutation.isPending}
+            onClick={closeForm}
+            disabled={busy}
             className="border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text)] hover:border-[var(--app-brand)]"
           >
             {t('cancel')}
@@ -228,7 +304,7 @@ export function RobotsPanel() {
             className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-panel-alt)] pl-10 pr-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
           />
         </div>
-        <Button type="button" onClick={() => { setForm(EMPTY_FORM); setFormError(null); setAdding(true); }} className="bg-[var(--app-brand)] text-white hover:opacity-90">
+        <Button type="button" onClick={openAdd} className="bg-[var(--app-brand)] text-white hover:opacity-90">
           <Plus className="h-4 w-4" /> {t('registerRobot')}
         </Button>
       </div>
@@ -276,6 +352,14 @@ export function RobotsPanel() {
 
             {r.deployment ? (
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openEdit(r)}
+                  aria-label={t('editAria', { name: robotDisplayName(r) })}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--app-border)] text-[var(--app-muted)] transition hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)]"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
                 <select
                   aria-label={t('cadenceAria', { name: robotDisplayName(r) })}
                   value={r.deployment.reportCadence}
@@ -304,9 +388,19 @@ export function RobotsPanel() {
                 </button>
               </div>
             ) : (
-              <span className="rounded-full border border-[var(--app-border)] px-2.5 py-1 text-xs font-semibold text-[var(--app-muted)]">
-                {t('inactive')}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-[var(--app-border)] px-2.5 py-1 text-xs font-semibold text-[var(--app-muted)]">
+                  {t('inactive')}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => openEdit(r)}
+                  aria-label={t('editAria', { name: robotDisplayName(r) })}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--app-border)] text-[var(--app-muted)] transition hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)]"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              </div>
             )}
           </li>
         ))}

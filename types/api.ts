@@ -437,6 +437,16 @@ export interface RegisterRobotRequest {
   reportCadence?: ReportCadence | null;
 }
 
+// Edit an existing robot — serial number is immutable, so it is not included.
+export interface UpdateRobotRequest {
+  brand: string;
+  model?: string | null;
+  name?: string | null;
+  customerProfileId: string;
+  site?: string | null;
+  reportCadence?: ReportCadence | null;
+}
+
 // Automated report delivery history (report_sends)
 export type ReportSendStatus = 'SENT' | 'FAILED' | 'SKIPPED';
 

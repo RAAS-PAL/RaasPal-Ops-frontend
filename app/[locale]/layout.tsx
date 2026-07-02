@@ -18,7 +18,7 @@
  *      Components so they can call useTranslations() on the client too.
  *
  * generateStaticParams tells Next.js which locale segments to pre-render at
- * build time, so /en, /th, /zh are all statically generated.
+ * build time, so /en and /th are all statically generated.
  */
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
