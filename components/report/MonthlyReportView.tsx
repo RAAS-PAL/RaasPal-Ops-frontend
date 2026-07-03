@@ -257,11 +257,15 @@ export function MonthlyReportView({ report }: { report: MonthlyPerformanceReport
           <div className="space-y-2">
             <SectionBar heading={`${t('part')} 3 : ${t('consumablesStatus')}`} />
             <div className="px-2 text-[15px]">
-              {report.consumables.map((c) => (
-                <ConsumableRow key={c.label} item={c} />
-              ))}
+              {report.consumables.length > 0 ? (
+                report.consumables.map((c) => <ConsumableRow key={c.label} item={c} />)
+              ) : (
+                <p className="py-1.5 text-[#6b7785]">{t('noConsumables')}</p>
+              )}
             </div>
-            <p className="px-2 pt-1 text-xs italic text-[#6b7785]">* {t('manufacturerNote')}</p>
+            {report.consumables.length > 0 && (
+              <p className="px-2 pt-1 text-xs italic text-[#6b7785]">* {t('manufacturerNote')}</p>
+            )}
           </div>
 
           <div className="space-y-3">

@@ -11,6 +11,7 @@
     "consumablesStatus": "Consumables Status",
     "recommendations": "Recommendations",
     "manufacturerNote": "Based on manufacturer recommendations.",
+    "noConsumables": "This robot has no tracked consumables.",
     "recAction": "Schedule {part} replacement soon — residual at {value}%.",
     "recMonitor": "Monitor {part} wear — residual at {value}%.",
     "recCompletion": "Investigate incomplete tasks — average completion is {value}%.",
