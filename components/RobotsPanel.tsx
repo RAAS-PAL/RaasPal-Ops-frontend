@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Bot,
   Building2,
+  CalendarCheck,
   Loader2,
   MapPin,
   Pencil,
@@ -155,6 +156,11 @@ export function RobotsPanel() {
   const cadenceMutation = useMutation({
     mutationFn: ({ deploymentId, cadence }: { deploymentId: string; cadence: ReportCadence }) =>
       robotUnitApi.updateCadence(deploymentId, cadence).then((r) => r.data),
+    onSuccess: refresh,
+  });
+
+  const setAllCadenceMutation = useMutation({
+    mutationFn: (cadence: ReportCadence) => robotUnitApi.updateAllCadence(cadence).then((r) => r.data),
     onSuccess: refresh,
   });
 
@@ -313,10 +319,31 @@ export function RobotsPanel() {
             className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-panel-alt)] pl-10 pr-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
           />
         </div>
-        <Button type="button" onClick={openAdd} className="bg-[var(--app-brand)] text-white hover:opacity-90">
-          <Plus className="h-4 w-4" /> {t('registerRobot')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            onClick={() => {
+              if (confirm(t('setAllMonthlyConfirm'))) setAllCadenceMutation.mutate('MONTHLY');
+            }}
+            disabled={setAllCadenceMutation.isPending || robots.length === 0}
+            title={t('setAllMonthlyHint')}
+            className="border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text)] hover:border-[var(--app-brand)] disabled:opacity-50"
+          >
+            {setAllCadenceMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarCheck className="h-4 w-4" />}
+            {t('setAllMonthly')}
+          </Button>
+          <Button type="button" onClick={openAdd} className="bg-[var(--app-brand)] text-white hover:opacity-90">
+            <Plus className="h-4 w-4" /> {t('registerRobot')}
+          </Button>
+        </div>
       </div>
+
+      {setAllCadenceMutation.isSuccess && (
+        <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+          <CalendarCheck className="h-4 w-4 shrink-0" />
+          {t('setAllMonthlyDone', { count: setAllCadenceMutation.data?.data ?? 0 })}
+        </p>
+      )}
 
       {isLoading && (
         <div className="flex items-center gap-2 py-8 text-sm text-[var(--app-muted)]">
