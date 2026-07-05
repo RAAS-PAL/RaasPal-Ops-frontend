@@ -155,9 +155,12 @@ export const robotUnitApi = {
   updateCadence: (deploymentId: string, reportCadence: ReportCadence) =>
     api.patch<ApiResponse<RobotUnitResponse>>(`/api/v1/robot-units/deployments/${deploymentId}/cadence`, { reportCadence }),
 
-  /** Set the report cadence on every active deployment at once. Returns the count updated. */
-  updateAllCadence: (reportCadence: ReportCadence) =>
-    api.patch<ApiResponse<number>>('/api/v1/robot-units/deployments/cadence', { reportCadence }),
+  /**
+   * Bulk cadence change. With no ids → every active deployment; with ids → just
+   * that selection. Returns the count updated.
+   */
+  updateAllCadence: (reportCadence: ReportCadence, deploymentIds?: string[]) =>
+    api.patch<ApiResponse<number>>('/api/v1/robot-units/deployments/cadence', { reportCadence, deploymentIds }),
 
   deactivate: (deploymentId: string) =>
     api.delete<ApiResponse<void>>(`/api/v1/robot-units/deployments/${deploymentId}`),

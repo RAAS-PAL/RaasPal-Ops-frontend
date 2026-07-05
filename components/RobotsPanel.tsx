@@ -92,6 +92,8 @@ export function RobotsPanel() {
   const [query, setQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [adding, setAdding] = useState(false);
+  /** Selected deployment ids for the bulk cadence action. */
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   /** The robot being edited, or null when not editing. */
   const [editing, setEditing] = useState<RobotUnitResponse | null>(null);
   const [form, setForm] = useState<RegisterRobotRequest>(EMPTY_FORM);
@@ -128,6 +130,26 @@ export function RobotsPanel() {
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
 
+  // Selection targets every *filtered* robot with an active deployment (not just
+  // the visible page), so "Select all" really means all matching robots.
+  const selectableIds = filtered
+    .filter((r) => r.deployment)
+    .map((r) => r.deployment!.deploymentId);
+  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
+
+  function toggleSelectAll() {
+    setSelected(allSelected ? new Set() : new Set(selectableIds));
+  }
+
+  function toggleSelect(deploymentId: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(deploymentId)) next.delete(deploymentId);
+      else next.add(deploymentId);
+      return next;
+    });
+  }
+
   function refresh() {
     queryClient.invalidateQueries({ queryKey: ['robot-units'] });
   }
@@ -160,8 +182,12 @@ export function RobotsPanel() {
   });
 
   const setAllCadenceMutation = useMutation({
-    mutationFn: (cadence: ReportCadence) => robotUnitApi.updateAllCadence(cadence).then((r) => r.data),
-    onSuccess: refresh,
+    mutationFn: ({ cadence, ids }: { cadence: ReportCadence; ids?: string[] }) =>
+      robotUnitApi.updateAllCadence(cadence, ids).then((r) => r.data),
+    onSuccess: () => {
+      refresh();
+      setSelected(new Set());
+    },
   });
 
   const deactivateMutation = useMutation({
@@ -320,22 +346,50 @@ export function RobotsPanel() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            onClick={() => {
-              if (confirm(t('setAllMonthlyConfirm'))) setAllCadenceMutation.mutate('MONTHLY');
-            }}
-            disabled={setAllCadenceMutation.isPending || robots.length === 0}
-            title={t('setAllMonthlyHint')}
-            className="border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text)] hover:border-[var(--app-brand)] disabled:opacity-50"
-          >
-            {setAllCadenceMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarCheck className="h-4 w-4" />}
-            {t('setAllMonthly')}
-          </Button>
           <Button type="button" onClick={openAdd} className="bg-[var(--app-brand)] text-white hover:opacity-90">
             <Plus className="h-4 w-4" /> {t('registerRobot')}
           </Button>
         </div>
+      </div>
+
+      {/* Selection toolbar: select all + bulk cadence for the selection */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] px-4 py-2.5">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--app-text)]">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={toggleSelectAll}
+            disabled={selectableIds.length === 0}
+            className="h-4 w-4 accent-[var(--app-brand)]"
+          />
+          {t('selectAll', { count: selectableIds.length })}
+        </label>
+        {selected.size > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[var(--app-muted)]">{t('selectedCount', { count: selected.size })}</span>
+            <Button
+              type="button"
+              onClick={() => {
+                if (confirm(t('setSelectedMonthlyConfirm', { count: selected.size }))) {
+                  setAllCadenceMutation.mutate({ cadence: 'MONTHLY', ids: [...selected] });
+                }
+              }}
+              disabled={setAllCadenceMutation.isPending}
+              className="bg-[var(--app-brand)] text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {setAllCadenceMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarCheck className="h-4 w-4" />}
+              {t('setSelectedMonthly')}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setSelected(new Set())}
+              disabled={setAllCadenceMutation.isPending}
+              className="border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text)] hover:border-[var(--app-brand)]"
+            >
+              {t('clearSelection')}
+            </Button>
+          </div>
+        )}
       </div>
 
       {setAllCadenceMutation.isSuccess && (
@@ -369,7 +423,17 @@ export function RobotsPanel() {
             key={r.id}
             className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4"
           >
-            <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-3">
+              {r.deployment && (
+                <input
+                  type="checkbox"
+                  checked={selected.has(r.deployment.deploymentId)}
+                  onChange={() => toggleSelect(r.deployment!.deploymentId)}
+                  aria-label={t('selectAria', { name: robotDisplayName(r) })}
+                  className="h-4 w-4 shrink-0 accent-[var(--app-brand)]"
+                />
+              )}
+              <div className="min-w-0">
               <div className="flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
                 <Bot className="h-4 w-4 shrink-0 text-[var(--app-brand-dark)]" />
                 <span className="truncate">{robotDisplayName(r)}</span>
@@ -383,6 +447,7 @@ export function RobotsPanel() {
                 {r.deployment?.site && (
                   <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{r.deployment.site}</span>
                 )}
+              </div>
               </div>
             </div>
 
