@@ -460,3 +460,18 @@ export interface ReportSend {
   errorMessage: string | null;
   sentAt: string;
 }
+
+/** Summary of a finished whole-month delivery run. */
+export interface DeliveryRunSummary {
+  month: string;
+  sent: number;
+  skipped: number;
+  failed: number;
+}
+
+/** Whether a delivery run is executing, for which month, and the last finished summary. */
+export interface DeliveryRunStatus {
+  running: boolean;
+  month: string | null;
+  lastSummary: DeliveryRunSummary | null;
+}
