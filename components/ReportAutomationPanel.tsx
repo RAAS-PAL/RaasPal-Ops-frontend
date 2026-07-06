@@ -65,6 +65,16 @@ export function ReportAutomationPanel() {
   const maxMonth = previousMonth();
   const queryClient = useQueryClient();
 
+  // The bulk run executes in the background on the server (it syncs every robot
+  // first, which takes minutes). Poll its status while it runs; the history list
+  // below auto-refreshes so progress is visible send by send.
+  const { data: runStatus } = useQuery({
+    queryKey: ['report-delivery-status'],
+    queryFn: () => reportApi.deliveryStatus().then((r) => r.data.data),
+    refetchInterval: (query) => (query.state.data?.running ? 3000 : false),
+  });
+  const running = runStatus?.running ?? false;
+
   const {
     data: history = [],
     isLoading,
@@ -72,6 +82,7 @@ export function ReportAutomationPanel() {
   } = useQuery({
     queryKey: ['report-delivery-history', month],
     queryFn: () => reportApi.deliveryHistory(month).then((r) => r.data.data ?? []),
+    refetchInterval: running ? 5000 : false,
   });
 
   const { data: customers = [] } = useQuery({
@@ -79,11 +90,13 @@ export function ReportAutomationPanel() {
     queryFn: () => customerApi.list().then((r) => r.data.data ?? []),
   });
 
-  const invalidate = () =>
+  const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['report-delivery-history', month] });
+    queryClient.invalidateQueries({ queryKey: ['report-delivery-status'] });
+  };
 
   const runMutation = useMutation({
-    mutationFn: () => reportApi.runDelivery(month).then((r) => r.data.data),
+    mutationFn: () => reportApi.runDelivery(month).then((r) => r.data),
     onSuccess: invalidate,
   });
 
@@ -123,14 +136,29 @@ export function ReportAutomationPanel() {
         <button
           type="button"
           onClick={() => runMutation.mutate()}
-          disabled={runMutation.isPending}
-          title="Send this month's bundle to every eligible customer (already-sent are skipped)"
+          disabled={runMutation.isPending || running}
+          title="Send this month's bundle to every eligible customer (already-sent are skipped). Runs in the background — progress appears in the history below."
           className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
         >
-          {runMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-          {runMutation.isPending ? 'Running…' : 'Run delivery now'}
+          {runMutation.isPending || running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+          {running ? 'Run in progress…' : 'Run delivery now'}
         </button>
       </div>
+
+      {running && (
+        <p className="flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700 dark:border-sky-900/40 dark:bg-sky-950/30 dark:text-sky-300">
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+          Delivery run in progress for {runStatus?.month ?? month} — syncing robots and sending emails. The
+          history below updates automatically; this can take several minutes.
+        </p>
+      )}
+      {!running && runStatus?.lastSummary && (
+        <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          Last run ({runStatus.lastSummary.month}) — {runStatus.lastSummary.sent} sent,{' '}
+          {runStatus.lastSummary.skipped} skipped, {runStatus.lastSummary.failed} failed.
+        </p>
+      )}
 
       {/* Send to one customer — for testing before the full run. Recorded in
           history, so "Run delivery now" later skips anyone already sent here. */}
@@ -150,7 +178,7 @@ export function ReportAutomationPanel() {
           <button
             type="button"
             onClick={() => customerId && sendMutation.mutate(customerId)}
-            disabled={!customerId || sendMutation.isPending}
+            disabled={!customerId || sendMutation.isPending || running}
             title="Email this customer their bundle for the selected month (recorded so the full run skips them)"
             className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
           >
@@ -179,12 +207,6 @@ export function ReportAutomationPanel() {
         </p>
       )}
 
-      {runMutation.isSuccess && runMutation.data && (
-        <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
-          <CheckCircle2 className="h-4 w-4 shrink-0" />
-          Run complete — {runMutation.data.sent} sent, {runMutation.data.skipped} skipped, {runMutation.data.failed} failed.
-        </p>
-      )}
       {runMutation.isError && (
         <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />

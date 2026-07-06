@@ -10,6 +10,15 @@
 
 import axios from 'axios';
 
+// Opt a request out of the automatic network-error retry below — for
+// long-running operations (e.g. a Gausium sync) where a timeout means "still
+// working", not "flaky network", so retrying would just fire a second one.
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    skipRetry?: boolean;
+  }
+}
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
 
 export const api = axios.create({
@@ -39,10 +48,14 @@ api.interceptors.response.use(
       localStorage.removeItem('raaspal_token');
     }
 
-    // No response = network error (cold start / timeout). Retry once automatically.
+    // No response = network error (cold start / timeout). Retry once automatically,
+    // unless the request opted out (skipRetry) — a slow long-running operation like
+    // a Gausium sync isn't a flaky blip, and retrying it would fire a second one
+    // while the first may still be running server-side.
     const isNetworkError = !error.response;
     const alreadyRetried = error.config?._retried;
-    if (isNetworkError && !alreadyRetried && error.config) {
+    const skipRetry = error.config?.skipRetry;
+    if (isNetworkError && !alreadyRetried && !skipRetry && error.config) {
       error.config._retried = true;
       await new Promise((r) => setTimeout(r, 3000));
       return api(error.config);
@@ -60,6 +73,7 @@ import type {
   CreateUserRequest,
   CvteDeviceResponse,
   CvteDeviceSyncRequest,
+  DeliveryRunStatus,
   FileUploadResponse,
   GenerateProposalRequest,
   GeneratedProposalResponse,
@@ -300,13 +314,19 @@ export const reportApi = {
       { params: { serialNumber, month } },
     ),
 
-  /** Run the automated whole-month delivery now (idempotent — skips already-sent). */
+  /**
+   * Start the whole-month delivery in the background (returns immediately —
+   * the run syncs all robots first and takes minutes). Idempotent per customer;
+   * a second start while one is running is rejected.
+   */
   runDelivery: (month: string) =>
-    api.post<ApiResponse<{ month: string; sent: number; skipped: number; failed: number }>>(
-      '/api/v1/reports/delivery/run',
-      null,
-      { params: { month } },
-    ),
+    api.post<ApiResponse<DeliveryRunStatus>>('/api/v1/reports/delivery/run', null, {
+      params: { month },
+    }),
+
+  /** Poll whether a delivery run is executing + the last finished summary. */
+  deliveryStatus: () =>
+    api.get<ApiResponse<DeliveryRunStatus>>('/api/v1/reports/delivery/status'),
 
   /** Send (or resend) one customer's bundle for the month. */
   sendCustomerBundle: (customerProfileId: string, month: string) =>
@@ -323,11 +343,17 @@ export const reportApi = {
 
 // Telemetry — on-demand sync from the brand API (e.g. Gausium) into robot_task_reports
 export const telemetryApi = {
-  /** Pull a robot's task reports from its brand API for [from, to] ("YYYY-MM-DD"). */
+  /**
+   * Pull a robot's task reports from its brand API for [from, to] ("YYYY-MM-DD").
+   * A busy robot can mean several paginated calls to the brand's cloud API, which
+   * can legitimately take longer than the default timeout — so this gets a longer
+   * one, and skips the automatic retry (a timeout here means "still working," not
+   * a flaky network blip; retrying would just fire a second concurrent sync).
+   */
   sync: (serialNumber: string, from: string, to: string) =>
     api.post<ApiResponse<{ serialNumber: string; saved: number; skipped: number }>>(
       `/api/v1/telemetry/sync/${encodeURIComponent(serialNumber)}`,
       null,
-      { params: { from, to } },
+      { params: { from, to }, timeout: 180_000, skipRetry: true },
     ),
 };

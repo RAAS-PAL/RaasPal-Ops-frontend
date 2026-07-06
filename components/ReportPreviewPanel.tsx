@@ -56,8 +56,14 @@ function monthRange(month: string): { from: string; to: string } {
 }
 
 function errorMessage(e: unknown, fallback: string): string {
-  const ax = e as { response?: { data?: { message?: string } } };
-  return ax?.response?.data?.message ?? fallback;
+  const ax = e as { response?: { data?: { message?: string } }; code?: string };
+  if (ax?.response?.data?.message) return ax.response.data.message;
+  // No response at all = the request timed out or the connection dropped client-side
+  // — the backend may well have kept running and finished. Don't blame credentials.
+  if (ax?.code === 'ECONNABORTED' || !ax?.response) {
+    return 'This is taking longer than expected — it may still be running on the server. Wait a moment, then refresh before retrying.';
+  }
+  return fallback;
 }
 
 function matchesQuery(r: RobotUnitResponse, q: string): boolean {
