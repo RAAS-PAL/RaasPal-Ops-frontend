@@ -328,10 +328,17 @@ export const reportApi = {
   deliveryStatus: () =>
     api.get<ApiResponse<DeliveryRunStatus>>('/api/v1/reports/delivery/status'),
 
-  /** Send (or resend) one customer's bundle for the month. */
+  /**
+   * Send (or resend) one customer's bundle for the month. This syncs the
+   * customer's robots first, which can take a while for busy robots — so it gets
+   * a longer timeout and skips the auto-retry (a timeout means "still working";
+   * retrying would send the email a second time).
+   */
   sendCustomerBundle: (customerProfileId: string, month: string) =>
     api.post<ApiResponse<ReportSend>>('/api/v1/reports/delivery/send', null, {
       params: { customerProfileId, month },
+      timeout: 180_000,
+      skipRetry: true,
     }),
 
   /** Delivery history for a month, newest first. */
