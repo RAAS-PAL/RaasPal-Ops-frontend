@@ -72,7 +72,13 @@ export function CustomerBundleClient({ token }: { token: string }) {
         bundle.robots.map((robot, idx) => (
           <div
             key={robot.serialNumber ?? idx}
-            className={idx < bundle.robots.length - 1 ? 'print:break-after-page' : undefined}
+            // content-visibility:auto defers rendering of off-screen reports, so a
+            // customer with 70+ robots doesn't paint every report at once (which
+            // can freeze low-end devices). contain-intrinsic-size keeps the scroll
+            // bar stable; printing renders everything so the PDF has all pages.
+            className={`[content-visibility:auto] [contain-intrinsic-size:auto_1400px] print:[content-visibility:visible] ${
+              idx < bundle.robots.length - 1 ? 'print:break-after-page' : ''
+            }`}
           >
             <MonthlyReportView report={robot} />
           </div>
