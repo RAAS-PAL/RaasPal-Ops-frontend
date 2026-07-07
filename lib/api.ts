@@ -328,9 +328,14 @@ export const reportApi = {
   deliveryStatus: () =>
     api.get<ApiResponse<DeliveryRunStatus>>('/api/v1/reports/delivery/status'),
 
-  /** Send (or resend) one customer's bundle for the month. */
+  /**
+   * Send (or resend) one customer's bundle for the month. Runs in the background
+   * on the server (syncing a large site's robots can take minutes) and returns
+   * immediately; the outcome appears in the delivery history. Rejected while
+   * another delivery is running.
+   */
   sendCustomerBundle: (customerProfileId: string, month: string) =>
-    api.post<ApiResponse<ReportSend>>('/api/v1/reports/delivery/send', null, {
+    api.post<ApiResponse<DeliveryRunStatus>>('/api/v1/reports/delivery/send', null, {
       params: { customerProfileId, month },
     }),
 

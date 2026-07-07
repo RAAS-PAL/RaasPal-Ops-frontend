@@ -101,11 +101,12 @@ export function ReportAutomationPanel() {
   });
 
   // Send one customer's bundle for the month. Used by the single-customer picker
-  // (testing) AND the per-row resend. Both hit /delivery/send, which records the
-  // send in report_sends — so the later bulk "Run delivery now" skips them.
+  // (testing) AND the per-row resend. Runs in the background on the server (a
+  // large site's sync can take minutes); the outcome lands in report_sends, so
+  // the history below shows it and a later "Run delivery now" skips them.
   const sendMutation = useMutation({
     mutationFn: (customerProfileId: string) =>
-      reportApi.sendCustomerBundle(customerProfileId, month).then((r) => r.data.data),
+      reportApi.sendCustomerBundle(customerProfileId, month).then((r) => r.data),
     onSuccess: invalidate,
   });
 
@@ -195,9 +196,7 @@ export function ReportAutomationPanel() {
       {sendMutation.isSuccess && sendMutation.data && (
         <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
-          {sendMutation.data.status === 'SENT'
-            ? `Sent to ${sendMutation.data.customerName} (${sendMutation.data.recipientEmail}).`
-            : `Send to ${sendMutation.data.customerName} recorded as ${sendMutation.data.status}.`}
+          {sendMutation.data.message ?? 'Send started — the result will appear in the history below.'}
         </p>
       )}
       {sendMutation.isError && (
