@@ -315,13 +315,18 @@ export const reportApi = {
     ),
 
   /**
-   * Start the whole-month delivery in the background (returns immediately —
-   * the run syncs all robots first and takes minutes). Idempotent per customer;
-   * a second start while one is running is rejected.
+   * Start the whole-month delivery in the background (returns immediately — the
+   * run syncs each customer's robots as it sends them, which takes minutes).
+   * Idempotent per customer; a second start while one is running is rejected.
+   * `excludedCustomerIds` holds back specific customers for this run only (e.g.
+   * a site not fully registered yet) — they stay eligible for a later run.
    */
-  runDelivery: (month: string) =>
+  runDelivery: (month: string, excludedCustomerIds?: string[]) =>
     api.post<ApiResponse<DeliveryRunStatus>>('/api/v1/reports/delivery/run', null, {
-      params: { month },
+      params: {
+        month,
+        excludedCustomerIds: excludedCustomerIds?.length ? excludedCustomerIds.join(',') : undefined,
+      },
     }),
 
   /** Poll whether a delivery run is executing + the last finished summary. */

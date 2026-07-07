@@ -18,8 +18,10 @@ import {
   Mail,
   Play,
   RefreshCw,
+  Search,
   Send,
   SkipForward,
+  X,
 } from 'lucide-react';
 import { customerApi, reportApi } from '@/lib/api';
 import type { CustomerResponse, ReportSend } from '@/types/api';
@@ -62,6 +64,9 @@ const STATUS_ICON: Record<ReportSend['status'], React.ReactNode> = {
 export function ReportAutomationPanel() {
   const [month, setMonth] = useState(previousMonth);
   const [customerId, setCustomerId] = useState('');
+  /** Customers held back from "Run delivery now" (e.g. a site not fully registered yet). */
+  const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
+  const [excludeQuery, setExcludeQuery] = useState('');
   const maxMonth = previousMonth();
   const queryClient = useQueryClient();
 
@@ -96,8 +101,23 @@ export function ReportAutomationPanel() {
   };
 
   const runMutation = useMutation({
-    mutationFn: () => reportApi.runDelivery(month).then((r) => r.data),
+    mutationFn: () => reportApi.runDelivery(month, [...excludedIds]).then((r) => r.data),
     onSuccess: invalidate,
+  });
+
+  function toggleExcluded(id: string) {
+    setExcludedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const excludedCustomers = customers.filter((c) => excludedIds.has(c.id));
+  const excludeCandidates = customers.filter((c) => {
+    const q = excludeQuery.trim().toLowerCase();
+    return !q || customerLabel(c).toLowerCase().includes(q);
   });
 
   // Send one customer's bundle for the month. Used by the single-customer picker
@@ -119,6 +139,8 @@ export function ReportAutomationPanel() {
           Each customer is emailed one link covering all of their robots for the month. The scheduler runs
           automatically on the 2nd of each month for the previous month. You can also run a month now, or
           resend a customer whose delivery failed. Running again is safe — customers already sent are skipped.
+          You can also exclude specific customers from a run below (e.g. a site whose robots aren't fully
+          registered yet) — they stay eligible for a later run.
         </p>
       </div>
 
@@ -138,12 +160,94 @@ export function ReportAutomationPanel() {
           type="button"
           onClick={() => runMutation.mutate()}
           disabled={runMutation.isPending || running}
-          title="Send this month's bundle to every eligible customer (already-sent are skipped). Runs in the background — progress appears in the history below."
+          title={
+            excludedIds.size > 0
+              ? `Send this month's bundle to every eligible customer except ${excludedIds.size} excluded (already-sent are also skipped). Runs in the background.`
+              : "Send this month's bundle to every eligible customer (already-sent are skipped). Runs in the background — progress appears in the history below."
+          }
           className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
         >
           {runMutation.isPending || running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
           {running ? 'Run in progress…' : 'Run delivery now'}
         </button>
+      </div>
+
+      {/* Exclude specific customers from "Run delivery now" — held back entirely
+          (not synced, not emailed) and left eligible for a later run. Useful for
+          a site whose robots aren't fully registered yet. */}
+      <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-[var(--app-text)]">Exclude from this run (optional)</p>
+          {excludedIds.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setExcludedIds(new Set())}
+              className="text-xs font-semibold text-[var(--app-brand-dark)] hover:underline"
+            >
+              Clear ({excludedIds.size})
+            </button>
+          )}
+        </div>
+        <p className="mt-1 text-xs text-[var(--app-muted)]">
+          Excluded customers are skipped entirely this run — not synced, not emailed — and stay eligible for a
+          later run once ready.
+        </p>
+
+        {excludedCustomers.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {excludedCustomers.map((c) => (
+              <span
+                key={c.id}
+                className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200"
+              >
+                {customerLabel(c)}
+                <button
+                  type="button"
+                  onClick={() => toggleExcluded(c.id)}
+                  aria-label={`Remove ${customerLabel(c)} from exclusions`}
+                  className="rounded-full hover:opacity-70"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="relative mt-2">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--app-muted)]" />
+          <input
+            type="text"
+            value={excludeQuery}
+            onChange={(e) => setExcludeQuery(e.target.value)}
+            placeholder="Search customers to exclude…"
+            className="h-9 w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] pl-9 pr-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
+          />
+        </div>
+
+        <ul className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-[var(--app-border)]">
+          {excludeCandidates.length === 0 && (
+            <li className="px-3 py-2 text-xs text-[var(--app-muted)]">No customers match.</li>
+          )}
+          {excludeCandidates.map((c) => (
+            <li key={c.id} className="border-b border-[var(--app-border)] last:border-b-0">
+              <label className="flex cursor-pointer items-center justify-between gap-3 px-3 py-2 text-sm text-[var(--app-text)] hover:bg-[var(--app-panel-alt)]">
+                <span className="flex min-w-0 items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={excludedIds.has(c.id)}
+                    onChange={() => toggleExcluded(c.id)}
+                    className="h-4 w-4 shrink-0 accent-[var(--app-brand)]"
+                  />
+                  <span className="truncate">{customerLabel(c)}</span>
+                </span>
+                <span className="shrink-0 text-xs text-[var(--app-muted)]">
+                  {c.robotCount} robot{c.robotCount === 1 ? '' : 's'}
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
       </div>
 
       {running && (
