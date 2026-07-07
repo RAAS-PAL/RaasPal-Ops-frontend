@@ -12,6 +12,7 @@
     "recommendations": "Recommendations",
     "manufacturerNote": "Based on manufacturer recommendations.",
     "noConsumables": "This robot has no tracked consumables.",
+    "pageOf": "Page {number} / {total}",
     "recAction": "Schedule {part} replacement soon — residual at {value}%.",
     "recMonitor": "Monitor {part} wear — residual at {value}%.",
     "recCompletion": "Investigate incomplete tasks — average completion is {value}%.",
@@ -57,6 +58,9 @@
     "noMatch": "No customers match your search.",
     "robotCount": "{count, plural, one {# robot} other {# robots}}",
     "loadMore": "Load more ({count} remaining)",
+    "sentMonthFilter": "Report month",
+    "sentCount": "Sent ×{count} ({month})",
+    "notSentYet": "Not sent ({month})",
     "deleteConfirm": "Delete \"{name}\"? This cannot be undone.",
     "editAria": "Edit {name}",
     "deleteAria": "Delete {name}"
