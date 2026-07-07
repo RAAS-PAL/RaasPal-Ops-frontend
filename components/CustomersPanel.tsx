@@ -14,6 +14,7 @@ import { useTranslations } from 'next-intl';
 import {
   AlertTriangle,
   Building2,
+  CheckCircle2,
   Loader2,
   Mail,
   Pencil,
@@ -22,7 +23,7 @@ import {
   Search,
   Trash2,
 } from 'lucide-react';
-import { customerApi } from '@/lib/api';
+import { customerApi, reportApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import type { CustomerRequest, CustomerResponse } from '@/types/api';
 
@@ -56,10 +57,20 @@ const inputClass =
 
 const PAGE_SIZE = 10;
 
+/** Previous calendar month as "YYYY-MM" — the month reports are usually sent for. */
+function previousMonth(): string {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 export function CustomersPanel() {
   const t = useTranslations('customers');
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
+  /** Month used for the per-customer "Sent ×N" report badge. */
+  const [reportMonth, setReportMonth] = useState(previousMonth);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   /** null = list view; 'new' = add form; object = edit form. */
   const [editing, setEditing] = useState<CustomerResponse | 'new' | null>(null);
@@ -70,6 +81,22 @@ export function CustomersPanel() {
     queryKey: ['customers'],
     queryFn: () => customerApi.list().then((r) => r.data.data ?? []),
   });
+
+  // How many report emails each customer was SENT in the selected month, from
+  // the delivery history — powers the "Sent ×N" badge on each row.
+  const { data: monthHistory = [] } = useQuery({
+    queryKey: ['report-delivery-history', reportMonth],
+    queryFn: () => reportApi.deliveryHistory(reportMonth).then((r) => r.data.data ?? []),
+  });
+  const sentCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const row of monthHistory) {
+      if (row.status === 'SENT') {
+        counts.set(row.customerProfileId, (counts.get(row.customerProfileId) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [monthHistory]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -215,6 +242,15 @@ export function CustomersPanel() {
             className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-panel-alt)] pl-10 pr-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
           />
         </div>
+        <label className="flex items-center gap-2 text-xs text-[var(--app-muted)]">
+          {t('sentMonthFilter')}
+          <input
+            type="month"
+            value={reportMonth}
+            onChange={(e) => setReportMonth(e.target.value)}
+            className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
+          />
+        </label>
         <Button type="button" onClick={openAdd} className="bg-[var(--app-brand)] text-white hover:opacity-90">
           <Plus className="h-4 w-4" /> {t('addCustomer')}
         </Button>
@@ -265,6 +301,16 @@ export function CustomersPanel() {
                   <span className="inline-flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{c.contactPhone}</span>
                 )}
                 <span>{t('robotCount', { count: c.robotCount })}</span>
+                {(sentCounts.get(c.id) ?? 0) > 0 ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+                    <CheckCircle2 className="h-3 w-3" />
+                    {t('sentCount', { count: sentCounts.get(c.id)!, month: reportMonth })}
+                  </span>
+                ) : (
+                  <span className="rounded-full border border-[var(--app-border)] px-2 py-0.5 text-[var(--app-muted)]">
+                    {t('notSentYet', { month: reportMonth })}
+                  </span>
+                )}
               </div>
             </div>
 

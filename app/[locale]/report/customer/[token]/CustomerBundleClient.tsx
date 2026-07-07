@@ -80,7 +80,7 @@ export function CustomerBundleClient({ token }: { token: string }) {
               idx < bundle.robots.length - 1 ? 'print:break-after-page' : ''
             }`}
           >
-            <MonthlyReportView report={robot} />
+            <MonthlyReportView report={robot} page={{ number: idx + 1, total: bundle.robots.length }} />
           </div>
         ))}
     </div>

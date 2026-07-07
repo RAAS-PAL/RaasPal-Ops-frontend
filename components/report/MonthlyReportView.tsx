@@ -201,7 +201,14 @@ function OperationalBlock({ o }: { o: OperationalPerformance }) {
 
 /* ─── Main view ──────────────────────────────────────────────────────────── */
 
-export function MonthlyReportView({ report }: { report: MonthlyPerformanceReport }) {
+export function MonthlyReportView({
+  report,
+  page,
+}: {
+  report: MonthlyPerformanceReport;
+  /** Position in a multi-report bundle (e.g. page 3 of 71); omitted on single reports. */
+  page?: { number: number; total: number };
+}) {
   const t = useTranslations('report');
 
   return (
@@ -289,7 +296,14 @@ export function MonthlyReportView({ report }: { report: MonthlyPerformanceReport
         </div>
 
         {/* Footer */}
-        <p className="mt-8 border-t border-[#dbe4f3] pt-3 text-center text-xs text-[#6b7785]">RAAS PAL CO., LTD</p>
+        <div className="relative mt-8 border-t border-[#dbe4f3] pt-3">
+          <p className="text-center text-xs text-[#6b7785]">RAAS PAL CO., LTD</p>
+          {page && (
+            <span className="absolute right-0 top-3 text-xs text-[#6b7785]">
+              {t('pageOf', { number: page.number, total: page.total })}
+            </span>
+          )}
+        </div>
       </div>
     </main>
   );
