@@ -568,6 +568,7 @@
     "tabs": {
       "monitor": "Monitor robots",
       "reports": "Manage report automation",
+      "email": "Email customers",
       "preview": "Report Preview",
       "customers": "Customers",
       "robots": "Robots"

@@ -83,6 +83,7 @@ import type {
   RecommendationResponse,
   RequirementResponse,
   RobotImportResult,
+  AnnouncementResult,
   CustomerRequest,
   CustomerResponse,
   RobotRequest,
@@ -152,6 +153,23 @@ export const customerApi = {
 
   delete: (id: string) =>
     api.delete<ApiResponse<void>>(`/api/v1/customers/${id}`),
+
+  /**
+   * Send a plain-text announcement to selected customers. The email body is
+   * EXACTLY `message` — no report links or template. Optional `cc` is added to
+   * every email. Long timeout + skipRetry: sending to many customers takes a
+   * while, and a retry would double-send.
+   */
+  sendAnnouncement: (body: {
+    customerProfileIds: string[];
+    subject: string;
+    message: string;
+    cc?: string[];
+  }) =>
+    api.post<ApiResponse<AnnouncementResult>>('/api/v1/customers/announcements', body, {
+      timeout: 300_000,
+      skipRetry: true,
+    }),
 };
 
 // Robot units & deployments (register robots, link to customers, set cadence)

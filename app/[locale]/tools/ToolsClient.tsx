@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Bot, CalendarClock, FileSearch, Radio, Users } from 'lucide-react';
+import { Bot, CalendarClock, FileSearch, Mail, Radio, Users } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { CvteMonitorPanel } from '@/components/CvteMonitorPanel';
@@ -10,8 +10,9 @@ import { CustomersPanel } from '@/components/CustomersPanel';
 import { RobotsPanel } from '@/components/RobotsPanel';
 import { ReportPreviewPanel } from '@/components/ReportPreviewPanel';
 import { ReportAutomationPanel } from '@/components/ReportAutomationPanel';
+import { CustomerEmailPanel } from '@/components/CustomerEmailPanel';
 
-type ToolTab = 'monitor' | 'reports' | 'preview' | 'customers' | 'robots';
+type ToolTab = 'monitor' | 'reports' | 'email' | 'preview' | 'customers' | 'robots';
 
 export function ToolsClient({ initialTab = 'monitor' }: { initialTab?: ToolTab }) {
   const t = useTranslations('tools');
@@ -20,6 +21,7 @@ export function ToolsClient({ initialTab = 'monitor' }: { initialTab?: ToolTab }
   const tabs: { id: ToolTab; label: string; icon: React.ReactNode }[] = [
     { id: 'monitor', label: t('tabs.monitor'), icon: <Radio className="h-4 w-4" /> },
     { id: 'reports', label: t('tabs.reports'), icon: <CalendarClock className="h-4 w-4" /> },
+    { id: 'email', label: t('tabs.email'), icon: <Mail className="h-4 w-4" /> },
     { id: 'preview', label: t('tabs.preview'), icon: <FileSearch className="h-4 w-4" /> },
     { id: 'customers', label: t('tabs.customers'), icon: <Users className="h-4 w-4" /> },
     { id: 'robots', label: t('tabs.robots'), icon: <Bot className="h-4 w-4" /> },
@@ -57,6 +59,7 @@ export function ToolsClient({ initialTab = 'monitor' }: { initialTab?: ToolTab }
 
             {tab === 'monitor' && <CvteMonitorPanel />}
             {tab === 'reports' && <ReportAutomationPanel />}
+            {tab === 'email' && <CustomerEmailPanel />}
             {tab === 'preview' && <ReportPreviewPanel />}
             {tab === 'customers' && <CustomersPanel />}
             {tab === 'robots' && <RobotsPanel />}

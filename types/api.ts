@@ -393,6 +393,17 @@ export interface CustomerResponse {
   updatedAt: string;
 }
 
+export interface AnnouncementResult {
+  sent: number;
+  failed: number;
+  items: {
+    customerName: string;
+    recipients: string;
+    ok: boolean;
+    error: string | null;
+  }[];
+}
+
 export interface CustomerRequest {
   companyName: string;
   industry?: string | null;
