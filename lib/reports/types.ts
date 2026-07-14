@@ -54,10 +54,10 @@ export interface ExecutiveSummary {
   averageProductivitySqmH: number;
   waterConsumptionL: number;
   /**
-   * Battery consumed per area cleaned, e.g. "5.5 %/100 sqm". Backend formula:
-   * sum(startBatteryPct − endBatteryPct) over the month's tasks ÷ total area
-   * cleaned (sqm) × 100. Skip tasks with null battery; clamp negative per-task
-   * values (mid-task charging) to 0 before summing.
+   * Area cleaned per 100% of battery, e.g. "4,761.9 sqm/100%". Backend formula:
+   * total area cleaned (sqm) ÷ sum(startBatteryPct − endBatteryPct) over the
+   * month's tasks × 100. Skip tasks with null battery; clamp negative per-task
+   * values (mid-task charging) to 0 before summing. "—" when no battery was used.
    */
   batteryConsumption: string;
 }
