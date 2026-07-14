@@ -24,7 +24,7 @@
     "totalAreaCleaned": "พื้นที่ทำความสะอาดรวม",
     "averageProductivity": "ประสิทธิภาพการทำความสะอาดเฉลี่ย",
     "waterConsumption": "ปริมาณการใช้น้ำรวม",
-    "batteryConsumption": "อัตราการใช้พลังงานแบตเตอรี่",
+    "batteryConsumption": "ประสิทธิภาพแบตเตอรี่",
     "taskType": "รูปแบบการทำงาน",
     "taskStatus": "ผลการดำเนินงาน",
     "tasksPerDay": "จำนวนภารกิจเฉลี่ยต่อวัน",
