@@ -9,7 +9,7 @@
  * before any robot is registered. Metrics are representative placeholders — this
  * is for confirming layout, not live numbers.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale } from 'next-intl';
 import {
@@ -77,8 +77,11 @@ function matchesQuery(r: RobotUnitResponse, q: string): boolean {
 
 const CADENCE_LABEL: Record<string, string> = { MONTHLY: 'Monthly', WEEKLY: 'Weekly', OFF: 'Off' };
 
+const PAGE_SIZE = 10;
+
 export function ReportPreviewPanel() {
   const [query, setQuery] = useState('');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [month, setMonth] = useState(previousMonth);
   const locale = useLocale();
@@ -91,6 +94,11 @@ export function ReportPreviewPanel() {
   });
 
   const filtered = useMemo(() => robots.filter((r) => matchesQuery(r, query)), [robots, query]);
+
+  // Render only a page at a time — the full list of ~100 robots is slow to paint.
+  useEffect(() => setVisibleCount(PAGE_SIZE), [query]);
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
 
   const isRobot = selection?.kind === 'robot';
   const robotSn = selection?.kind === 'robot' ? selection.robot.serialNumber : undefined;
@@ -319,7 +327,7 @@ export function ReportPreviewPanel() {
         )}
 
         <ul className="space-y-2">
-          {filtered.map((r) => (
+          {visible.map((r) => (
             <li key={r.id}>
               <button
                 type="button"
@@ -352,6 +360,18 @@ export function ReportPreviewPanel() {
             </li>
           ))}
         </ul>
+
+        {hasMore && (
+          <div className="flex justify-center pt-2">
+            <button
+              type="button"
+              onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+              className="rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-4 py-2 text-sm font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
+            >
+              Load more ({filtered.length - visibleCount} remaining)
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
