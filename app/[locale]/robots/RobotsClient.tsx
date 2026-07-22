@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Bot, ChevronLeft, ChevronRight, Loader2, Plus } from 'lucide-react';
+import { Bot, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { robotApi } from '@/lib/api';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { RobotDetailModal } from '@/components/RobotDetailModal';
+import { ListSkeleton } from '@/components/ui/skeleton';
+import { StatusBadge, toneForStatus } from '@/components/ui/status-badge';
 import type { RobotResponse, RobotType } from '@/types/api';
 
 const ITEMS_PER_PAGE = 9;
@@ -31,21 +33,6 @@ function TypeBadge({ type }: { type: RobotType }) {
   return (
     <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${styles[type]}`}>
       {type}
-    </span>
-  );
-}
-
-function StatusBadge({ status }: { status: RobotResponse['testStatus'] }) {
-  const styles: Record<RobotResponse['testStatus'], string> = {
-    VERIFIED:     'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
-    PENDING:      'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
-    UNDER_TESTING:'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400',
-    REJECTED:     'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400',
-    DRAFT:        'bg-gray-100 text-gray-500 dark:bg-gray-900/40 dark:text-gray-400',
-  };
-  return (
-    <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${styles[status]}`}>
-      {status}
     </span>
   );
 }
@@ -105,7 +92,7 @@ function RobotRow({ robot, onClick }: { robot: RobotResponse; onClick: () => voi
 
       <div className="flex flex-1 flex-wrap items-center gap-1.5 min-w-0">
         <TypeBadge type={robot.robotType} />
-        <StatusBadge status={robot.testStatus} />
+        <StatusBadge tone={toneForStatus(robot.testStatus)}>{robot.testStatus}</StatusBadge>
         <PriceBadge robot={robot} />
       </div>
 
@@ -294,11 +281,7 @@ export function RobotsClient() {
       </div>
 
       {/* States */}
-      {isLoading && (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-7 w-7 animate-spin text-[var(--app-brand)]" />
-        </div>
-      )}
+      {isLoading && <ListSkeleton rows={6} />}
 
       {isError && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">

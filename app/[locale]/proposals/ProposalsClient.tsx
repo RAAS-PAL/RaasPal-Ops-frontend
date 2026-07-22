@@ -7,22 +7,10 @@ import { Bot, ClipboardList, FileText, Loader2, Plus, Trash2 } from 'lucide-reac
 import { Link } from '@/i18n/navigation';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
+import { ListSkeleton } from '@/components/ui/skeleton';
+import { StatusBadge, toneForStatus } from '@/components/ui/status-badge';
 import { proposalApi } from '@/lib/api';
 import type { GeneratedProposalResponse } from '@/types/api';
-
-function StatusBadge({ status }: { status: GeneratedProposalResponse['status'] }) {
-  return (
-    <span
-      className={`rounded-full px-2.5 py-1 text-xs font-bold ${
-        status === 'FINAL'
-          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-          : 'bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]'
-      }`}
-    >
-      {status}
-    </span>
-  );
-}
 
 function ProposalCard({
   proposal,
@@ -42,9 +30,9 @@ function ProposalCard({
   });
 
   return (
-    <article className="flex flex-col gap-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--app-brand)] hover:shadow-md hover:shadow-[var(--app-brand-glow)] sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-start gap-4">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
+    <article className="flex flex-col gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4 shadow-sm transition hover:border-[var(--app-brand)] hover:shadow-md hover:shadow-[var(--app-brand-glow)] sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
           <Bot className="h-5 w-5" />
         </span>
         <div>
@@ -57,8 +45,10 @@ function ProposalCard({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 pl-[60px] sm:pl-0">
-        <StatusBadge status={proposal.status} />
+      <div className="flex items-center gap-2 pl-[52px] sm:pl-0">
+        <StatusBadge tone={proposal.status === 'FINAL' ? 'success' : toneForStatus(proposal.status)}>
+          {proposal.status}
+        </StatusBadge>
         <Link
           className="flex items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-3 py-1.5 text-sm font-semibold text-[var(--app-muted)] transition hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)]"
           href={`/proposals/${proposal.id}`}
@@ -164,7 +154,7 @@ export function ProposalsClient() {
             onSearchChange={setSearchQuery}
           />
 
-          <div className="space-y-4 p-4 sm:p-6">
+          <div className="mx-auto w-full max-w-6xl space-y-4 p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <p className="text-sm text-[var(--app-muted)]">
                 {isLoading
@@ -182,11 +172,7 @@ export function ProposalsClient() {
               </Link>
             </div>
 
-            {isLoading && (
-              <div className="flex justify-center py-16">
-                <Loader2 className="h-7 w-7 animate-spin text-[var(--app-brand)]" />
-              </div>
-            )}
+            {isLoading && <ListSkeleton rows={5} />}
 
             {isError && (
               <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">

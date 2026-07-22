@@ -3,25 +3,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Bot, ChevronRight, ClipboardList, FileText, Loader2, Plus } from 'lucide-react';
+import { Bot, ChevronRight, ClipboardList, FileText, Plus } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
+import { ListSkeleton } from '@/components/ui/skeleton';
+import { StatusBadge, toneForStatus } from '@/components/ui/status-badge';
 import { recommendationApi } from '@/lib/api';
 import type { RecommendationResponse } from '@/types/api';
-
-function StatusBadge({ status }: { status: RecommendationResponse['status'] }) {
-  const styles: Record<RecommendationResponse['status'], string> = {
-    COMPLETED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
-    PENDING:   'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
-    FAILED:    'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400',
-  };
-  return (
-    <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${styles[status]}`}>
-      {status}
-    </span>
-  );
-}
 
 function RecommendationCard({ rec }: { rec: RecommendationResponse }) {
   const t = useTranslations('solutions');
@@ -42,9 +31,9 @@ function RecommendationCard({ rec }: { rec: RecommendationResponse }) {
   const viewHref = `/generate-solution/${solutionType}/recommendation?recId=${rec.id}`;
 
   return (
-    <article className="flex flex-col gap-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--app-brand)] hover:shadow-md hover:shadow-[var(--app-brand-glow)] sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-start gap-4">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
+    <article className="flex flex-col gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4 shadow-sm transition hover:border-[var(--app-brand)] hover:shadow-md hover:shadow-[var(--app-brand-glow)] sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
           <Bot className="h-5 w-5" />
         </span>
         <div>
@@ -61,8 +50,8 @@ function RecommendationCard({ rec }: { rec: RecommendationResponse }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 pl-[60px] sm:pl-0">
-        <StatusBadge status={rec.status} />
+      <div className="flex items-center gap-2 pl-[52px] sm:pl-0">
+        <StatusBadge tone={toneForStatus(rec.status)}>{rec.status}</StatusBadge>
         {rec.status === 'COMPLETED' && (
           <>
             <Link
@@ -150,7 +139,7 @@ export function SolutionsClient() {
             onSearchChange={handleSearch}
           />
 
-          <div className="space-y-4 p-4 sm:p-6">
+          <div className="mx-auto w-full max-w-6xl space-y-4 p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <p className="text-sm text-[var(--app-muted)]">
                 {isLoading
@@ -168,11 +157,7 @@ export function SolutionsClient() {
               </Link>
             </div>
 
-            {isLoading && (
-              <div className="flex justify-center py-16">
-                <Loader2 className="h-7 w-7 animate-spin text-[var(--app-brand)]" />
-              </div>
-            )}
+            {isLoading && <ListSkeleton rows={5} />}
 
             {isError && (
               <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">

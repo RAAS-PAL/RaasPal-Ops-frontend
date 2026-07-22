@@ -12,11 +12,19 @@ import { ReportPreviewPanel } from '@/components/ReportPreviewPanel';
 import { ReportAutomationPanel } from '@/components/ReportAutomationPanel';
 import { CustomerEmailPanel } from '@/components/CustomerEmailPanel';
 
-type ToolTab = 'monitor' | 'reports' | 'email' | 'preview' | 'customers' | 'robots';
+const TOOL_TABS = ['monitor', 'reports', 'email', 'preview', 'customers', 'robots'] as const;
+
+export type ToolTab = (typeof TOOL_TABS)[number];
 
 export function ToolsClient({ initialTab = 'monitor' }: { initialTab?: ToolTab }) {
   const t = useTranslations('tools');
   const [tab, setTab] = useState<ToolTab>(initialTab);
+
+  // Keep the active tab in the URL so tool views are shareable/bookmarkable.
+  const selectTab = (next: ToolTab) => {
+    setTab(next);
+    window.history.replaceState(null, '', `?tab=${next}`);
+  };
 
   const tabs: { id: ToolTab; label: string; icon: React.ReactNode }[] = [
     { id: 'monitor', label: t('tabs.monitor'), icon: <Radio className="h-4 w-4" /> },
@@ -35,16 +43,16 @@ export function ToolsClient({ initialTab = 'monitor' }: { initialTab?: ToolTab }
           <AppTopBar eyebrow={t('eyebrow')} title={t('title')} searchPlaceholder={t('searchPlaceholder')} />
 
           <div className="space-y-5 p-4 sm:p-6">
-            {/* Tab switcher */}
-            <div className="inline-flex rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-1">
+            {/* Tab switcher — scrolls horizontally instead of wrapping/overflowing */}
+            <div className="flex max-w-full gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-1 sm:inline-flex sm:w-fit">
               {tabs.map((item) => {
                 const active = tab === item.id;
                 return (
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => setTab(item.id)}
-                    className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                    onClick={() => selectTab(item.id)}
+                    className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold transition ${
                       active
                         ? 'bg-[var(--app-brand)] text-white shadow-sm'
                         : 'text-[var(--app-muted)] hover:text-[var(--app-brand-dark)]'

@@ -18,6 +18,7 @@ import { fileApi, requirementApi } from '@/lib/api';
 import type { RobotType } from '@/types/api';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
+import { FlowStepper } from '@/components/FlowStepper';
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
@@ -165,6 +166,9 @@ export function UploadClient({ locale, solutionType, meta }: UploadClientProps) 
               <ArrowLeft className="h-4 w-4" />
               {t('backToTypes')}
             </Link>
+
+            {/* Pipeline position */}
+            <FlowStepper current="upload" />
 
             {/* Header */}
             <div className="bg-aurora animate-aurora relative overflow-hidden rounded-2xl p-6 text-white shadow-lg shadow-[var(--app-brand-glow)]">

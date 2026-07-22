@@ -151,6 +151,25 @@
     "eyebrow": "RAAS PAL team destination",
     "title": "Team Operations Dashboard",
     "searchPlaceholder": "Search customers, solution inputs, robots",
+    "kpi": {
+      "solutions": "Solutions",
+      "solutionsHint": "Total generated",
+      "proposals": "Proposals",
+      "proposalsHint": "Total created",
+      "robots": "Robot catalog",
+      "robotsHint": "Approved models",
+      "devices": "Devices online",
+      "devicesHint": "{offline} offline"
+    },
+    "recent": {
+      "heading": "Recent solutions",
+      "viewAll": "View all",
+      "empty": "No solutions yet",
+      "emptyHint": "Generate your first robot solution and it will appear here.",
+      "cta": "New solution",
+      "failedToLoad": "Couldn't load recent solutions.",
+      "processing": "Processing…"
+    },
     "stats": {
       "customerProfiles": "Customer profiles",
       "customerProfilesDetail": "+5 onboarded this week",
@@ -224,6 +243,12 @@
     "eyebrow": "RAAS PAL solution workspace",
     "title": "Generate Solution",
     "searchPlaceholder": "Search customers, sites, robot criteria",
+    "stepper": {
+      "ariaLabel": "Solution generation progress",
+      "upload": "Upload survey",
+      "recommendation": "Review recommendations",
+      "proposal": "Generate proposal"
+    },
     "workspace": {
       "kicker": "Solution builder",
       "title": "Create a robot solution from customer inputs.",
