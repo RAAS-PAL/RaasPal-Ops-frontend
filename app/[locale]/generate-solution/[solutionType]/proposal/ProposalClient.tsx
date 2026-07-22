@@ -18,6 +18,7 @@ import { proposalApi } from '@/lib/api';
 import type { GeneratedProposalResponse } from '@/types/api';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
+import { FlowStepper } from '@/components/FlowStepper';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -119,6 +120,9 @@ function ProposalInner({ solutionType }: Pick<ProposalClientProps, 'solutionType
               <ArrowLeft className="h-4 w-4" />
               {t('backToRecommendations')}
             </Link>
+
+            {/* Pipeline position */}
+            <FlowStepper current="proposal" />
 
             {/* Header */}
             <div className="bg-aurora animate-aurora relative overflow-hidden rounded-2xl p-6 text-white shadow-lg shadow-[var(--app-brand-glow)]">

@@ -13,6 +13,7 @@ import type {
 } from '@/types/api';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
+import { FlowStepper } from '@/components/FlowStepper';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -618,6 +619,9 @@ function RecommendationInner({ solutionType }: Pick<RecommendationClientProps, '
               <ArrowLeft className="h-4 w-4" />
               {t('backToUpload')}
             </Link>
+
+            {/* Pipeline position */}
+            <FlowStepper current="recommendation" />
 
             {/* Header */}
             <div className="bg-aurora animate-aurora relative overflow-hidden rounded-2xl p-6 text-white shadow-lg shadow-[var(--app-brand-glow)]">

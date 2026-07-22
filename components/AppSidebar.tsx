@@ -34,8 +34,8 @@ export function AppSidebar() {
 
   return (
     <aside
-      className={`hidden shrink-0 border-r border-[var(--app-border)] bg-[var(--app-panel-soft)] px-4 py-5 transition-[width] duration-200 min-[1680px]:flex min-[1680px]:flex-col ${
-        collapsed ? 'w-24' : 'w-72'
+      className={`hidden shrink-0 border-r border-[var(--app-border)] bg-[var(--app-panel-soft)] px-4 py-5 transition-[width] duration-200 lg:flex lg:flex-col ${
+        collapsed ? 'w-20' : 'w-64 xl:w-72'
       }`}
     >
       <div className={`mb-8 flex items-center gap-3 px-2 ${collapsed ? 'justify-center' : ''}`}>

@@ -1,4 +1,4 @@
-import { Bell, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { TopNavigationMenu } from '@/components/TopNavigationMenu';
@@ -29,7 +29,7 @@ export function AppTopBar({
           <h1 className="truncate text-lg font-semibold sm:text-xl">{title}</h1>
         </div>
 
-        <div className="ml-auto hidden h-10 min-w-0 max-w-xl flex-1 min-[1200px]:flex">
+        <div className="ml-auto hidden h-10 min-w-0 max-w-xl flex-1 md:flex">
           {isSearchable ? (
             <div className="relative flex h-full w-full items-center">
               <Search className="pointer-events-none absolute left-3 h-4 w-4 shrink-0 text-[var(--app-muted)]" />
@@ -58,14 +58,6 @@ export function AppTopBar({
           )}
         </div>
 
-        <button
-          aria-label="Notifications"
-          className="relative hidden h-10 w-10 items-center justify-center rounded-xl border border-[var(--app-border)] text-[var(--app-muted)] transition hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)] sm:flex"
-          type="button"
-        >
-          <Bell className="h-4 w-4" />
-          <span className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-[var(--app-brand)]" />
-        </button>
         <ThemeToggle />
         <LanguageSwitcher />
         <UserMenu />

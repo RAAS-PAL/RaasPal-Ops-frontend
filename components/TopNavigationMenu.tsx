@@ -41,7 +41,7 @@ export function TopNavigationMenu() {
   }, []);
 
   return (
-    <div ref={containerRef} className="relative min-[1680px]:hidden">
+    <div ref={containerRef} className="relative lg:hidden">
       <button
         aria-expanded={open}
         aria-haspopup="menu"
