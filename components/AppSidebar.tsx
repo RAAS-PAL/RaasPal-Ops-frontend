@@ -2,6 +2,7 @@
 
 import {
   Bot,
+  CalendarClock,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
@@ -18,6 +19,7 @@ import { useAuthStore } from '@/store/auth';
 
 export const navigationItems = [
   { title: 'Team Dashboard', labelKey: 'teamDashboard', href: '/', icon: LayoutDashboard },
+  { title: 'Reports', labelKey: 'reports', href: '/reports', icon: CalendarClock },
   { title: 'Generate Solution', labelKey: 'generateSolution', href: '/generate-solution', icon: ClipboardList },
   { title: 'Solutions', labelKey: 'solutions', href: '/solutions', icon: Sparkles },
   { title: 'Proposals', labelKey: 'proposals', href: '/proposals', icon: FileText },
