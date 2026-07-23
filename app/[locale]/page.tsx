@@ -19,10 +19,10 @@ export default async function LocaleHomePage() {
   ];
 
   const quickLinks = [
-    { href: '/reports?tab=email',   icon: Mail,      label: t('quickAccess.emailLabel'),     description: t('quickAccess.emailDesc') },
-    { href: '/reports?tab=preview', icon: FileSearch, label: t('quickAccess.previewLabel'),   description: t('quickAccess.previewDesc') },
-    { href: '/tools?tab=robots',    icon: Bot,       label: t('quickAccess.robotsLabel'),    description: t('quickAccess.robotsDesc') },
-    { href: '/tools?tab=customers', icon: Users,     label: t('quickAccess.customersLabel'), description: t('quickAccess.customersDesc') },
+    { href: '/reports?tab=email',   icon: Mail,       label: t('quickAccess.emailLabel') },
+    { href: '/reports?tab=preview', icon: FileSearch, label: t('quickAccess.previewLabel') },
+    { href: '/tools?tab=robots',    icon: Bot,        label: t('quickAccess.robotsLabel') },
+    { href: '/tools?tab=customers', icon: Users,      label: t('quickAccess.customersLabel') },
   ];
 
   return (
@@ -81,19 +81,16 @@ export default async function LocaleHomePage() {
                 {t('quickAccess.heading')}
               </h3>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {quickLinks.map(({ href, icon: Icon, label, description }) => (
+                {quickLinks.map(({ href, icon: Icon, label }) => (
                   <Link
                     key={href}
-                    className="group flex items-center gap-4 rounded-2xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4 transition hover:-translate-y-0.5 hover:border-[var(--app-brand)] hover:shadow-md hover:shadow-[var(--app-brand-glow)]"
+                    className="group flex items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4 transition hover:-translate-y-0.5 hover:border-[var(--app-brand)] hover:shadow-md hover:shadow-[var(--app-brand-glow)]"
                     href={href}
                   >
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)] transition group-hover:bg-gradient-to-br group-hover:from-[var(--app-brand)] group-hover:to-[var(--app-brand-dark)] group-hover:text-white">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)] transition group-hover:bg-gradient-to-br group-hover:from-[var(--app-brand)] group-hover:to-[var(--app-brand-dark)] group-hover:text-white">
                       <Icon className="h-5 w-5" />
                     </span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-[var(--app-text)]">{label}</p>
-                      <p className="truncate text-xs text-[var(--app-muted)]">{description}</p>
-                    </div>
+                    <p className="min-w-0 truncate text-sm font-semibold text-[var(--app-text)]">{label}</p>
                     <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-[var(--app-muted)] transition group-hover:translate-x-0.5 group-hover:text-[var(--app-brand)]" />
                   </Link>
                 ))}

@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
+  CalendarClock,
   CheckCircle2,
   Loader2,
   Mail,
@@ -132,16 +133,15 @@ export function ReportAutomationPanel() {
 
   return (
     <div className="space-y-5">
-      {/* How it works */}
-      <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4">
-        <p className="text-sm font-semibold text-[var(--app-text)]">Automated monthly report delivery</p>
-        <p className="mt-1 text-xs text-[var(--app-muted)]">
-          Each customer is emailed one link covering all of their robots for the month. The scheduler runs
-          automatically on the 2nd of each month for the previous month. You can also run a month now, or
-          resend a customer whose delivery failed. Running again is safe — customers already sent are skipped.
-          You can also exclude specific customers from a run below (e.g. a site whose robots aren't fully
-          registered yet) — they stay eligible for a later run.
-        </p>
+      {/* Topic header */}
+      <div className="flex items-center gap-2.5 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
+          <CalendarClock className="h-4.5 w-4.5" />
+        </span>
+        <div>
+          <p className="text-sm font-semibold text-[var(--app-text)]">Automated monthly report delivery</p>
+          <p className="text-xs text-[var(--app-muted)]">One link per customer — auto on the 2nd, or run a month below.</p>
+        </div>
       </div>
 
       {/* Controls */}

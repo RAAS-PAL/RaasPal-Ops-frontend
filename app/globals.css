@@ -181,6 +181,32 @@ body {
   font-family: var(--font-sans, Arial, Helvetica, sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* App text uses the normal arrow cursor instead of the I-beam, so labels and
+     copy never read as "editable" — text stays fully selectable/copiable. */
+  cursor: default;
+}
+
+/* Only real text fields keep the typing caret. */
+input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+textarea,
+[contenteditable="true"] {
+  cursor: text;
+}
+
+/* Interactive controls get the pointer. */
+button:not(:disabled),
+a[href],
+label[for],
+select,
+summary,
+[role="button"],
+[role="tab"] {
+  cursor: pointer;
+}
+
+:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
 }
 
 /* ─── Scrollbar (WebKit) ──────────────────────────────────────────────────── */
