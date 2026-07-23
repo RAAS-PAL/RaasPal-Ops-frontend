@@ -489,15 +489,15 @@ export interface DeliveryRunStatus {
 
 /* ─── AutoXing on-demand delivery report ──────────────────────────────────── */
 
+/** "Right now" snapshot — shown in the operator UI, never in the printable report. */
 export interface AutoxingLiveStatus {
   batteryPct: number | null;
   moveState: string | null;
+  isOnline: boolean | null;
   isCharging: boolean | null;
   isEmergencyStop: boolean | null;
   isManualMode: boolean | null;
-  isRemoteMode: boolean | null;
   errors: string[];
-  areaId: string | null;
   timestamp: number | null;
 }
 
@@ -508,16 +508,40 @@ export interface AutoxingCategoryStat {
   durationSeconds: number;
 }
 
+export interface AutoxingDailyStat {
+  date: string;
+  count: number;
+  mileageMeters: number;
+  durationSeconds: number;
+}
+
+export interface AutoxingSummary {
+  totalTasks: number;
+  deliveryTasks: number;
+  deliverySharePct: number;
+  totalMileageMeters: number;
+  totalDurationSeconds: number;
+  activeDays: number;
+  totalDays: number;
+  tasksPerActiveDay: number;
+  avgTaskSeconds: number;
+  avgMileagePerActiveDayMeters: number;
+  busiestDate: string | null;
+  busiestCount: number;
+  busiestMileageMeters: number;
+  busiestDurationSeconds: number;
+}
+
 export interface AutoxingDeliveryReport {
   robotId: string;
+  robotName: string;
+  model: string | null;
+  customerName: string;
+  siteBranch: string;
   periodLabel: string;
   liveStatus: AutoxingLiveStatus | null;
-  summary: {
-    totalTasks: number;
-    totalMileageMeters: number;
-    totalDurationSeconds: number;
-  };
+  summary: AutoxingSummary;
   categories: AutoxingCategoryStat[];
-  daily: { date: string; count: number }[];
+  daily: AutoxingDailyStat[];
   note: string;
 }

@@ -379,9 +379,15 @@ export const autoxingApi = {
    * The AutoXing statistics endpoint caches results for 5 minutes, and a
    * whole-month sync can be slow, so this gets a longer timeout.
    */
-  preview: (robotId: string, from?: string, to?: string) =>
+  preview: (
+    robotId: string,
+    from?: string,
+    to?: string,
+    robotName?: string,
+    model?: string,
+  ) =>
     api.get<ApiResponse<AutoxingDeliveryReport>>('/api/v1/autoxing/report/preview', {
-      params: { robotId, from, to },
+      params: { robotId, from, to, robotName: robotName || undefined, model: model || undefined },
       timeout: 120_000,
       skipRetry: true,
     }),
