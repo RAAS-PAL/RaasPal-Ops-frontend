@@ -2,14 +2,15 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { CalendarClock, FileSearch, Mail } from 'lucide-react';
+import { CalendarClock, FileSearch, Gauge, Mail } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { ReportAutomationPanel } from '@/components/ReportAutomationPanel';
 import { CustomerEmailPanel } from '@/components/CustomerEmailPanel';
 import { ReportPreviewPanel } from '@/components/ReportPreviewPanel';
+import { AutoxingReportPanel } from '@/components/AutoxingReportPanel';
 
-const REPORT_TABS = ['automation', 'email', 'preview'] as const;
+const REPORT_TABS = ['automation', 'email', 'preview', 'autoxing'] as const;
 
 export type ReportTab = (typeof REPORT_TABS)[number];
 
@@ -27,6 +28,7 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
     { id: 'automation', label: t('tabs.automation'), icon: <CalendarClock className="h-4 w-4" /> },
     { id: 'email', label: t('tabs.email'), icon: <Mail className="h-4 w-4" /> },
     { id: 'preview', label: t('tabs.preview'), icon: <FileSearch className="h-4 w-4" /> },
+    { id: 'autoxing', label: t('tabs.autoxing'), icon: <Gauge className="h-4 w-4" /> },
   ];
 
   return (
@@ -62,6 +64,7 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
             {tab === 'automation' && <ReportAutomationPanel />}
             {tab === 'email' && <CustomerEmailPanel />}
             {tab === 'preview' && <ReportPreviewPanel />}
+            {tab === 'autoxing' && <AutoxingReportPanel />}
           </div>
         </section>
       </div>

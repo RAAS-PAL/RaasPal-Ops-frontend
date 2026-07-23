@@ -69,6 +69,7 @@ api.interceptors.response.use(
 
 import type {
   ApiResponse,
+  AutoxingDeliveryReport,
   AuthResponse,
   CreateUserRequest,
   CvteDeviceResponse,
@@ -366,6 +367,23 @@ export const reportApi = {
   deliveryHistory: (month: string) =>
     api.get<ApiResponse<ReportSend[]>>('/api/v1/reports/delivery/history', {
       params: { month },
+    }),
+};
+
+// AutoXing — on-demand delivery report preview (no persistence). Fetches live
+// statistics + robot state directly from the AutoXing API for an urgent report.
+export const autoxingApi = {
+  /**
+   * Delivery report for one AutoXing robot. `from`/`to` are "YYYY-MM-DD" and
+   * optional (backend defaults to the last 30 days). Range max is 30 days.
+   * The AutoXing statistics endpoint caches results for 5 minutes, and a
+   * whole-month sync can be slow, so this gets a longer timeout.
+   */
+  preview: (robotId: string, from?: string, to?: string) =>
+    api.get<ApiResponse<AutoxingDeliveryReport>>('/api/v1/autoxing/report/preview', {
+      params: { robotId, from, to },
+      timeout: 120_000,
+      skipRetry: true,
     }),
 };
 
