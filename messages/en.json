@@ -658,7 +658,8 @@
     "tabs": {
       "automation": "Manage automation",
       "email": "Email customers",
-      "preview": "Report preview"
+      "preview": "Report preview",
+      "autoxing": "AutoXing report"
     }
   },
   "userMenu": {
