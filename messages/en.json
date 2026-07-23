@@ -205,9 +205,54 @@
     },
     "hero": {
       "eyebrow": "Get started",
-      "title": "Generate a Robot Solution",
-      "description": "Upload a customer survey and let AI extract requirements, match robots from the catalog, and draft a ready-to-send proposal — in minutes.",
-      "cta": "Start here"
+      "title": "Monthly report automation",
+      "description": "Deliver every customer one link covering all their robots for the month — run, monitor, and resend deliveries from one place.",
+      "cta": "Manage delivery"
+    },
+    "reportKpi": {
+      "sent": "Sent this month",
+      "sentHint": "Customers emailed",
+      "failed": "Needs attention",
+      "failedHint": "Failed — resend required",
+      "skipped": "Skipped",
+      "skippedHint": "Already sent or not eligible",
+      "customers": "Customers",
+      "customersHint": "Report recipients"
+    },
+    "delivery": {
+      "heading": "Monthly delivery",
+      "reportPeriod": "Report period · {month}",
+      "running": "Run in progress",
+      "idle": "Idle",
+      "coverage": "Coverage",
+      "coverageCount": "{sent} of {total} customers sent",
+      "sent": "Sent",
+      "skipped": "Skipped",
+      "failed": "Failed",
+      "manage": "Manage report delivery"
+    },
+    "recentDeliveries": {
+      "heading": "Recent deliveries",
+      "viewAll": "View all",
+      "failedToLoad": "Couldn't load delivery history.",
+      "empty": "No deliveries yet",
+      "emptyHint": "Run this month's delivery, or send a customer their report to get started.",
+      "cta": "Go to Reports"
+    },
+    "reportFlow": {
+      "heading": "How automated delivery works",
+      "step1Title": "Register robots to customers",
+      "step1Description": "Link each physical robot by serial number to the customer site it serves.",
+      "step2Title": "Telemetry syncs automatically",
+      "step2Description": "Task reports are pulled from each brand's cloud API into the platform.",
+      "step3Title": "Monthly bundle is built",
+      "step3Description": "All of a customer's robots are aggregated into one report page per month.",
+      "step4Title": "Email delivered on schedule",
+      "step4Description": "The scheduler emails each customer one link on the 2nd — or run it manually anytime."
+    },
+    "solutionShortcut": {
+      "label": "Generate a robot solution",
+      "description": "Upload a customer survey and let AI recommend robots and draft a proposal."
     },
     "howItWorks": {
       "heading": "How it works",
@@ -226,8 +271,14 @@
       "solutionsDesc": "View all past recommendations",
       "proposalsLabel": "Proposals",
       "proposalsDesc": "Browse generated proposals",
-      "robotsLabel": "Robot Catalog",
-      "robotsDesc": "Manage the robot database"
+      "robotsLabel": "Robots",
+      "robotsDesc": "Register robots to customers",
+      "emailLabel": "Email customers",
+      "emailDesc": "Send a report link by email",
+      "previewLabel": "Report preview",
+      "previewDesc": "Preview a robot's monthly report",
+      "customersLabel": "Customers",
+      "customersDesc": "Manage report recipients"
     },
     "cvteSummary": {
       "heading": "Robot Online Status",
@@ -589,7 +640,7 @@
   "tools": {
     "eyebrow": "Operations",
     "title": "Tools",
-    "searchPlaceholder": "Robot monitoring and report automation",
+    "searchPlaceholder": "Robot monitoring, customers and registration",
     "tabs": {
       "monitor": "Monitor robots",
       "reports": "Manage report automation",
@@ -599,6 +650,16 @@
       "robots": "Robots"
     },
     "automationComingSoon": "Scheduled report automation is coming soon."
+  },
+  "reports": {
+    "eyebrow": "Report automation",
+    "title": "Reports",
+    "searchPlaceholder": "Manage monthly report delivery",
+    "tabs": {
+      "automation": "Manage automation",
+      "email": "Email customers",
+      "preview": "Report preview"
+    }
   },
   "userMenu": {
     "profile": "Profile",
