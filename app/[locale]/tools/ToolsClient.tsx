@@ -2,14 +2,15 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Bot, Radio, Users } from 'lucide-react';
+import { Bot, Handshake, Radio, Users } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { CvteMonitorPanel } from '@/components/CvteMonitorPanel';
 import { CustomersPanel } from '@/components/CustomersPanel';
 import { RobotsPanel } from '@/components/RobotsPanel';
+import { PartnersPanel } from '@/components/PartnersPanel';
 
-const TOOL_TABS = ['monitor', 'customers', 'robots'] as const;
+const TOOL_TABS = ['monitor', 'customers', 'robots', 'partners'] as const;
 
 export type ToolTab = (typeof TOOL_TABS)[number];
 
@@ -27,6 +28,7 @@ export function ToolsClient({ initialTab = 'monitor' }: { initialTab?: ToolTab }
     { id: 'monitor', label: t('tabs.monitor'), icon: <Radio className="h-4 w-4" /> },
     { id: 'customers', label: t('tabs.customers'), icon: <Users className="h-4 w-4" /> },
     { id: 'robots', label: t('tabs.robots'), icon: <Bot className="h-4 w-4" /> },
+    { id: 'partners', label: t('tabs.partners'), icon: <Handshake className="h-4 w-4" /> },
   ];
 
   return (
@@ -62,6 +64,7 @@ export function ToolsClient({ initialTab = 'monitor' }: { initialTab?: ToolTab }
             {tab === 'monitor' && <CvteMonitorPanel />}
             {tab === 'customers' && <CustomersPanel />}
             {tab === 'robots' && <RobotsPanel />}
+            {tab === 'partners' && <PartnersPanel />}
           </div>
         </section>
       </div>

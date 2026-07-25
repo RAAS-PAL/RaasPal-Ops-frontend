@@ -426,6 +426,8 @@ export interface DeploymentInfo {
   site: string | null;
   reportCadence: ReportCadence;
   active: boolean;
+  /** Distributor/service partner servicing this deployment; null = RAASPAL-direct. */
+  partnerId: string | null;
 }
 
 export interface RobotUnitResponse {
@@ -456,6 +458,49 @@ export interface UpdateRobotRequest {
   customerProfileId: string;
   site?: string | null;
   reportCadence?: ReportCadence | null;
+}
+
+/* ─── Partners (distributor/service partners + their API keys) ─────────────── */
+/* Mirrors the partner/* DTOs on the backend. */
+
+export interface PartnerResponse {
+  id: string;
+  name: string;
+  active: boolean;
+  createdAt: string;
+}
+
+/** Metadata for one API key — never the secret (only the display prefix). */
+export interface ApiKeyResponse {
+  id: string;
+  keyPrefix: string;
+  label: string | null;
+  active: boolean;
+  createdAt: string;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+}
+
+/** The one-time response when a key is minted — carries the plaintext apiKey. */
+export interface CreatedApiKeyResponse {
+  id: string;
+  apiKey: string;
+  keyPrefix: string;
+  label: string | null;
+  warning: string;
+}
+
+export interface CreatePartnerRequest {
+  name: string;
+}
+
+export interface UpdatePartnerRequest {
+  name?: string | null;
+  active?: boolean | null;
+}
+
+export interface CreateApiKeyRequest {
+  label?: string | null;
 }
 
 // Automated report delivery history (report_sends)
