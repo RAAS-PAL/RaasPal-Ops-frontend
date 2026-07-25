@@ -1,6 +1,6 @@
 import { ToolsClient, type ToolTab } from './ToolsClient';
 
-const VALID_TABS: readonly string[] = ['monitor', 'customers', 'robots'];
+const VALID_TABS: readonly string[] = ['monitor', 'customers', 'robots', 'partners'];
 
 export default async function ToolsPage({
   searchParams,

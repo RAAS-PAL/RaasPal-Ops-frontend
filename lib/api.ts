@@ -80,6 +80,12 @@ import type {
   GeneratedProposalResponse,
   LoginRequest,
   PagedResponse,
+  PartnerResponse,
+  ApiKeyResponse,
+  CreatedApiKeyResponse,
+  CreatePartnerRequest,
+  UpdatePartnerRequest,
+  CreateApiKeyRequest,
   RegisterRequest,
   RecommendationResponse,
   RequirementResponse,
@@ -197,6 +203,35 @@ export const robotUnitApi = {
 
   deactivate: (deploymentId: string) =>
     api.delete<ApiResponse<void>>(`/api/v1/robot-units/deployments/${deploymentId}`),
+};
+
+// Partners — distributor/service partners (e.g. PCS) and their API keys.
+// Admin side only (JWT); the partner-facing /api/partner/v1 API is key-authed
+// and never called from this app.
+export const partnerApi = {
+  list: () =>
+    api.get<ApiResponse<PartnerResponse[]>>('/api/v1/partners'),
+
+  create: (body: CreatePartnerRequest) =>
+    api.post<ApiResponse<PartnerResponse>>('/api/v1/partners', body),
+
+  /** Rename and/or enable/disable (disable = instant kill-switch for all its keys). */
+  update: (id: string, body: UpdatePartnerRequest) =>
+    api.patch<ApiResponse<PartnerResponse>>(`/api/v1/partners/${id}`, body),
+
+  listKeys: (partnerId: string) =>
+    api.get<ApiResponse<ApiKeyResponse[]>>(`/api/v1/partners/${partnerId}/keys`),
+
+  /** Mint a key — the response carries the plaintext ONCE (never recoverable after). */
+  createKey: (partnerId: string, body: CreateApiKeyRequest) =>
+    api.post<ApiResponse<CreatedApiKeyResponse>>(`/api/v1/partners/${partnerId}/keys`, body),
+
+  revokeKey: (keyId: string) =>
+    api.delete<ApiResponse<void>>(`/api/v1/partners/keys/${keyId}`),
+
+  /** Assign a deployment to a partner, or un-assign it (partnerId = null). */
+  assignDeployment: (deploymentId: string, partnerId: string | null) =>
+    api.put<ApiResponse<void>>(`/api/v1/partners/deployments/${deploymentId}`, { partnerId }),
 };
 
 // Auth
