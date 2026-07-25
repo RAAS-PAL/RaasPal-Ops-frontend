@@ -489,14 +489,20 @@ function PartnerDetail({
         ) : (
           <ul className="space-y-1.5">
             {assigned.map((r) => (
-              <li key={r.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-3 py-2">
-                <div className="flex min-w-0 items-center gap-2 text-sm text-[var(--app-text)]">
+              <li key={r.id} className="flex items-center gap-3 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-3 py-2">
+                {/* Left: robot identity (grows, truncates) */}
+                <div className="flex min-w-0 flex-1 items-center gap-2 text-sm text-[var(--app-text)]">
                   <Bot className="h-3.5 w-3.5 shrink-0 text-[var(--app-muted)]" />
                   <span className="truncate font-medium">{robotDisplayName(r)}</span>
-                  <span className="text-xs text-[var(--app-muted)]">{r.serialNumber}</span>
-                  <span className="inline-flex items-center gap-1 text-xs text-[var(--app-muted)]">
-                    <Building2 className="h-3 w-3" />{r.deployment?.customerName}
-                  </span>
+                  <span className="shrink-0 text-xs text-[var(--app-muted)]">{r.serialNumber}</span>
+                </div>
+                {/* Right: customer — fixed-width column aligned with the assign box above */}
+                <div
+                  title={r.deployment?.customerName ?? undefined}
+                  className="flex w-72 shrink-0 items-center gap-1 border-l border-[var(--app-border)] pl-3 text-xs text-[var(--app-muted)] sm:w-80"
+                >
+                  <Building2 className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{r.deployment?.customerName}</span>
                 </div>
                 <button
                   type="button"
@@ -507,7 +513,7 @@ function PartnerDetail({
                   }}
                   disabled={unassignMutation.isPending}
                   aria-label={t('unassign')}
-                  className="flex h-8 items-center gap-1 rounded-lg border border-[var(--app-border)] px-2 text-xs text-red-500 transition hover:border-red-400 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-950/30"
+                  className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-[var(--app-border)] px-2 text-xs text-red-500 transition hover:border-red-400 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-950/30"
                 >
                   <Trash2 className="h-3.5 w-3.5" /> {t('unassign')}
                 </button>
