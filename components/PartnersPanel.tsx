@@ -24,6 +24,7 @@ import {
   Loader2,
   Plus,
   Power,
+  Search,
   Trash2,
   X,
 } from 'lucide-react';
@@ -239,7 +240,8 @@ function PartnerDetail({
   const [keyLabel, setKeyLabel] = useState('');
   const [minted, setMinted] = useState<CreatedApiKeyResponse | null>(null);
   const [copied, setCopied] = useState(false);
-  const [assignId, setAssignId] = useState('');
+  const [assignSearch, setAssignSearch] = useState('');
+  const [assignSel, setAssignSel] = useState<Set<string>>(new Set());
 
   const { data: keys = [], isLoading: keysLoading } = useQuery({
     queryKey: ['partner-keys', partner.id],
@@ -270,9 +272,9 @@ function PartnerDetail({
   });
 
   const assignMutation = useMutation({
-    mutationFn: (deploymentId: string) =>
-      partnerApi.assignDeployment(deploymentId, partner.id).then((r) => r.data),
-    onSuccess: () => { setAssignId(''); refreshRobots(); },
+    mutationFn: (deploymentIds: string[]) =>
+      partnerApi.assignDeployments(partner.id, deploymentIds).then((r) => r.data),
+    onSuccess: () => { setAssignSel(new Set()); setAssignSearch(''); refreshRobots(); },
   });
 
   const unassignMutation = useMutation({
@@ -283,6 +285,35 @@ function PartnerDetail({
 
   const assigned = robots.filter((r) => r.deployment && r.deployment.partnerId === partner.id);
   const assignable = robots.filter((r) => r.deployment && r.deployment.partnerId !== partner.id);
+
+  const q = assignSearch.trim().toLowerCase();
+  const assignableFiltered = q
+    ? assignable.filter((r) =>
+        [robotDisplayName(r), r.serialNumber, r.brand, r.model, r.deployment?.customerName]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(q))
+    : assignable;
+  const filteredIds = assignableFiltered.map((r) => r.deployment!.deploymentId);
+  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => assignSel.has(id));
+
+  function toggleSel(id: string) {
+    setAssignSel((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function toggleSelAllFiltered() {
+    setAssignSel((prev) => {
+      const next = new Set(prev);
+      if (allFilteredSelected) filteredIds.forEach((id) => next.delete(id));
+      else filteredIds.forEach((id) => next.add(id));
+      return next;
+    });
+  }
 
   async function copyKey(value: string) {
     try {
@@ -364,34 +395,86 @@ function PartnerDetail({
           <Bot className="h-4 w-4 text-[var(--app-brand-dark)]" /> {t('robotsTitle')}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <select className={`${inputClass} max-w-md`} value={assignId} onChange={(e) => setAssignId(e.target.value)}>
-            <option value="">{t('assignRobot')}</option>
-            {assignable.map((r) => {
-              const otherPartner = r.deployment?.partnerId
-                ? partnerNameById.get(r.deployment.partnerId)
-                : null;
-              const suffix = otherPartner ? ` · ${t('assignedElsewhere', { partner: otherPartner })}` : '';
-              return (
-                <option key={r.deployment!.deploymentId} value={r.deployment!.deploymentId}>
-                  {robotDisplayName(r)} — {r.deployment?.customerName ?? ''}{suffix}
-                </option>
-              );
-            })}
-          </select>
-          <Button
-            type="button"
-            onClick={() => assignId && assignMutation.mutate(assignId)}
-            disabled={!assignId || assignMutation.isPending}
-            className="bg-[var(--app-brand)] text-white hover:opacity-90 disabled:opacity-50"
-          >
-            {assignMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            {t('assign')}
-          </Button>
+        {/* Persistent, searchable multi-select box — stays open on outside clicks
+            (unlike a native <select>), so many robots can be ticked and assigned
+            in one action. Search matches robot name, serial, brand, and customer. */}
+        <div className="rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)]">
+          <div className="flex items-center gap-2 border-b border-[var(--app-border)] px-3 py-2">
+            <Search className="h-4 w-4 shrink-0 text-[var(--app-muted)]" />
+            <input
+              className="h-8 w-full bg-transparent text-sm text-[var(--app-text)] outline-none"
+              value={assignSearch}
+              onChange={(e) => setAssignSearch(e.target.value)}
+              placeholder={t('assignSearchPlaceholder')}
+            />
+          </div>
+
+          {assignable.length === 0 ? (
+            <p className="px-3 py-3 text-xs text-[var(--app-muted)]">{t('noAssignableRobots')}</p>
+          ) : (
+            <>
+              <label className="flex cursor-pointer items-center justify-between gap-2 border-b border-[var(--app-border)] px-3 py-2 text-xs">
+                <span className="flex items-center gap-2 font-semibold text-[var(--app-text)]">
+                  <input
+                    type="checkbox"
+                    checked={allFilteredSelected}
+                    onChange={toggleSelAllFiltered}
+                    disabled={filteredIds.length === 0}
+                    className="h-4 w-4 accent-[var(--app-brand)]"
+                  />
+                  {t('selectAllFiltered', { count: filteredIds.length })}
+                </span>
+                <span className="text-[var(--app-muted)]">{t('selectedCount', { count: assignSel.size })}</span>
+              </label>
+
+              <ul className="max-h-64 overflow-y-auto">
+                {assignableFiltered.length === 0 ? (
+                  <li className="px-3 py-3 text-xs text-[var(--app-muted)]">{t('noMatch')}</li>
+                ) : (
+                  assignableFiltered.map((r) => {
+                    const id = r.deployment!.deploymentId;
+                    const otherPartner = r.deployment?.partnerId
+                      ? partnerNameById.get(r.deployment.partnerId)
+                      : null;
+                    return (
+                      <li key={id}>
+                        <label className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--app-panel-alt)]">
+                          <input
+                            type="checkbox"
+                            checked={assignSel.has(id)}
+                            onChange={() => toggleSel(id)}
+                            className="h-4 w-4 shrink-0 accent-[var(--app-brand)]"
+                          />
+                          <Bot className="h-3.5 w-3.5 shrink-0 text-[var(--app-muted)]" />
+                          <span className="truncate font-medium text-[var(--app-text)]">{robotDisplayName(r)}</span>
+                          <span className="shrink-0 text-xs text-[var(--app-muted)]">{r.serialNumber}</span>
+                          <span className="inline-flex min-w-0 items-center gap-1 truncate text-xs text-[var(--app-muted)]">
+                            <Building2 className="h-3 w-3 shrink-0" />{r.deployment?.customerName}
+                          </span>
+                          {otherPartner && (
+                            <span className="ml-auto shrink-0 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
+                              {t('assignedElsewhere', { partner: otherPartner })}
+                            </span>
+                          )}
+                        </label>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
+            </>
+          )}
         </div>
-        {assignable.length === 0 && (
-          <p className="text-xs text-[var(--app-muted)]">{t('noAssignableRobots')}</p>
-        )}
+
+        <Button
+          type="button"
+          onClick={() => assignSel.size > 0 && assignMutation.mutate([...assignSel])}
+          disabled={assignSel.size === 0 || assignMutation.isPending}
+          className="bg-[var(--app-brand)] text-white hover:opacity-90 disabled:opacity-50"
+        >
+          {assignMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          {t('assignSelected', { count: assignSel.size })}
+        </Button>
 
         {assigned.length === 0 ? (
           <p className="text-xs text-[var(--app-muted)]">{t('noRobotsAssigned')}</p>

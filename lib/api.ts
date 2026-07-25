@@ -232,6 +232,10 @@ export const partnerApi = {
   /** Assign a deployment to a partner, or un-assign it (partnerId = null). */
   assignDeployment: (deploymentId: string, partnerId: string | null) =>
     api.put<ApiResponse<void>>(`/api/v1/partners/deployments/${deploymentId}`, { partnerId }),
+
+  /** Bulk-assign many deployments to a partner in one call. Returns the count assigned. */
+  assignDeployments: (partnerId: string, deploymentIds: string[]) =>
+    api.put<ApiResponse<number>>(`/api/v1/partners/${partnerId}/deployments`, { deploymentIds }),
 };
 
 // Auth
