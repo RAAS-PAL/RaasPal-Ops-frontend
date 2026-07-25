@@ -63,9 +63,11 @@ export function PartnersPanel() {
     queryFn: () => partnerApi.list().then((r) => r.data.data ?? []),
   });
 
-  const { data: robots = [] } = useQuery({
+  const { data: robots = [], isLoading: robotsLoading } = useQuery({
     queryKey: ['robot-units'],
     queryFn: () => robotUnitApi.list().then((r) => r.data.data ?? []),
+    // Keep the robots list warm so re-opening a partner is instant, not a refetch.
+    staleTime: 60_000,
   });
 
   const partnerNameById = useMemo(
@@ -201,6 +203,7 @@ export function PartnersPanel() {
                 <PartnerDetail
                   partner={p}
                   robots={robots}
+                  robotsLoading={robotsLoading}
                   partnerNameById={partnerNameById}
                 />
               )}
@@ -229,10 +232,12 @@ function StatusPill({ active, activeLabel, disabledLabel }: { active: boolean; a
 function PartnerDetail({
   partner,
   robots,
+  robotsLoading,
   partnerNameById,
 }: {
   partner: PartnerResponse;
   robots: RobotUnitResponse[];
+  robotsLoading: boolean;
   partnerNameById: Map<string, string>;
 }) {
   const t = useTranslations('partnersPanel');
@@ -409,7 +414,11 @@ function PartnerDetail({
             />
           </div>
 
-          {assignable.length === 0 ? (
+          {robotsLoading && robots.length === 0 ? (
+            <p className="flex items-center gap-2 px-3 py-3 text-xs text-[var(--app-muted)]">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t('loading')}
+            </p>
+          ) : assignable.length === 0 ? (
             <p className="px-3 py-3 text-xs text-[var(--app-muted)]">{t('noAssignableRobots')}</p>
           ) : (
             <>
@@ -484,7 +493,11 @@ function PartnerDetail({
           {t('assignSelected', { count: assignSel.size })}
         </Button>
 
-        {assigned.length === 0 ? (
+        {robotsLoading && robots.length === 0 ? (
+          <p className="flex items-center gap-2 text-xs text-[var(--app-muted)]">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t('loading')}
+          </p>
+        ) : assigned.length === 0 ? (
           <p className="text-xs text-[var(--app-muted)]">{t('noRobotsAssigned')}</p>
         ) : (
           <ul className="space-y-1.5">
