@@ -475,10 +475,16 @@ export interface ApiKeyResponse {
   id: string;
   keyPrefix: string;
   label: string | null;
+  /** Live: active, not revoked, and not expired. */
   active: boolean;
   createdAt: string;
   lastUsedAt: string | null;
   revokedAt: string | null;
+  /** When the key stops working; null = never expires. */
+  expiresAt: string | null;
+  expired: boolean;
+  /** Rotation nudge: still usable but expiring within a week. */
+  expiringSoon: boolean;
 }
 
 /** The one-time response when a key is minted — carries the plaintext apiKey. */
@@ -487,6 +493,7 @@ export interface CreatedApiKeyResponse {
   apiKey: string;
   keyPrefix: string;
   label: string | null;
+  expiresAt: string | null;
   warning: string;
 }
 
@@ -501,6 +508,8 @@ export interface UpdatePartnerRequest {
 
 export interface CreateApiKeyRequest {
   label?: string | null;
+  /** Optional lifetime in days; omit for a key that never expires. */
+  expiresInDays?: number | null;
 }
 
 // Automated report delivery history (report_sends)

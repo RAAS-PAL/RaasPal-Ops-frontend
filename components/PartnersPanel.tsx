@@ -243,6 +243,8 @@ function PartnerDetail({
   const t = useTranslations('partnersPanel');
   const queryClient = useQueryClient();
   const [keyLabel, setKeyLabel] = useState('');
+  /** '' = never expires; otherwise a day count. */
+  const [keyExpiry, setKeyExpiry] = useState('');
   const [minted, setMinted] = useState<CreatedApiKeyResponse | null>(null);
   const [copied, setCopied] = useState(false);
   const [assignSearch, setAssignSearch] = useState('');
@@ -261,8 +263,10 @@ function PartnerDetail({
   }
 
   const mintMutation = useMutation({
-    mutationFn: (label: string) =>
-      partnerApi.createKey(partner.id, { label: label.trim() || null }).then((r) => r.data),
+    mutationFn: ({ label, expiresInDays }: { label: string; expiresInDays: number | null }) =>
+      partnerApi
+        .createKey(partner.id, { label: label.trim() || null, expiresInDays })
+        .then((r) => r.data),
     onSuccess: (res) => {
       setMinted(res.data);
       setKeyLabel('');
@@ -368,9 +372,25 @@ function PartnerDetail({
             onChange={(e) => setKeyLabel(e.target.value)}
             placeholder={t('keyLabelPlaceholder')}
           />
+          <select
+            className={`${inputClass} max-w-44`}
+            value={keyExpiry}
+            onChange={(e) => setKeyExpiry(e.target.value)}
+            aria-label={t('keyExpiryLabel')}
+          >
+            <option value="">{t('expiryNever')}</option>
+            <option value="30">{t('expiryDays', { days: 30 })}</option>
+            <option value="90">{t('expiryDays', { days: 90 })}</option>
+            <option value="365">{t('expiryDays', { days: 365 })}</option>
+          </select>
           <Button
             type="button"
-            onClick={() => mintMutation.mutate(keyLabel)}
+            onClick={() =>
+              mintMutation.mutate({
+                label: keyLabel,
+                expiresInDays: keyExpiry ? Number(keyExpiry) : null,
+              })
+            }
             disabled={mintMutation.isPending}
             className="bg-[var(--app-brand)] text-white hover:opacity-90"
           >
@@ -553,15 +573,25 @@ function KeyRow({
   const lastUsed = k.lastUsedAt
     ? t('keyLastUsed', { date: new Date(k.lastUsedAt).toLocaleDateString() })
     : t('keyNeverUsed');
+  const expiry = k.expiresAt ? new Date(k.expiresAt).toLocaleDateString() : null;
   return (
     <li className="flex items-center justify-between gap-3 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-3 py-2">
-      <div className="flex min-w-0 items-center gap-2">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
         <code className="rounded bg-[var(--app-panel-alt)] px-1.5 py-0.5 font-mono text-xs text-[var(--app-text)]">{k.keyPrefix}…</code>
         {k.label && <span className="truncate text-xs text-[var(--app-muted)]">{k.label}</span>}
         <span className="text-xs text-[var(--app-muted)]">· {lastUsed}</span>
-        {!k.active && (
+        <span className="text-xs text-[var(--app-muted)]">
+          · {expiry ? t('keyExpires', { date: expiry }) : t('expiryNever')}
+        </span>
+        {/* Expired and revoked are different states — an expired key needs a new
+            one minted, a revoked key was deliberately killed. */}
+        {k.expired ? (
+          <span className="rounded-full border border-[var(--app-border)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--app-muted)]">{t('keyExpired')}</span>
+        ) : !k.active ? (
           <span className="rounded-full border border-[var(--app-border)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--app-muted)]">{t('keyRevoked')}</span>
-        )}
+        ) : k.expiringSoon ? (
+          <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">{t('keyExpiringSoon')}</span>
+        ) : null}
       </div>
       {k.active && (
         <button
