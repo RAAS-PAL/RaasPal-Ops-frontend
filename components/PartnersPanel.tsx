@@ -438,24 +438,32 @@ function PartnerDetail({
                       : null;
                     return (
                       <li key={id}>
-                        <label className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--app-panel-alt)]">
+                        <label className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm hover:bg-[var(--app-panel-alt)]">
                           <input
                             type="checkbox"
                             checked={assignSel.has(id)}
                             onChange={() => toggleSel(id)}
                             className="h-4 w-4 shrink-0 accent-[var(--app-brand)]"
                           />
-                          <Bot className="h-3.5 w-3.5 shrink-0 text-[var(--app-muted)]" />
-                          <span className="truncate font-medium text-[var(--app-text)]">{robotDisplayName(r)}</span>
-                          <span className="shrink-0 text-xs text-[var(--app-muted)]">{r.serialNumber}</span>
-                          <span className="inline-flex min-w-0 items-center gap-1 truncate text-xs text-[var(--app-muted)]">
-                            <Building2 className="h-3 w-3 shrink-0" />{r.deployment?.customerName}
-                          </span>
-                          {otherPartner && (
-                            <span className="ml-auto shrink-0 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
-                              {t('assignedElsewhere', { partner: otherPartner })}
-                            </span>
-                          )}
+                          {/* Left: robot identity (grows, truncates) */}
+                          <div className="flex min-w-0 flex-1 items-center gap-2">
+                            <Bot className="h-3.5 w-3.5 shrink-0 text-[var(--app-muted)]" />
+                            <span className="truncate font-medium text-[var(--app-text)]">{robotDisplayName(r)}</span>
+                            <span className="shrink-0 text-xs text-[var(--app-muted)]">{r.serialNumber}</span>
+                          </div>
+                          {/* Right: customer — fixed-width column so names line up vertically for scanning */}
+                          <div
+                            title={r.deployment?.customerName ?? undefined}
+                            className="flex w-72 shrink-0 items-center gap-1 border-l border-[var(--app-border)] pl-3 text-xs text-[var(--app-muted)] sm:w-80"
+                          >
+                            <Building2 className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{r.deployment?.customerName}</span>
+                            {otherPartner && (
+                              <span className="ml-auto shrink-0 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
+                                {t('assignedElsewhere', { partner: otherPartner })}
+                              </span>
+                            )}
+                          </div>
                         </label>
                       </li>
                     );
