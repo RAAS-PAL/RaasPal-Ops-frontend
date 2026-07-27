@@ -66,6 +66,17 @@
     "deleteAria": "Delete {name}"
   },
   "robotsPanel": {
+    "syncTitle": "Telemetry sync",
+    "syncFrom": "From",
+    "syncTo": "To",
+    "syncAll": "Sync all robots",
+    "syncHint": "Pulls task reports from each robot's brand API into RAASPAL. Reports and the partner API only show data that has been synced. Re-syncing a range is safe — duplicates are skipped.",
+    "syncRunning": "Syncing the fleet — this can take a few minutes for many robots. Leave this tab open.",
+    "syncAllDone": "Synced {robots} robot(s): {saved} new report(s), {duplicates} already present, {failed} failed.",
+    "syncOneDone": "Synced {serial}: {saved} new report(s), {duplicates} already present.",
+    "syncOneTitle": "Sync this robot for the selected date range",
+    "syncOneAria": "Sync telemetry for {name}",
+    "syncError": "Telemetry sync failed",
     "searchPlaceholder": "Search by serial number, robot, or customer…",
     "registerRobot": "Register robot",
     "editRobot": "Edit robot",
