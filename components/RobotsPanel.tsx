@@ -112,6 +112,8 @@ export function RobotsPanel() {
   const [syncTo, setSyncTo] = useState(isoDate(0));
   /** '' = the whole fleet; otherwise sync only that partner's robots. */
   const [syncPartnerId, setSyncPartnerId] = useState('');
+  /** Re-read and overwrite reports already stored, instead of skipping them. */
+  const [syncRefresh, setSyncRefresh] = useState(false);
   /** Serial currently syncing on its own row, or null. */
   const [syncingSerial, setSyncingSerial] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -225,14 +227,16 @@ export function RobotsPanel() {
    */
   const syncAllMutation = useMutation({
     mutationFn: () =>
-      telemetryApi.syncAll(syncFrom, syncTo, syncPartnerId || undefined).then((r) => r.data),
+      telemetryApi
+        .syncAll(syncFrom, syncTo, syncPartnerId || undefined, syncRefresh)
+        .then((r) => r.data),
     onMutate: () => setSyncError(null),
     onError: (e) => setSyncError(errorMessage(e, t('syncError'))),
   });
 
   const syncOneMutation = useMutation({
     mutationFn: (serialNumber: string) =>
-      telemetryApi.sync(serialNumber, syncFrom, syncTo).then((r) => r.data),
+      telemetryApi.sync(serialNumber, syncFrom, syncTo, syncRefresh).then((r) => r.data),
     onMutate: (serialNumber) => {
       setSyncError(null);
       setSyncingSerial(serialNumber);
@@ -457,7 +461,22 @@ export function RobotsPanel() {
           </Button>
         </div>
 
-        <p className="text-xs text-[var(--app-muted)]">{t('syncHint')}</p>
+        {/* Refresh re-reads reports already stored and overwrites them — needed
+            after a mapping fix, since a normal sync skips anything it has seen. */}
+        <label className="flex w-fit cursor-pointer items-center gap-2 text-xs text-[var(--app-text)]">
+          <input
+            type="checkbox"
+            checked={syncRefresh}
+            onChange={(e) => setSyncRefresh(e.target.checked)}
+            disabled={syncing}
+            className="h-4 w-4 accent-[var(--app-brand)]"
+          />
+          {t('syncRefresh')}
+        </label>
+
+        <p className="text-xs text-[var(--app-muted)]">
+          {syncRefresh ? t('syncRefreshHint') : t('syncHint')}
+        </p>
 
         {syncAllMutation.isPending && (
           <p className="flex items-center gap-2 text-xs text-[var(--app-muted)]">
@@ -471,6 +490,7 @@ export function RobotsPanel() {
             {t('syncAllDone', {
               robots: syncAllMutation.data.data.robotsSynced,
               saved: syncAllMutation.data.data.saved,
+              updated: syncAllMutation.data.data.updated,
               duplicates: syncAllMutation.data.data.duplicatesSkipped,
               failed: syncAllMutation.data.data.robotsFailed,
             })}
@@ -483,6 +503,7 @@ export function RobotsPanel() {
             {t('syncOneDone', {
               serial: syncOneMutation.data.data.serialNumber,
               saved: syncOneMutation.data.data.saved,
+              updated: syncOneMutation.data.data.updated,
               duplicates: syncOneMutation.data.data.skipped,
             })}
           </p>

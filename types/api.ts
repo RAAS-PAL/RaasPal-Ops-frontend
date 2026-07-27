@@ -518,6 +518,8 @@ export interface CreateApiKeyRequest {
 export interface TelemetrySyncResult {
   serialNumber: string;
   saved: number;
+  /** Existing rows re-read and overwritten (refresh mode only). */
+  updated: number;
   skipped: number;
 }
 
@@ -529,6 +531,8 @@ export interface TelemetrySyncSummary {
   robotsSkipped: number;
   robotsFailed: number;
   saved: number;
+  /** Existing rows re-read and overwritten (refresh mode only). */
+  updated: number;
   duplicatesSkipped: number;
   durationMs: number;
 }
