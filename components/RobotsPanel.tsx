@@ -225,12 +225,25 @@ export function RobotsPanel() {
    * the partner API read what has been synced, so this is how fresh data appears.
    * Idempotent — re-syncing a range never duplicates rows.
    */
+  /**
+   * The fleet sync runs in the background on the server (looping dozens of robots'
+   * brand APIs outlasts any browser request), so starting it returns immediately
+   * and progress comes from polling.
+   */
+  const { data: syncStatus } = useQuery({
+    queryKey: ['telemetry-sync-status'],
+    queryFn: () => telemetryApi.syncStatus().then((r) => r.data.data),
+    refetchInterval: (query) => (query.state.data?.running ? 3000 : false),
+    refetchOnWindowFocus: true,
+  });
+
   const syncAllMutation = useMutation({
     mutationFn: () =>
       telemetryApi
         .syncAll(syncFrom, syncTo, syncPartnerId || undefined, syncRefresh)
         .then((r) => r.data),
     onMutate: () => setSyncError(null),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['telemetry-sync-status'] }),
     onError: (e) => setSyncError(errorMessage(e, t('syncError'))),
   });
 
@@ -245,7 +258,10 @@ export function RobotsPanel() {
     onSettled: () => setSyncingSerial(null),
   });
 
-  const syncing = syncAllMutation.isPending || syncOneMutation.isPending;
+  // A background fleet sync counts as "syncing" too — the server rejects a
+  // second concurrent run, so the controls stay disabled until it finishes.
+  const syncing =
+    syncAllMutation.isPending || syncOneMutation.isPending || Boolean(syncStatus?.running);
 
   function openAdd() {
     setEditing(null);
@@ -454,7 +470,7 @@ export function RobotsPanel() {
             disabled={syncing}
             className="bg-[var(--app-brand)] text-white hover:opacity-90 disabled:opacity-50"
           >
-            {syncAllMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             {syncPartnerId
               ? t('syncPartner', { partner: partners.find((p) => p.id === syncPartnerId)?.name ?? '' })
               : t('syncAll')}
@@ -478,21 +494,36 @@ export function RobotsPanel() {
           {syncRefresh ? t('syncRefreshHint') : t('syncHint')}
         </p>
 
-        {syncAllMutation.isPending && (
-          <p className="flex items-center gap-2 text-xs text-[var(--app-muted)]">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t('syncRunning')}
-          </p>
+        {/* Progress comes from polling, so it survives a page reload and keeps
+            reporting even though the start request already returned. */}
+        {syncStatus?.running && (
+          <div className="space-y-1.5">
+            <p className="flex items-center gap-2 text-xs text-[var(--app-muted)]">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {syncStatus.total > 0
+                ? t('syncProgress', { done: syncStatus.processed, total: syncStatus.total })
+                : t('syncRunning')}
+            </p>
+            {syncStatus.total > 0 && (
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--app-panel-alt)]">
+                <div
+                  className="h-full rounded-full bg-[var(--app-brand)] transition-all"
+                  style={{ width: `${Math.round((syncStatus.processed / syncStatus.total) * 100)}%` }}
+                />
+              </div>
+            )}
+          </div>
         )}
 
-        {syncAllMutation.isSuccess && syncAllMutation.data?.data && (
+        {!syncStatus?.running && syncStatus?.lastSummary && (
           <p className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
             {t('syncAllDone', {
-              robots: syncAllMutation.data.data.robotsSynced,
-              saved: syncAllMutation.data.data.saved,
-              updated: syncAllMutation.data.data.updated,
-              duplicates: syncAllMutation.data.data.duplicatesSkipped,
-              failed: syncAllMutation.data.data.robotsFailed,
+              robots: syncStatus.lastSummary.robotsSynced,
+              saved: syncStatus.lastSummary.saved,
+              updated: syncStatus.lastSummary.updated,
+              duplicates: syncStatus.lastSummary.duplicatesSkipped,
+              failed: syncStatus.lastSummary.robotsFailed,
             })}
           </p>
         )}
