@@ -24,7 +24,7 @@ import {
   Search,
   Trash2,
 } from 'lucide-react';
-import { customerApi, robotUnitApi, telemetryApi } from '@/lib/api';
+import { customerApi, partnerApi, robotUnitApi, telemetryApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import type {
   CustomerResponse,
@@ -110,6 +110,8 @@ export function RobotsPanel() {
   /* Telemetry sync range — defaults to the last 7 days. */
   const [syncFrom, setSyncFrom] = useState(isoDate(7));
   const [syncTo, setSyncTo] = useState(isoDate(0));
+  /** '' = the whole fleet; otherwise sync only that partner's robots. */
+  const [syncPartnerId, setSyncPartnerId] = useState('');
   /** Serial currently syncing on its own row, or null. */
   const [syncingSerial, setSyncingSerial] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -124,6 +126,12 @@ export function RobotsPanel() {
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
     queryFn: () => customerApi.list().then((r) => r.data.data ?? []),
+  });
+
+  const { data: partners = [] } = useQuery({
+    queryKey: ['partners'],
+    queryFn: () => partnerApi.list().then((r) => r.data.data ?? []),
+    staleTime: 60_000,
   });
 
   const filtered = useMemo(() => {
@@ -216,7 +224,8 @@ export function RobotsPanel() {
    * Idempotent — re-syncing a range never duplicates rows.
    */
   const syncAllMutation = useMutation({
-    mutationFn: () => telemetryApi.syncAll(syncFrom, syncTo).then((r) => r.data),
+    mutationFn: () =>
+      telemetryApi.syncAll(syncFrom, syncTo, syncPartnerId || undefined).then((r) => r.data),
     onMutate: () => setSyncError(null),
     onError: (e) => setSyncError(errorMessage(e, t('syncError'))),
   });
@@ -420,6 +429,21 @@ export function RobotsPanel() {
               className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-2 text-xs text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
             />
           </label>
+          {/* Scope: the whole fleet, or just one partner's robots — the useful
+              unit when onboarding or refreshing a single distributor. */}
+          <label className="flex items-center gap-1.5 text-xs text-[var(--app-muted)]">
+            {t('syncScope')}
+            <select
+              value={syncPartnerId}
+              onChange={(e) => setSyncPartnerId(e.target.value)}
+              className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-2 text-xs text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
+            >
+              <option value="">{t('syncScopeAll')}</option>
+              {partners.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </label>
           <Button
             type="button"
             onClick={() => syncAllMutation.mutate()}
@@ -427,7 +451,9 @@ export function RobotsPanel() {
             className="bg-[var(--app-brand)] text-white hover:opacity-90 disabled:opacity-50"
           >
             {syncAllMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            {t('syncAll')}
+            {syncPartnerId
+              ? t('syncPartner', { partner: partners.find((p) => p.id === syncPartnerId)?.name ?? '' })
+              : t('syncAll')}
           </Button>
         </div>
 

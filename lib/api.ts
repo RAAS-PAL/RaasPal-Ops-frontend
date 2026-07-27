@@ -450,15 +450,16 @@ export const telemetryApi = {
     ),
 
   /**
-   * Sync EVERY actively deployed robot for [from, to]. Runs inline on the server
-   * and loops the whole fleet, so it can take minutes — hence the long timeout
-   * and skipRetry (a timeout means "still working", and retrying would start a
-   * second concurrent sync). Idempotent: re-running a range never duplicates rows.
+   * Sync actively deployed robots for [from, to] — the whole fleet, or just one
+   * partner's robots when `partnerId` is given. Runs inline on the server and
+   * loops every robot, so it can take minutes — hence the long timeout and
+   * skipRetry (a timeout means "still working", and retrying would start a second
+   * concurrent sync). Idempotent: re-running a range never duplicates rows.
    */
-  syncAll: (from: string, to: string) =>
+  syncAll: (from: string, to: string, partnerId?: string) =>
     api.post<ApiResponse<TelemetrySyncSummary>>(
       '/api/v1/telemetry/sync-all',
       null,
-      { params: { from, to }, timeout: 600_000, skipRetry: true },
+      { params: { from, to, partnerId: partnerId || undefined }, timeout: 600_000, skipRetry: true },
     ),
 };
