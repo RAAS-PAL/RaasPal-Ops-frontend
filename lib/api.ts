@@ -102,7 +102,7 @@ import type {
   ReportCadence,
   ReportSend,
   TelemetrySyncResult,
-  TelemetrySyncSummary,
+  TelemetrySyncStatus,
   TestStatus,
   TranslationResponse,
   UserResponse,
@@ -451,20 +451,20 @@ export const telemetryApi = {
     ),
 
   /**
-   * Sync actively deployed robots for [from, to] — the whole fleet, or just one
-   * partner's robots when `partnerId` is given. Runs inline on the server and
-   * loops every robot, so it can take minutes — hence the long timeout and
-   * skipRetry (a timeout means "still working", and retrying would start a second
-   * concurrent sync). Idempotent: re-running a range never duplicates rows.
+   * Start a fleet sync for [from, to] — the whole fleet, or just one partner's
+   * robots when `partnerId` is given. Returns immediately: the run happens in the
+   * background on the server because looping a large fleet's brand APIs takes
+   * minutes, far longer than a browser will wait. Poll `syncStatus` for progress.
+   * Idempotent: re-running a range never duplicates rows.
    */
   syncAll: (from: string, to: string, partnerId?: string, refresh = false) =>
-    api.post<ApiResponse<TelemetrySyncSummary>>(
+    api.post<ApiResponse<TelemetrySyncStatus>>(
       '/api/v1/telemetry/sync-all',
       null,
-      {
-        params: { from, to, partnerId: partnerId || undefined, refresh },
-        timeout: 600_000,
-        skipRetry: true,
-      },
+      { params: { from, to, partnerId: partnerId || undefined, refresh }, skipRetry: true },
     ),
+
+  /** Progress of the running sync, or the outcome of the last finished one. */
+  syncStatus: () =>
+    api.get<ApiResponse<TelemetrySyncStatus>>('/api/v1/telemetry/sync-status'),
 };

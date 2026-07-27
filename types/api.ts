@@ -523,6 +523,14 @@ export interface TelemetrySyncResult {
   skipped: number;
 }
 
+/** Live progress of a background fleet sync, plus the last finished summary. */
+export interface TelemetrySyncStatus {
+  running: boolean;
+  processed: number;
+  total: number;
+  lastSummary: TelemetrySyncSummary | null;
+}
+
 /** Aggregate outcome of a fleet-wide sync run. */
 export interface TelemetrySyncSummary {
   from: string;
