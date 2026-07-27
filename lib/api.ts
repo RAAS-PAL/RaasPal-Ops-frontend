@@ -101,6 +101,7 @@ import type {
   UpdateRobotRequest,
   ReportCadence,
   ReportSend,
+  TelemetrySyncSummary,
   TestStatus,
   TranslationResponse,
   UserResponse,
@@ -446,5 +447,18 @@ export const telemetryApi = {
       `/api/v1/telemetry/sync/${encodeURIComponent(serialNumber)}`,
       null,
       { params: { from, to }, timeout: 180_000, skipRetry: true },
+    ),
+
+  /**
+   * Sync EVERY actively deployed robot for [from, to]. Runs inline on the server
+   * and loops the whole fleet, so it can take minutes — hence the long timeout
+   * and skipRetry (a timeout means "still working", and retrying would start a
+   * second concurrent sync). Idempotent: re-running a range never duplicates rows.
+   */
+  syncAll: (from: string, to: string) =>
+    api.post<ApiResponse<TelemetrySyncSummary>>(
+      '/api/v1/telemetry/sync-all',
+      null,
+      { params: { from, to }, timeout: 600_000, skipRetry: true },
     ),
 };

@@ -512,6 +512,27 @@ export interface CreateApiKeyRequest {
   expiresInDays?: number | null;
 }
 
+/* ─── Telemetry sync ──────────────────────────────────────────────────────── */
+
+/** Result of syncing one robot from its brand API. */
+export interface TelemetrySyncResult {
+  serialNumber: string;
+  saved: number;
+  skipped: number;
+}
+
+/** Aggregate outcome of a fleet-wide sync run. */
+export interface TelemetrySyncSummary {
+  from: string;
+  to: string;
+  robotsSynced: number;
+  robotsSkipped: number;
+  robotsFailed: number;
+  saved: number;
+  duplicatesSkipped: number;
+  durationMs: number;
+}
+
 // Automated report delivery history (report_sends)
 export type ReportSendStatus = 'SENT' | 'FAILED' | 'SKIPPED';
 

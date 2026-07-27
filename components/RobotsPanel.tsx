@@ -15,14 +15,16 @@ import {
   Bot,
   Building2,
   CalendarCheck,
+  CheckCircle2,
   Loader2,
   MapPin,
   Pencil,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
 } from 'lucide-react';
-import { customerApi, robotUnitApi } from '@/lib/api';
+import { customerApi, robotUnitApi, telemetryApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import type {
   CustomerResponse,
@@ -63,6 +65,13 @@ const inputClass =
 
 const PAGE_SIZE = 10;
 
+/** "YYYY-MM-DD" for a date offset from today — the sync range inputs. */
+function isoDate(daysAgo = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toISOString().slice(0, 10);
+}
+
 const EMPTY_FORM: RegisterRobotRequest = {
   serialNumber: '',
   brand: 'GAUSIUM',
@@ -98,6 +107,12 @@ export function RobotsPanel() {
   const [editing, setEditing] = useState<RobotUnitResponse | null>(null);
   const [form, setForm] = useState<RegisterRobotRequest>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
+  /* Telemetry sync range — defaults to the last 7 days. */
+  const [syncFrom, setSyncFrom] = useState(isoDate(7));
+  const [syncTo, setSyncTo] = useState(isoDate(0));
+  /** Serial currently syncing on its own row, or null. */
+  const [syncingSerial, setSyncingSerial] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   const cadenceLabel = (c: ReportCadence) => t(CADENCE_KEY[c]);
 
@@ -194,6 +209,30 @@ export function RobotsPanel() {
     mutationFn: (deploymentId: string) => robotUnitApi.deactivate(deploymentId).then((r) => r.data),
     onSuccess: refresh,
   });
+
+  /**
+   * Pull task reports from each robot's brand API into our database. Reports and
+   * the partner API read what has been synced, so this is how fresh data appears.
+   * Idempotent — re-syncing a range never duplicates rows.
+   */
+  const syncAllMutation = useMutation({
+    mutationFn: () => telemetryApi.syncAll(syncFrom, syncTo).then((r) => r.data),
+    onMutate: () => setSyncError(null),
+    onError: (e) => setSyncError(errorMessage(e, t('syncError'))),
+  });
+
+  const syncOneMutation = useMutation({
+    mutationFn: (serialNumber: string) =>
+      telemetryApi.sync(serialNumber, syncFrom, syncTo).then((r) => r.data),
+    onMutate: (serialNumber) => {
+      setSyncError(null);
+      setSyncingSerial(serialNumber);
+    },
+    onError: (e) => setSyncError(errorMessage(e, t('syncError'))),
+    onSettled: () => setSyncingSerial(null),
+  });
+
+  const syncing = syncAllMutation.isPending || syncOneMutation.isPending;
 
   function openAdd() {
     setEditing(null);
@@ -352,6 +391,84 @@ export function RobotsPanel() {
         </div>
       </div>
 
+      {/* Telemetry sync: pulls task reports from the brand APIs into our database.
+          Reports and the partner API only ever show what has been synced. */}
+      <div className="space-y-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
+            <RefreshCw className="h-4 w-4 text-[var(--app-brand-dark)]" />
+            {t('syncTitle')}
+          </span>
+          <label className="flex items-center gap-1.5 text-xs text-[var(--app-muted)]">
+            {t('syncFrom')}
+            <input
+              type="date"
+              value={syncFrom}
+              max={syncTo}
+              onChange={(e) => setSyncFrom(e.target.value)}
+              className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-2 text-xs text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
+            />
+          </label>
+          <label className="flex items-center gap-1.5 text-xs text-[var(--app-muted)]">
+            {t('syncTo')}
+            <input
+              type="date"
+              value={syncTo}
+              min={syncFrom}
+              max={isoDate(0)}
+              onChange={(e) => setSyncTo(e.target.value)}
+              className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-2 text-xs text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
+            />
+          </label>
+          <Button
+            type="button"
+            onClick={() => syncAllMutation.mutate()}
+            disabled={syncing}
+            className="bg-[var(--app-brand)] text-white hover:opacity-90 disabled:opacity-50"
+          >
+            {syncAllMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {t('syncAll')}
+          </Button>
+        </div>
+
+        <p className="text-xs text-[var(--app-muted)]">{t('syncHint')}</p>
+
+        {syncAllMutation.isPending && (
+          <p className="flex items-center gap-2 text-xs text-[var(--app-muted)]">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t('syncRunning')}
+          </p>
+        )}
+
+        {syncAllMutation.isSuccess && syncAllMutation.data?.data && (
+          <p className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            {t('syncAllDone', {
+              robots: syncAllMutation.data.data.robotsSynced,
+              saved: syncAllMutation.data.data.saved,
+              duplicates: syncAllMutation.data.data.duplicatesSkipped,
+              failed: syncAllMutation.data.data.robotsFailed,
+            })}
+          </p>
+        )}
+
+        {syncOneMutation.isSuccess && syncOneMutation.data?.data && (
+          <p className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            {t('syncOneDone', {
+              serial: syncOneMutation.data.data.serialNumber,
+              saved: syncOneMutation.data.data.saved,
+              duplicates: syncOneMutation.data.data.skipped,
+            })}
+          </p>
+        )}
+
+        {syncError && (
+          <p className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
+            <AlertTriangle className="h-4 w-4 shrink-0" /> {syncError}
+          </p>
+        )}
+      </div>
+
       {/* Selection toolbar: select all + bulk cadence for the selection */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] px-4 py-2.5">
         <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--app-text)]">
@@ -453,6 +570,20 @@ export function RobotsPanel() {
 
             {r.deployment ? (
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => syncOneMutation.mutate(r.serialNumber)}
+                  disabled={syncing}
+                  title={t('syncOneTitle')}
+                  aria-label={t('syncOneAria', { name: robotDisplayName(r) })}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--app-border)] text-[var(--app-muted)] transition hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)] disabled:opacity-50"
+                >
+                  {syncingSerial === r.serialNumber ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                </button>
                 <button
                   type="button"
                   onClick={() => openEdit(r)}
