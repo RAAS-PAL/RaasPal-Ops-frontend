@@ -101,6 +101,7 @@ import type {
   UpdateRobotRequest,
   ReportCadence,
   ReportSend,
+  TelemetrySyncResult,
   TelemetrySyncSummary,
   TestStatus,
   TranslationResponse,
@@ -442,23 +443,28 @@ export const telemetryApi = {
    * one, and skips the automatic retry (a timeout here means "still working," not
    * a flaky network blip; retrying would just fire a second concurrent sync).
    */
-  sync: (serialNumber: string, from: string, to: string) =>
-    api.post<ApiResponse<{ serialNumber: string; saved: number; skipped: number }>>(
+  sync: (serialNumber: string, from: string, to: string, refresh = false) =>
+    api.post<ApiResponse<TelemetrySyncResult>>(
       `/api/v1/telemetry/sync/${encodeURIComponent(serialNumber)}`,
       null,
-      { params: { from, to }, timeout: 180_000, skipRetry: true },
+      { params: { from, to, refresh }, timeout: 180_000, skipRetry: true },
     ),
 
   /**
-   * Sync EVERY actively deployed robot for [from, to]. Runs inline on the server
-   * and loops the whole fleet, so it can take minutes — hence the long timeout
-   * and skipRetry (a timeout means "still working", and retrying would start a
-   * second concurrent sync). Idempotent: re-running a range never duplicates rows.
+   * Sync actively deployed robots for [from, to] — the whole fleet, or just one
+   * partner's robots when `partnerId` is given. Runs inline on the server and
+   * loops every robot, so it can take minutes — hence the long timeout and
+   * skipRetry (a timeout means "still working", and retrying would start a second
+   * concurrent sync). Idempotent: re-running a range never duplicates rows.
    */
-  syncAll: (from: string, to: string) =>
+  syncAll: (from: string, to: string, partnerId?: string, refresh = false) =>
     api.post<ApiResponse<TelemetrySyncSummary>>(
       '/api/v1/telemetry/sync-all',
       null,
-      { params: { from, to }, timeout: 600_000, skipRetry: true },
+      {
+        params: { from, to, partnerId: partnerId || undefined, refresh },
+        timeout: 600_000,
+        skipRetry: true,
+      },
     ),
 };
