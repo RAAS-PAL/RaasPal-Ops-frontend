@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Integration guide for the RAASPAL Partner API: authentication, endpoints, field reference and error handling.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/raas-pal-logo.png">
+<style>html{-webkit-text-size-adjust:100%}body{margin:0}img{max-width:100%}</style>
+<title>RAASPAL Partner API — Integration Guide</title>
+
+<style>
+  :root {
+    --paper:   #f6f8fa;
+    --card:    #ffffff;
+    --ink:     #111a21;
+    --muted:   #5b6b78;
+    --rule:    #dde5eb;
+    --rule-sq: #eef3f7;
+    --accent:  #0d7d8a;
+    --accent-soft: #e4f4f6;
+    --ok:      #1a7f4b;
+    --ok-soft: #e6f5ec;
+    --warn:    #8a5a00;
+    --warn-soft:#fdf1dc;
+    --err:     #b42318;
+    --err-soft:#fdeceb;
+
+    --measure: 68ch;
+    --s1: 0.5rem; --s2: 0.875rem; --s3: 1.5rem; --s4: 2.5rem; --s5: 4rem;
+
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:   #0c1116;
+      --card:    #131b22;
+      --ink:     #e6edf3;
+      --muted:   #8b9aa7;
+      --rule:    #22303b;
+      --rule-sq: #1a242d;
+      --accent:  #3fd3e0;
+      --accent-soft: #0e2a2f;
+      --ok:      #4ade80;
+      --ok-soft: #0e2418;
+      --warn:    #fbbf24;
+      --warn-soft:#2a1f06;
+      --err:     #f87171;
+      --err-soft:#2c1210;
+    }
+  }
+
+  /* The viewer's toggle must win over the OS preference in both directions. */
+  :root[data-theme="dark"] {
+    --paper:#0c1116; --card:#131b22; --ink:#e6edf3; --muted:#8b9aa7;
+    --rule:#22303b; --rule-sq:#1a242d; --accent:#3fd3e0; --accent-soft:#0e2a2f;
+    --ok:#4ade80; --ok-soft:#0e2418; --warn:#fbbf24; --warn-soft:#2a1f06;
+    --err:#f87171; --err-soft:#2c1210;
+  }
+  :root[data-theme="light"] {
+    --paper:#f6f8fa; --card:#ffffff; --ink:#111a21; --muted:#5b6b78;
+    --rule:#dde5eb; --rule-sq:#eef3f7; --accent:#0d7d8a; --accent-soft:#e4f4f6;
+    --ok:#1a7f4b; --ok-soft:#e6f5ec; --warn:#8a5a00; --warn-soft:#fdf1dc;
+    --err:#b42318; --err-soft:#fdeceb;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: var(--s5) var(--s3) var(--s5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s5);
+  }
+
+  p, li { max-width: var(--measure); }
+
+  /* ── Masthead ─────────────────────────────────────────────── */
+  .masthead { display: flex; flex-direction: column; gap: var(--s2); }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0;
+  }
+
+  h1 {
+    font-size: clamp(1.9rem, 4.5vw, 2.9rem);
+    line-height: 1.1;
+    letter-spacing: -0.022em;
+    font-weight: 660;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  .standfirst { font-size: 1.075rem; color: var(--muted); margin: 0; }
+
+  .meta {
+    display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3);
+    font-family: var(--mono); font-size: 0.76rem; color: var(--muted);
+    border-top: 1px solid var(--rule);
+    padding-top: var(--s2);
+  }
+  .meta b { color: var(--ink); font-weight: 600; }
+
+  /* ── Sections ─────────────────────────────────────────────── */
+  section { display: flex; flex-direction: column; gap: var(--s3); }
+
+  h2 {
+    font-size: 1.32rem; letter-spacing: -0.012em; font-weight: 640;
+    margin: 0; padding-bottom: var(--s1);
+    border-bottom: 1px solid var(--rule);
+  }
+  h3 { font-size: 1rem; font-weight: 640; margin: 0; letter-spacing: -0.005em; }
+
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px;
+  }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--rule-sq);
+    padding: 0.12em 0.36em;
+    border-radius: 3px;
+  }
+
+  /* ── Endpoint blocks ──────────────────────────────────────── */
+  .endpoint {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: var(--s3);
+    display: flex; flex-direction: column; gap: var(--s2);
+  }
+
+  .endpoint-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s2); }
+
+  .step {
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 700;
+    color: var(--accent); letter-spacing: 0.08em;
+  }
+
+  .verb {
+    font-family: var(--mono); font-size: 0.7rem; font-weight: 700;
+    letter-spacing: 0.09em;
+    color: var(--ok); background: var(--ok-soft);
+    border: 1px solid color-mix(in srgb, var(--ok) 26%, transparent);
+    padding: 0.14rem 0.44rem; border-radius: 3px;
+  }
+
+  .path {
+    font-family: var(--mono); font-size: 0.95rem; font-weight: 600;
+    word-break: break-all;
+  }
+
+  /* ── Code + tables scroll inside their own box ────────────── */
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  pre {
+    font-family: var(--mono); font-size: 0.8rem; line-height: 1.6;
+    background: var(--rule-sq);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: var(--s2);
+    margin: 0;
+    overflow-x: auto;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  table {
+    border-collapse: collapse; width: 100%; min-width: 34rem;
+    font-size: 0.86rem; font-variant-numeric: tabular-nums;
+  }
+  th, td {
+    text-align: left; padding: 0.5rem 0.85rem 0.5rem 0;
+    border-bottom: 1px solid var(--rule); vertical-align: top;
+  }
+  th {
+    font-family: var(--mono); font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.09em; color: var(--muted); font-weight: 600;
+    border-bottom-color: var(--ink);
+  }
+  td:first-child { font-family: var(--mono); font-size: 0.82rem; white-space: nowrap; }
+  td.wrap-ok { font-family: var(--sans); white-space: normal; }
+
+  .status { font-family: var(--mono); font-weight: 700; white-space: nowrap; }
+  .s-401, .s-404 { color: var(--err); }
+  .s-400 { color: var(--warn); }
+  .s-429 { color: var(--warn); }
+  .s-200 { color: var(--ok); }
+
+  /* ── Callout ──────────────────────────────────────────────── */
+  .note {
+    background: var(--accent-soft);
+    border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+    border-radius: 5px;
+    padding: var(--s2) var(--s3);
+    display: flex; flex-direction: column; gap: var(--s1);
+  }
+  .note p { max-width: none; margin: 0; }
+  .note .eyebrow { color: var(--accent); }
+
+  .contents {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: var(--s1) var(--s3);
+    list-style: none; padding: 0; margin: 0;
+    font-family: var(--mono); font-size: 0.82rem;
+  }
+  .contents li { max-width: none; }
+
+  dl.fields { margin: 0; display: grid; gap: var(--s1); }
+  dl.fields div { display: flex; flex-wrap: wrap; gap: var(--s1); align-items: baseline; }
+  dl.fields dt { font-family: var(--mono); font-size: 0.82rem; font-weight: 600; }
+  dl.fields dd { margin: 0; color: var(--muted); font-size: 0.9rem; }
+  dl.fields dd ul { margin: 0.4rem 0 0; padding-left: 0; list-style: none; display: grid; gap: 0.2rem; }
+  dl.fields dd ul code { margin-right: 0.35rem; }
+
+  footer {
+    border-top: 1px solid var(--rule); padding-top: var(--s3);
+    font-size: 0.86rem; color: var(--muted);
+  }
+
+  @media (max-width: 40rem) {
+    .wrap { padding: var(--s4) var(--s2) var(--s4); gap: var(--s4); }
+  }
+
+  @media print {
+    body { background: #fff; color: #000; }
+    .wrap { max-width: none; padding: 0; gap: 2rem; }
+    .endpoint { break-inside: avoid; border-color: #ccc; }
+    pre { background: #f4f4f4; border-color: #ddd; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">RAASPAL · Partner Integration</p>
+    <h1>Partner API for robot cleaning data</h1>
+    <p class="standfirst">
+      A read-only HTTP API for retrieving cleaning task reports from the robots you service.
+      Authenticate with an API key, list your robots, then pull their task history by date.
+    </p>
+    <div class="meta">
+      <span><b>Version</b> v1</span>
+      <span><b>Format</b> JSON over HTTPS</span>
+      <span><b>Access</b> Read-only</span>
+      <span><b>Audience</b> PCS engineering</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Before you start</h2>
+    <p>
+      RAASPAL issues you a secret API key. It looks like <code>pk_</code> followed by a long random
+      string, and it is shown only once when it is created — store it somewhere safe, such as your
+      server's environment configuration. If it is ever lost or exposed, ask RAASPAL to revoke it and
+      issue a new one.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Item</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Base URL</td>
+            <td class="wrap-ok"><code>https://ai-robotrecommendationsystem-backend.onrender.com</code></td>
+          </tr>
+          <tr>
+            <td>Auth header</td>
+            <td class="wrap-ok"><code>X-API-Key: pk_&lt;your key&gt;</code></td>
+          </tr>
+          <tr>
+            <td>Rate limit</td>
+            <td class="wrap-ok">120 requests per minute, per key</td>
+          </tr>
+          <tr>
+            <td>Content type</td>
+            <td class="wrap-ok"><code>application/json</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Every request carries the key in the <code>X-API-Key</code> header. There is no login step,
+      no token exchange, and no expiry to manage unless RAASPAL issues you a time-limited key.
+    </p>
+
+    <h3>Checking your key</h3>
+    <p>
+      <code>GET /api/partner/v1/me</code> confirms a key is valid and names the account it belongs
+      to. You do not need it to integrate — it is there so you can test a new key, or work out
+      whether a problem is your key or your data.
+    </p>
+
+    <div class="scroll">
+<pre><code>curl -H "X-API-Key: pk_your_key_here" \
+  "https://ai-robotrecommendationsystem-backend.onrender.com/api/partner/v1/me"</code></pre>
+    </div>
+
+    <div class="scroll">
+<pre><code>{
+  "success": true,
+  "data": {
+    "partnerId": "8f21c0d4-3b7a-4e19-9f42-6c8a1d5e77b3",
+    "partnerName": "PCS",
+    "apiKeyId": "1c9e5a72-40bd-4f86-b0d1-2e4437a9c810"
+  },
+  "timestamp": "2026-07-27T05:07:49.615530267"
+}</code></pre>
+    </div>
+
+    <p>
+      A <code>200</code> means the key works. If this succeeds but <b>List your robots</b> comes back
+      empty, your key is fine and no robots have been assigned to your account yet — contact RAASPAL
+      rather than assuming an integration fault.
+    </p>
+
+    <div class="note">
+      <p class="eyebrow">How current is the data</p>
+      <p>
+        These endpoints return data RAASPAL has already collected from the robot manufacturer and
+        stored — they do not query the robot live. Task reports appear after RAASPAL's scheduled
+        sync has run, so a task finished minutes ago may not be available yet. Historical data does
+        not change once synced.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Endpoints</h2>
+    <p>Two endpoints, in the order you will use them.</p>
+    <ul class="contents">
+      <li><a href="#robots">01 — List your robots</a></li>
+      <li><a href="#reports">02 — Fetch task reports</a></li>
+    </ul>
+
+    <!-- 01 ─────────────────────────────────────────────────── -->
+    <article class="endpoint" id="robots">
+      <div class="endpoint-head">
+        <span class="step">01</span>
+        <span class="verb">GET</span>
+        <span class="path">/api/partner/v1/robots</span>
+      </div>
+      <p>
+        Every robot assigned to you, with the customer and site it is installed at. The
+        <code>serialNumber</code> is the identifier you pass to the task-reports endpoint — this is
+        how you discover which robots you can query.
+      </p>
+      <div class="scroll">
+<pre><code>{
+  "success": true,
+  "data": [
+    {
+      "serialNumber": "GS401-6220-W9R-K100",
+      "brand": "GAUSIUM",
+      "model": "Omnie",
+      "name": "Makro ST075 Thalang - Omnie",
+      "site": "makro ถลาง ภูเก็ต (Thalang, Phuket)",
+      "customerName": "PCS : Makro"
+    }
+  ],
+  "timestamp": "2026-07-27T05:07:49.615530267"
+}</code></pre>
+      </div>
+      <p>
+        If a robot you expect is missing, it has not been assigned to your account yet — contact
+        RAASPAL rather than querying it directly, as it will return <code>404</code>.
+      </p>
+    </article>
+
+    <!-- 02 ─────────────────────────────────────────────────── -->
+    <article class="endpoint" id="reports">
+      <div class="endpoint-head">
+        <span class="step">02</span>
+        <span class="verb">GET</span>
+        <span class="path">/api/partner/v1/robots/{serialNumber}/task-reports</span>
+      </div>
+      <p>
+        The cleaning task history for one of your robots, newest first. Results are paginated.
+      </p>
+
+      <h3>Query parameters</h3>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr><th>Parameter</th><th>Format</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>startTimeMin</td><td>YYYY-MM-DD</td>
+              <td class="wrap-ok">Earliest task start date, inclusive. Sent on its own, returns that single day.</td>
+            </tr>
+            <tr>
+              <td>startTimeMax</td><td>YYYY-MM-DD</td>
+              <td class="wrap-ok">Latest task start date, inclusive.</td>
+            </tr>
+            <tr>
+              <td>month</td><td>YYYY-MM</td>
+              <td class="wrap-ok">A whole calendar month. Ignored if <code>startTimeMin</code> or <code>startTimeMax</code> is present.</td>
+            </tr>
+            <tr>
+              <td>page</td><td>integer</td>
+              <td class="wrap-ok">Page number, starting at <code>0</code>. Default <code>0</code>.</td>
+            </tr>
+            <tr>
+              <td>size</td><td>integer</td>
+              <td class="wrap-ok">Results per page. Default <code>20</code>, maximum <code>100</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Dates are <b>dates only</b> — <code>2026-07-01</code>, not <code>2026-07-01 00:00:00</code>.
+        Sending a time returns <code>400</code> rather than silently narrowing your range.
+      </p>
+      <p>
+        The date you send is a <b>Thailand calendar day</b> (Asia/Bangkok), while the timestamps in
+        the response are <b>UTC</b>. So a task that ran at 04:00 on 25 July in Bangkok is matched by
+        <code>startTimeMin=2026-07-25</code>, and comes back with a start time of
+        <code>2026-07-24T21:00:17Z</code>. Both describe the same moment.
+      </p>
+
+      <div class="scroll">
+<pre><code>GET /api/partner/v1/robots/GS401-6220-69R-0100/task-reports
+      ?startTimeMin=2026-07-25&amp;startTimeMax=2026-07-25&amp;page=0&amp;size=20</code></pre>
+      </div>
+
+      <h3>Response</h3>
+      <p>
+        <code>data</code> holds one page of results. <code>totalElements</code> is the number of
+        matching tasks overall, and <code>totalPages</code> tells you how many requests it takes to
+        read them all.
+      </p>
+      <div class="scroll">
+<pre><code>{
+  "success": true,
+  "data": {
+    "content": [
+      {
+        "robotSerialNumber": "GS401-6220-69R-0100",
+        "externalTaskId": "b7c4e921-5a30-4f88-9d16-2c8b41ff7e05",
+        "brand": "GAUSIUM",
+        "cleaningPlan": "04.30น.",
+        "mapName": "OMNIE_PCS_MAKRO_สุราษฎร์ธานี",
+        "cleaningMode": "尘推",
+        "taskCompletionPct": 81.70,
+        "startTime": "2026-07-24T21:00:17Z",
+        "endTime": "2026-07-24T22:51:17Z",
+        "workingTimeSeconds": 5609,
+        "plannedAreaSqm": 1482.33,
+        "cleaningAreaSqm": 1211.06,
+        "workEfficiencySqmH": 777.32,
+        "waterConsumptionL": 0.00,
+        "startBatteryPct": 100,
+        "endBatteryPct": 81,
+        "brushResidualPct": 99.42,
+        "filterResidualPct": 99.87,
+        "suctionBladeResidualPct": 100.00,
+        "taskEndStatus": 0,
+        "operator": "user",
+        "reportMonth": "2026-07"
+      }
+    ],
+    "page": 0,
+    "size": 20,
+    "totalElements": 262,
+    "totalPages": 14,
+    "first": true,
+    "last": false,
+    "empty": false
+  },
+  "timestamp": "2026-07-27T05:07:49.615530267"
+}</code></pre>
+      </div>
+
+      <h3>Field reference</h3>
+      <dl class="fields">
+        <div><dt>externalTaskId</dt><dd>Unique id for the task, stable across requests — safe to use for deduplication.</dd></div>
+        <div><dt>cleaningPlan</dt><dd>Name of the cleaning plan the operator ran, as configured on the robot.</dd></div>
+        <div><dt>robotSerialNumber / brand</dt><dd>Echoed back so a page of results is self-describing.</dd></div>
+        <div><dt>mapName</dt><dd>The floor map the task ran on, as named on the robot. <code>null</code> for the occasional task where the manufacturer reports no map.</dd></div>
+        <div><dt>cleaningMode</dt><dd>Mode reported by the manufacturer, in the robot's own language.</dd></div>
+        <div><dt>taskCompletionPct</dt><dd>Percentage of the planned area actually covered.</dd></div>
+        <div><dt>startTime / endTime</dt><dd>ISO-8601 timestamps in <b>UTC</b> (the trailing <code>Z</code>). Gausium's own report pages show the same instants in the robot's local time, so a task shown there as 04:00 in Bangkok appears here as 21:00Z the previous day — add 7 hours to convert.</dd></div>
+        <div><dt>workingTimeSeconds</dt><dd>Time the robot was <b>actively working</b>, excluding pauses, docking and obstacle waits. This is normally <b>less than</b> <code>endTime − startTime</code> — use the timestamps for elapsed time and this field for productive time.</dd></div>
+        <div><dt>plannedAreaSqm / cleaningAreaSqm</dt><dd>Planned versus actual area cleaned, in square metres.</dd></div>
+        <div><dt>workEfficiencySqmH</dt><dd>Square metres cleaned per hour.</dd></div>
+        <div><dt>waterConsumptionL</dt><dd>Water used, in litres. Zero for dry cleaning modes.</dd></div>
+        <div><dt>startBatteryPct / endBatteryPct</dt><dd>Battery level at the start and end of the task.</dd></div>
+        <div><dt>brushResidualPct<br>filterResidualPct<br>suctionBladeResidualPct</dt><dd>Remaining life of each consumable — useful for planning maintenance visits.</dd></div>
+        <div><dt>taskEndStatus</dt><dd>
+          How the task ended, as reported by the robot:
+          <ul>
+            <li><code>0</code> Completed — the task ran to the end.</li>
+            <li><code>1</code> Manually terminated — an operator stopped it. Can happen at any point, including near completion, so a high <code>taskCompletionPct</code> with this status is normal.</li>
+            <li><code>2</code> Abnormal termination — the robot stopped early, e.g. a fault or a blocked route.</li>
+            <li><code>3</code> Startup failure — the task never began.</li>
+            <li><code>null</code> Treated as completed — a finished task that reported no explicit status.</li>
+          </ul>
+          RAASPAL applies this same mapping in the monthly performance reports sent to customers, so
+          the two always agree.
+        </dd></div>
+        <div><dt>operator</dt><dd>Account that started the task.</dd></div>
+        <div><dt>reportMonth</dt><dd>Calendar month the task is grouped under, as <code>YYYY-MM</code>.</dd></div>
+      </dl>
+    </article>
+  </section>
+
+  <section>
+    <h2>Responses and errors</h2>
+    <p>
+      Every response has the same envelope: a <code>success</code> flag, a <code>data</code> payload
+      on success or a <code>message</code> on failure, and a <code>timestamp</code>.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Status</th><th>Meaning</th><th>What to do</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="status s-200">200</td>
+            <td class="wrap-ok">Success.</td>
+            <td class="wrap-ok">Read <code>data</code>.</td>
+          </tr>
+          <tr>
+            <td class="status s-400">400</td>
+            <td class="wrap-ok">A parameter is malformed — usually a date with a time in it, or a month that is not <code>YYYY-MM</code>.</td>
+            <td class="wrap-ok">Read <code>message</code>; it names the parameter and the expected format.</td>
+          </tr>
+          <tr>
+            <td class="status s-401">401</td>
+            <td class="wrap-ok">The key is missing, incorrect, revoked, or expired.</td>
+            <td class="wrap-ok">Check the <code>X-API-Key</code> header. If it looks right, contact RAASPAL — the key may have been revoked.</td>
+          </tr>
+          <tr>
+            <td class="status s-404">404</td>
+            <td class="wrap-ok">That serial number is not one of your robots, or does not exist.</td>
+            <td class="wrap-ok">Confirm the serial against <code>/robots</code>.</td>
+          </tr>
+          <tr>
+            <td class="status s-429">429</td>
+            <td class="wrap-ok">You exceeded 120 requests in a minute.</td>
+            <td class="wrap-ok">Wait the number of seconds in the <code>Retry-After</code> header, then retry.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="scroll">
+<pre><code>{
+  "success": false,
+  "message": "No robot with serial number 'GS401-0000-0000' is available to this partner",
+  "timestamp": "2026-07-27T05:07:49.615530267"
+}</code></pre>
+    </div>
+
+    <h3>Staying within the rate limit</h3>
+    <p>
+      Successful responses include <code>X-RateLimit-Limit</code> and
+      <code>X-RateLimit-Remaining</code> so you can pace a large job rather than discovering the
+      limit by hitting it. Pulling a month of history for a large fleet is well within budget if you
+      request one robot at a time.
+    </p>
+  </section>
+
+  <section>
+    <h2>A worked example</h2>
+    <p>Pulling last month's cleaning data for your whole fleet:</p>
+    <ol>
+      <li>Call <code>/robots</code> once and keep the list of serial numbers.</li>
+      <li>
+        For each serial, call <code>/task-reports?month=2026-06&amp;size=100</code>.
+      </li>
+      <li>
+        If <code>totalPages</code> is greater than <code>1</code>, request the remaining pages with
+        <code>page=1</code>, <code>page=2</code>, and so on.
+      </li>
+      <li>
+        Store rows against <code>externalTaskId</code>. It never changes, so re-running the job will
+        not create duplicates.
+      </li>
+    </ol>
+  </section>
+
+  <footer>
+    <p>
+      Questions about access, a key that stopped working, or a robot missing from your list —
+      contact your RAASPAL representative. This document describes <b>v1</b> of the Partner API;
+      any breaking change will be announced before it takes effect.
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>
