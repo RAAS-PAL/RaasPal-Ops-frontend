@@ -508,8 +508,7 @@
         "brand": "GAUSIUM",
         "cleaningPlan": "04.30น.",
         "mapName": "OMNIE_PCS_MAKRO_สุราษฎร์ธานี",
-        "cleaningMode": "Dust Push",
-        "cleaningModeRaw": "尘推",
+        "cleaningMode": "Dust Mopping",
         "taskCompletionPct": 81.70,
         "startTime": "2026-07-24T21:00:17Z",
         "endTime": "2026-07-24T22:51:17Z",
@@ -548,18 +547,19 @@
         <div><dt>mapName</dt><dd>The floor map the task ran on, as named on the robot. <code>null</code> for the occasional task where the manufacturer reports no map.</dd></div>
         <div><dt>cleaningMode</dt><dd>
           The cleaning mode in English. The robots report this in Chinese, and inconsistently across
-          firmware versions, so RAASPAL normalises it to one of a fixed set:
+          firmware versions, so RAASPAL normalises it to one of a fixed set. <b>The English wording is
+          Gausium's own</b>, confirmed by them against every value present in the fleet:
           <ul>
-            <li><code>Floor Washing</code> · <code>Washing</code> · <code>Scrubbing</code> · <code>Wash &amp; Sweep</code></li>
-            <li><code>Dust Push</code> · <code>Mopping</code> · <code>Wet Mopping</code></li>
-            <li><code>Sweeping</code> · <code>Sweep &amp; Vacuum</code> · <code>Vacuuming</code> · <code>Water Suction</code></li>
-            <li><code>Light Cleaning</code> · <code>Medium Cleaning</code> · <code>Deep Cleaning</code></li>
-            <li><code>Patrol</code> — an inspection run, not a cleaning task</li>
+            <li><code>Scrubbing</code> · <code>Washing</code> · <code>Scrub &amp; Sweep</code></li>
+            <li><code>Dust Mopping</code> · <code>Mopping</code> · <code>Wet Mopping</code></li>
+            <li><code>Sweeping</code> · <code>Sweep &amp; Vacuum</code> · <code>Vacuuming</code> · <code>Water Sucking</code></li>
+            <li><code>Light Cleaning</code> · <code>Medium-Duty Cleaning</code> · <code>Heavy-Duty Cleaning</code></li>
+            <li><code>Patrol Inspection</code> — an inspection run, <b>not</b> a cleaning task</li>
           </ul>
           Safe to group and count on: one activity always yields one label, even where different robots
-          report it differently. An unrecognised mode reads as <code>Other</code>.
+          report it differently. An unrecognised mode reads as <code>Other</code>. The manufacturer's
+          untranslated value is not included in the response.
         </dd></div>
-        <div><dt>cleaningModeRaw</dt><dd>The manufacturer's own value, usually Chinese (e.g. <code>洗地</code>). Provided so a task can still be matched against Gausium's portal, which shows the untranslated term. Use <code>cleaningMode</code> for display.</dd></div>
         <div><dt>taskCompletionPct</dt><dd>Percentage of the planned area actually covered.</dd></div>
         <div><dt>startTime / endTime</dt><dd>ISO-8601 timestamps in <b>UTC</b> (the trailing <code>Z</code>). Gausium's own report pages show the same instants in the robot's local time, so a task shown there as 04:00 in Bangkok appears here as 21:00Z the previous day — add 7 hours to convert.</dd></div>
         <div><dt>workingTimeSeconds</dt><dd>Time the robot was <b>actively working</b>, excluding pauses, docking and obstacle waits. This is normally <b>less than</b> <code>endTime − startTime</code> — use the timestamps for elapsed time and this field for productive time.</dd></div>
