@@ -252,8 +252,6 @@
   }
 </style>
 
-</head>
-<body>
 <div class="wrap">
 
   <header class="masthead">
@@ -300,11 +298,12 @@
           </tr>
           <tr>
             <td>Token lifetime</td>
-            <td class="wrap-ok">1 hour</td>
+            <td class="wrap-ok">24 hours</td>
           </tr>
           <tr>
             <td>Rate limit</td>
-            <td class="wrap-ok">120 requests per minute</td>
+            <td class="wrap-ok">120 requests per minute for data endpoints, plus 20 per minute for
+              the token endpoint</td>
           </tr>
         </tbody>
       </table>
@@ -349,9 +348,10 @@
       <p class="eyebrow">Caching and refreshing</p>
       <p>
         <b>Do not request a new token for every call.</b> Cache it and reuse it until it expires —
-        roughly one exchange per hour. When a data request returns <code>401</code>, fetch a fresh
+        roughly one exchange per day. When a data request returns <code>401</code>, fetch a fresh
         token and retry that request once. That refresh-and-retry loop is the only token handling
-        your integration needs.
+        your integration needs. Read <code>expires_in</code> from the response rather than hard-coding
+        24 hours, so a future change to the lifetime does not break your client.
       </p>
     </div>
 
@@ -546,7 +546,19 @@
         <div><dt>cleaningPlan</dt><dd>Name of the cleaning plan the operator ran, as configured on the robot.</dd></div>
         <div><dt>robotSerialNumber / brand</dt><dd>Echoed back so a page of results is self-describing.</dd></div>
         <div><dt>mapName</dt><dd>The floor map the task ran on, as named on the robot. <code>null</code> for the occasional task where the manufacturer reports no map.</dd></div>
-        <div><dt>cleaningMode</dt><dd>The cleaning mode in English — e.g. <code>Floor Washing</code>, <code>Dust Push</code>. Translated by RAASPAL, since the robots report this in Chinese. An unrecognised mode reads as <code>Other</code>.</dd></div>
+        <div><dt>cleaningMode</dt><dd>
+          The cleaning mode in English. The robots report this in Chinese, and inconsistently across
+          firmware versions, so RAASPAL normalises it to one of a fixed set:
+          <ul>
+            <li><code>Floor Washing</code> · <code>Washing</code> · <code>Scrubbing</code> · <code>Wash &amp; Sweep</code></li>
+            <li><code>Dust Push</code> · <code>Mopping</code> · <code>Wet Mopping</code></li>
+            <li><code>Sweeping</code> · <code>Sweep &amp; Vacuum</code> · <code>Vacuuming</code> · <code>Water Suction</code></li>
+            <li><code>Light Cleaning</code> · <code>Medium Cleaning</code> · <code>Deep Cleaning</code></li>
+            <li><code>Patrol</code> — an inspection run, not a cleaning task</li>
+          </ul>
+          Safe to group and count on: one activity always yields one label, even where different robots
+          report it differently. An unrecognised mode reads as <code>Other</code>.
+        </dd></div>
         <div><dt>cleaningModeRaw</dt><dd>The manufacturer's own value, usually Chinese (e.g. <code>洗地</code>). Provided so a task can still be matched against Gausium's portal, which shows the untranslated term. Use <code>cleaningMode</code> for display.</dd></div>
         <div><dt>taskCompletionPct</dt><dd>Percentage of the planned area actually covered.</dd></div>
         <div><dt>startTime / endTime</dt><dd>ISO-8601 timestamps in <b>UTC</b> (the trailing <code>Z</code>). Gausium's own report pages show the same instants in the robot's local time, so a task shown there as 04:00 in Bangkok appears here as 21:00Z the previous day — add 7 hours to convert.</dd></div>
@@ -614,7 +626,8 @@
           </tr>
           <tr>
             <td class="status s-429">429</td>
-            <td class="wrap-ok">You exceeded 120 requests in a minute.</td>
+            <td class="wrap-ok">You exceeded 120 data requests in a minute — or 20 token requests,
+              which usually means the token is being fetched per call instead of reused.</td>
             <td class="wrap-ok">Wait the number of seconds in the <code>Retry-After</code> header, then retry.</td>
           </tr>
         </tbody>
@@ -636,6 +649,13 @@
       limit by hitting it. Pulling a month of history for a large fleet is well within budget if you
       request one robot at a time.
     </p>
+    <p>
+      The token endpoint has its own smaller budget of <b>20 requests per minute</b>, counted per IP
+      address rather than per client id, because a caller has no identity until the exchange
+      succeeds. Reusing a token for its full 24 hours needs one request a day, so this only bites a
+      client that exchanges credentials before every call — the usual cause of an unexpected 429 on
+      <code>/oauth/token</code>. Cache the <code>access_token</code> until it expires.
+    </p>
   </section>
 
   <section>
@@ -644,7 +664,7 @@
     <ol>
       <li>
         Exchange your credentials once at <code>/oauth/token</code> and keep the token. Reuse it for
-        the whole job — it lasts an hour, which is longer than the run will take.
+        the whole job — it lasts 24 hours, far longer than the run will take.
       </li>
       <li>Call <code>/robots</code> once and keep the list of serial numbers.</li>
       <li>
