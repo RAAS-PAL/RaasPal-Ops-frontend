@@ -473,6 +473,8 @@ export interface PartnerResponse {
 /** Metadata for one API key — never the secret (only the display prefix). */
 export interface ApiKeyResponse {
   id: string;
+  /** Public OAuth client identifier — safe to show, and re-readable later. */
+  clientId: string | null;
   keyPrefix: string;
   label: string | null;
   /** Live: active, not revoked, and not expired. */
@@ -487,9 +489,12 @@ export interface ApiKeyResponse {
   expiringSoon: boolean;
 }
 
-/** The one-time response when a key is minted — carries the plaintext apiKey. */
+/** The one-time response when a credential is minted — carries the plaintext secret. */
 export interface CreatedApiKeyResponse {
   id: string;
+  /** Public OAuth client identifier — pairs with apiKey at the token endpoint. */
+  clientId: string;
+  /** The client secret. Shown once and never recoverable. */
   apiKey: string;
   keyPrefix: string;
   label: string | null;
