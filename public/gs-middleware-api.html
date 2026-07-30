@@ -126,6 +126,17 @@
     border-bottom: 1px solid var(--rule);
   }
   h3 { font-size: 1rem; font-weight: 640; margin: 0; letter-spacing: -0.005em; }
+  /* Sub-headings within a section (the three token formats). Muted and smaller than
+     h3 so they read as alternatives under one heading, not as new topics. The section
+     flex gap supplies the spacing, hence margin: 0 as above. */
+  h4 {
+    font-size: 0.82rem; font-weight: 620; margin: 0;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  /* Binds a sub-heading to its own examples. Without this the section's uniform
+     1.5rem gap spaces a heading exactly as far from its code block as from the next
+     option's, and the grouping stops being readable. */
+  .opt { display: flex; flex-direction: column; gap: var(--s1); }
 
   a { color: var(--accent); text-underline-offset: 2px; }
   a:focus-visible, summary:focus-visible {
@@ -317,26 +328,101 @@
     </p>
 
     <h3>Getting a token</h3>
-    <div class="scroll">
+    <p>
+      Send the three fields below to <code>/oauth/token</code>. The endpoint accepts them in
+      <b>three</b> interchangeable formats — pick whichever your client makes easiest. All three return
+      exactly the same response.
+    </p>
+
+    <div class="opt">
+      <h4>Option 1 — JSON body</h4>
+      <p>The easiest option in Postman, and the one most HTTP libraries produce by default.</p>
+      <div class="scroll">
+<pre><code>POST /api/partner/v1/oauth/token
+Content-Type: application/json
+
+{
+  "grant_type": "client_credentials",
+  "client_id": "cid_your_client_id",
+  "client_secret": "pk_your_client_secret"
+}</code></pre>
+      </div>
+      <div class="scroll">
+<pre><code>curl -X POST "https://ai-robotrecommendationsystem-backend.onrender.com/api/partner/v1/oauth/token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "grant_type": "client_credentials",
+    "client_id": "cid_your_client_id",
+    "client_secret": "pk_your_client_secret"
+  }'</code></pre>
+      </div>
+    </div>
+
+    <div class="opt">
+      <h4>Option 2 — form-encoded body</h4>
+      <p>What the OAuth 2.0 specification defines, so off-the-shelf OAuth libraries use this.</p>
+      <div class="scroll">
+<pre><code>POST /api/partner/v1/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&amp;client_id=cid_your_client_id&amp;client_secret=pk_your_client_secret</code></pre>
+      </div>
+      <div class="scroll">
 <pre><code>curl -X POST "https://ai-robotrecommendationsystem-backend.onrender.com/api/partner/v1/oauth/token" \
   -d "grant_type=client_credentials" \
   -d "client_id=cid_your_client_id" \
   -d "client_secret=pk_your_client_secret"</code></pre>
+      </div>
     </div>
 
-    <div class="scroll">
+    <div class="opt">
+      <h4>Option 3 — HTTP Basic</h4>
+      <p>Credentials in the header instead of the body, also permitted by the specification.</p>
+      <div class="scroll">
+<pre><code>POST /api/partner/v1/oauth/token
+Authorization: Basic base64(client_id:client_secret)
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials</code></pre>
+      </div>
+    </div>
+
+    <div class="opt">
+      <h4>The response — identical for all three</h4>
+      <div class="scroll">
 <pre><code>{
   "access_token": "eyJhbGciOiJIUzI1NiJ9...",
   "token_type": "Bearer",
   "expires_in": 86400
 }</code></pre>
+      </div>
     </div>
 
-    <p>
-      Credentials may also be sent as a JSON body, or as HTTP Basic
-      (<code>Authorization: Basic base64(client_id:client_secret)</code>) — whichever your client
-      library prefers.
-    </p>
+    <div class="note">
+      <p class="eyebrow">Using Postman</p>
+      <p>
+        In the request's <b>Body</b> tab choose <b>raw</b>, then set the dropdown beside it to
+        <b>JSON</b> — not <b>Text</b>. That dropdown is what sets <code>Content-Type</code>, so
+        <b>do not add a <code>Content-Type</code> header yourself</b> on the Headers tab.
+      </p>
+      <p>
+        Getting this wrong is the most common cause of a failed first request. Two symptoms and what
+        they mean:
+      </p>
+      <ul>
+        <li>
+          <code>"error": "invalid_request"</code> — the body could not be read at all, usually because
+          the dropdown is on <b>Text</b>, or a <code>Content-Type</code> header was set by hand that
+          does not match the body. The message echoes the <code>Content-Type</code> we received, which
+          tells you which it was. <b>Your credentials are not the problem.</b>
+        </li>
+        <li>
+          <code>"error": "invalid_client"</code> — the body was read correctly, but the
+          <code>client_id</code> or <code>client_secret</code> is wrong, revoked or expired. Check them,
+          or ask RAASPAL to confirm the client id.
+        </li>
+      </ul>
+    </div>
 
     <h3>Using the token</h3>
     <div class="scroll">
