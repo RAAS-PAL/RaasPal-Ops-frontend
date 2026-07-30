@@ -261,7 +261,8 @@
     <h1>Partner API for robot cleaning data</h1>
     <p class="standfirst">
       A read-only HTTP API for retrieving cleaning task reports from the robots you service.
-      Authenticate with an API key, list your robots, then pull their task history by date.
+      Exchange your credentials for an access token, list your robots, then pull their task history
+      by date.
     </p>
     <div class="meta">
       <span><b>Version</b> v1</span>
@@ -274,10 +275,9 @@
   <section>
     <h2>Before you start</h2>
     <p>
-      RAASPAL issues you a secret API key. It looks like <code>pk_</code> followed by a long random
-      string, and it is shown only once when it is created — store it somewhere safe, such as your
-      server's environment configuration. If it is ever lost or exposed, ask RAASPAL to revoke it and
-      issue a new one.
+      RAASPAL issues you two values: a <b>client id</b> and a <b>client secret</b>. You exchange them
+      for a short-lived access token, then send that token on every data request. This is the standard
+      OAuth 2.0 <b>client credentials</b> grant, so most HTTP and OAuth libraries support it directly.
     </p>
 
     <div class="scroll">
@@ -291,37 +291,76 @@
             <td class="wrap-ok"><code>https://ai-robotrecommendationsystem-backend.onrender.com</code></td>
           </tr>
           <tr>
+            <td>Token endpoint</td>
+            <td class="wrap-ok"><code>POST /api/partner/v1/oauth/token</code></td>
+          </tr>
+          <tr>
             <td>Auth header</td>
-            <td class="wrap-ok"><code>X-API-Key: pk_&lt;your key&gt;</code></td>
+            <td class="wrap-ok"><code>Authorization: Bearer &lt;access_token&gt;</code></td>
+          </tr>
+          <tr>
+            <td>Token lifetime</td>
+            <td class="wrap-ok">1 hour</td>
           </tr>
           <tr>
             <td>Rate limit</td>
-            <td class="wrap-ok">120 requests per minute, per key</td>
-          </tr>
-          <tr>
-            <td>Content type</td>
-            <td class="wrap-ok"><code>application/json</code></td>
+            <td class="wrap-ok">120 requests per minute</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <p>
-      Every request carries the key in the <code>X-API-Key</code> header. There is no login step,
-      no token exchange, and no expiry to manage unless RAASPAL issues you a time-limited key.
+      The <b>client id</b> is not sensitive — RAASPAL can tell you again at any time. The
+      <b>client secret</b> is shown only once when it is created and cannot be recovered; store it in
+      your server's environment configuration. If it is ever exposed, ask RAASPAL to revoke it and
+      issue a new one — revocation takes effect immediately, including for tokens already issued.
     </p>
 
-    <h3>Checking your key</h3>
-    <p>
-      <code>GET /api/partner/v1/me</code> confirms a key is valid and names the account it belongs
-      to. You do not need it to integrate — it is there so you can test a new key, or work out
-      whether a problem is your key or your data.
-    </p>
+    <h3>Getting a token</h3>
+    <div class="scroll">
+<pre><code>curl -X POST "https://ai-robotrecommendationsystem-backend.onrender.com/api/partner/v1/oauth/token" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=cid_your_client_id" \
+  -d "client_secret=pk_your_client_secret"</code></pre>
+    </div>
 
     <div class="scroll">
-<pre><code>curl -H "X-API-Key: pk_your_key_here" \
-  "https://ai-robotrecommendationsystem-backend.onrender.com/api/partner/v1/me"</code></pre>
+<pre><code>{
+  "access_token": "eyJhbGciOiJIUzI1NiJ9...",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}</code></pre>
     </div>
+
+    <p>
+      Credentials may also be sent as a JSON body, or as HTTP Basic
+      (<code>Authorization: Basic base64(client_id:client_secret)</code>) — whichever your client
+      library prefers.
+    </p>
+
+    <h3>Using the token</h3>
+    <div class="scroll">
+<pre><code>curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
+  "https://ai-robotrecommendationsystem-backend.onrender.com/api/partner/v1/robots"</code></pre>
+    </div>
+
+    <div class="note">
+      <p class="eyebrow">Caching and refreshing</p>
+      <p>
+        <b>Do not request a new token for every call.</b> Cache it and reuse it until it expires —
+        roughly one exchange per hour. When a data request returns <code>401</code>, fetch a fresh
+        token and retry that request once. That refresh-and-retry loop is the only token handling
+        your integration needs.
+      </p>
+    </div>
+
+    <h3>Checking your credentials</h3>
+    <p>
+      <code>GET /api/partner/v1/me</code> confirms a token is valid and names the account it belongs
+      to. You do not need it to integrate — it is there to test a new credential, or to work out
+      whether a problem is your authentication or your data.
+    </p>
 
     <div class="scroll">
 <pre><code>{
@@ -336,9 +375,9 @@
     </div>
 
     <p>
-      A <code>200</code> means the key works. If this succeeds but <b>List your robots</b> comes back
-      empty, your key is fine and no robots have been assigned to your account yet — contact RAASPAL
-      rather than assuming an integration fault.
+      A <code>200</code> means your credentials work. If this succeeds but <b>List your robots</b>
+      comes back empty, authentication is fine and no robots have been assigned to your account yet —
+      contact RAASPAL rather than assuming an integration fault.
     </p>
 
     <div class="note">
@@ -469,7 +508,8 @@
         "brand": "GAUSIUM",
         "cleaningPlan": "04.30น.",
         "mapName": "OMNIE_PCS_MAKRO_สุราษฎร์ธานี",
-        "cleaningMode": "尘推",
+        "cleaningMode": "Dust Push",
+        "cleaningModeRaw": "尘推",
         "taskCompletionPct": 81.70,
         "startTime": "2026-07-24T21:00:17Z",
         "endTime": "2026-07-24T22:51:17Z",
@@ -506,7 +546,8 @@
         <div><dt>cleaningPlan</dt><dd>Name of the cleaning plan the operator ran, as configured on the robot.</dd></div>
         <div><dt>robotSerialNumber / brand</dt><dd>Echoed back so a page of results is self-describing.</dd></div>
         <div><dt>mapName</dt><dd>The floor map the task ran on, as named on the robot. <code>null</code> for the occasional task where the manufacturer reports no map.</dd></div>
-        <div><dt>cleaningMode</dt><dd>Mode reported by the manufacturer, in the robot's own language.</dd></div>
+        <div><dt>cleaningMode</dt><dd>The cleaning mode in English — e.g. <code>Floor Washing</code>, <code>Dust Push</code>. Translated by RAASPAL, since the robots report this in Chinese. An unrecognised mode reads as <code>Other</code>.</dd></div>
+        <div><dt>cleaningModeRaw</dt><dd>The manufacturer's own value, usually Chinese (e.g. <code>洗地</code>). Provided so a task can still be matched against Gausium's portal, which shows the untranslated term. Use <code>cleaningMode</code> for display.</dd></div>
         <div><dt>taskCompletionPct</dt><dd>Percentage of the planned area actually covered.</dd></div>
         <div><dt>startTime / endTime</dt><dd>ISO-8601 timestamps in <b>UTC</b> (the trailing <code>Z</code>). Gausium's own report pages show the same instants in the robot's local time, so a task shown there as 04:00 in Bangkok appears here as 21:00Z the previous day — add 7 hours to convert.</dd></div>
         <div><dt>workingTimeSeconds</dt><dd>Time the robot was <b>actively working</b>, excluding pauses, docking and obstacle waits. This is normally <b>less than</b> <code>endTime − startTime</code> — use the timestamps for elapsed time and this field for productive time.</dd></div>
@@ -558,8 +599,13 @@
           </tr>
           <tr>
             <td class="status s-401">401</td>
-            <td class="wrap-ok">The key is missing, incorrect, revoked, or expired.</td>
-            <td class="wrap-ok">Check the <code>X-API-Key</code> header. If it looks right, contact RAASPAL — the key may have been revoked.</td>
+            <td class="wrap-ok">The token is missing, malformed, or expired — or the credential behind it was revoked.</td>
+            <td class="wrap-ok"><b>Fetch a new token and retry once.</b> If that also fails, contact RAASPAL — the credential may have been revoked or expired.</td>
+          </tr>
+          <tr>
+            <td class="status s-401">401</td>
+            <td class="wrap-ok"><code>{"error": "invalid_client"}</code> from the <b>token endpoint</b>: the client id or secret is wrong, or the credential is revoked, expired, or disabled.</td>
+            <td class="wrap-ok">Check both values. The error is deliberately identical for every cause, so contact RAASPAL if they look correct.</td>
           </tr>
           <tr>
             <td class="status s-404">404</td>
@@ -596,6 +642,10 @@
     <h2>A worked example</h2>
     <p>Pulling last month's cleaning data for your whole fleet:</p>
     <ol>
+      <li>
+        Exchange your credentials once at <code>/oauth/token</code> and keep the token. Reuse it for
+        the whole job — it lasts an hour, which is longer than the run will take.
+      </li>
       <li>Call <code>/robots</code> once and keep the list of serial numbers.</li>
       <li>
         For each serial, call <code>/task-reports?month=2026-06&amp;size=100</code>.

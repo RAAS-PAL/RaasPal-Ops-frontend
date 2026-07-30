@@ -352,14 +352,33 @@ function PartnerDetail({
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="mt-2 flex items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-md border border-amber-300 bg-white px-2 py-1.5 font-mono text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/50 dark:text-amber-100">
-                {minted.apiKey}
+            {/* Both halves are needed at the token endpoint. The client id is not
+                sensitive and can be looked up again; the secret cannot. */}
+            <div className="mt-2 space-y-1.5">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-200">
+                {t('clientIdLabel')}
+              </p>
+              <code className="block truncate rounded-md border border-amber-300 bg-white px-2 py-1.5 font-mono text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/50 dark:text-amber-100">
+                {minted.clientId}
               </code>
-              <Button type="button" onClick={() => copyKey(minted.apiKey)} className="bg-[var(--app-brand)] text-white hover:opacity-90">
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copied ? t('copied') : t('copy')}
-              </Button>
+            </div>
+            <div className="mt-2 space-y-1.5">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-200">
+                {t('clientSecretLabel')}
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="min-w-0 flex-1 truncate rounded-md border border-amber-300 bg-white px-2 py-1.5 font-mono text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/50 dark:text-amber-100">
+                  {minted.apiKey}
+                </code>
+                <Button
+                  type="button"
+                  onClick={() => copyKey(`client_id=${minted.clientId}\nclient_secret=${minted.apiKey}`)}
+                  className="bg-[var(--app-brand)] text-white hover:opacity-90"
+                >
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? t('copied') : t('copyBoth')}
+                </Button>
+              </div>
             </div>
             <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">{t('mintedWarning')}</p>
           </div>
@@ -577,7 +596,10 @@ function KeyRow({
   return (
     <li className="flex items-center justify-between gap-3 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-3 py-2">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <code className="rounded bg-[var(--app-panel-alt)] px-1.5 py-0.5 font-mono text-xs text-[var(--app-text)]">{k.keyPrefix}…</code>
+        {/* The client id is public, so unlike the secret it stays readable. */}
+        <code className="rounded bg-[var(--app-panel-alt)] px-1.5 py-0.5 font-mono text-xs text-[var(--app-text)]">
+          {k.clientId ?? `${k.keyPrefix}…`}
+        </code>
         {k.label && <span className="truncate text-xs text-[var(--app-muted)]">{k.label}</span>}
         <span className="text-xs text-[var(--app-muted)]">· {lastUsed}</span>
         <span className="text-xs text-[var(--app-muted)]">
