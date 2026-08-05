@@ -35,8 +35,10 @@ export function AppSidebar() {
   const user = useAuthStore((s) => s.user);
 
   return (
+    // print:hidden — see AppTopBar. Navigation never belongs in a printed document,
+    // and leaving it in also narrows the printable width of the report beside it.
     <aside
-      className={`hidden shrink-0 border-r border-[var(--app-border)] bg-[var(--app-panel-soft)] px-4 py-5 transition-[width] duration-200 lg:flex lg:flex-col ${
+      className={`hidden shrink-0 border-r border-[var(--app-border)] bg-[var(--app-panel-soft)] px-4 py-5 transition-[width] duration-200 print:hidden lg:flex lg:flex-col ${
         collapsed ? 'w-20' : 'w-64 xl:w-72'
       }`}
     >

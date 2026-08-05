@@ -305,3 +305,34 @@ summary,
   --radius-lg:               var(--radius);
   --radius-xl:               calc(var(--radius) + 4px);
 }
+
+/* ─── Print ───────────────────────────────────────────────────────────────────
+ * The app prints real documents (the Corrective Maintenance report, the monthly
+ * performance report), so printing is a supported output, not an afterthought.
+ *
+ * Page geometry lives here rather than in a component: @page cannot be expressed
+ * as a Tailwind utility, and without an explicit size the browser uses its own
+ * default paper and margins — which is what pushed the CM report's footer onto a
+ * second sheet.
+ */
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  /* The screen shell paints a grey app background and constrains height to the
+     viewport. Both are meaningless on paper and the dvh height forces blank
+     trailing pages, so neutralise them at the root. */
+  html,
+  body {
+    height: auto;
+    background: #fff;
+  }
+
+  /* Belt-and-braces for anything that scrolls on screen: a clipped scroll
+     container prints as a cropped box rather than its full content. */
+  * {
+    overflow: visible !important;
+  }
+}
