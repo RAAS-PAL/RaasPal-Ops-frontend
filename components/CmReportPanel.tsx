@@ -356,7 +356,7 @@ export function CmReportPanel({
               />
             </label>
             <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
-              เจ้าหน้าที่ผู้เข้าดำเนินการ · Technician
+              เจ้าหน้าที่ผู้เข้าดำเนินการ · Officer
               <input
                 type="text"
                 value={form.technicianName}
