@@ -316,9 +316,33 @@ summary,
  * second sheet.
  */
 @media print {
+  /* Default geometry for every printable document in the app. */
   @page {
     size: A4;
     margin: 10mm;
+  }
+
+  /* The CM report opts out of the page margin entirely.
+   *
+   * The browser's own header and footer — timestamp, page title, URL, "1/1"
+   * counter — are painted into the page margin box, so with no margin there is
+   * nowhere to draw them. A vercel.app URL has no business on a document a
+   * customer signs, and this removes it regardless of the operator's print
+   * settings, rather than relying on them to untick a checkbox each time.
+   *
+   * Deliberately a NAMED page rather than a change to the rule above: the
+   * monthly performance report, delivery report and proposals all print too,
+   * and dropping their margin would push them to the physical paper edge. This
+   * changes one document and leaves the rest exactly as they print today.
+   *
+   * The whitespace given up here is re-added as padding inside the report, so
+   * content still never sits against the paper edge. Named pages need Chrome 85+;
+   * where unsupported this falls back to the rule above — margins and headers
+   * return, which is merely today's behaviour, not a broken page.
+   */
+  @page cm-report {
+    size: A4;
+    margin: 0;
   }
 
   /* The screen shell paints a grey app background and constrains height to the

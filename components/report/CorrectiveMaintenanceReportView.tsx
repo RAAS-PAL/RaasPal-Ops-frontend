@@ -104,11 +104,16 @@ export function CorrectiveMaintenanceReportView({ report }: { report: CmReportRe
     // in print that is a *full* sheet's height added on top of the @page margins —
     // so the footer no longer fits and spills onto a second page. In print the
     // @page rule owns the geometry and the content simply flows.
+    // [page:cm-report] selects the zero-margin @page rule in globals.css, which is
+    // what keeps the browser's timestamp/URL header off a signed document.
     <main
-      className="min-h-dvh bg-[#eef1f6] py-8 print:min-h-0 print:bg-white print:py-0"
+      className="min-h-dvh bg-[#eef1f6] py-8 print:min-h-0 print:bg-white print:py-0 print:[page:cm-report]"
       style={{ fontFamily: THAI_FONT_STACK, color: INK }}
     >
-      <div className="mx-auto flex min-h-[297mm] max-w-[210mm] flex-col bg-white px-10 py-8 shadow-sm print:min-h-0 print:max-w-none print:px-0 print:py-0 print:shadow-none">
+      {/* The print padding replaces the @page margin, which is set to 0 in
+          globals.css to suppress the browser's URL/timestamp header. Without it
+          the report would print flush to the paper edge and clip on most printers. */}
+      <div className="mx-auto flex min-h-[297mm] max-w-[210mm] flex-col bg-white px-10 py-8 shadow-sm print:min-h-0 print:max-w-none print:px-[13mm] print:py-[11mm] print:shadow-none">
         {/* ── Header ─────────────────────────────────────────────────────── */}
         {/* self-start is load-bearing: this is a direct child of a flex column, so
             the default align-items:stretch would override w-auto and smear the
