@@ -51,6 +51,64 @@ const EMPTY_FORM: CmReportRequest = {
   receiverSignature: '',
 };
 
+/**
+ * Builds the default filename the browser offers when saving the print as a PDF.
+ *
+ * Follows the convention already in use for these documents — the sample this
+ * feature was built from is `Pandora - CM Report-17 June 2026.pdf` — so saved
+ * reports keep filing alongside the existing ones. Note the filename uses an
+ * English Gregorian date even though the report body prints Thai Buddhist-era:
+ * that is what the existing files do, and it sorts and searches better.
+ */
+function cmReportFilename(customerName: string, isoDate: string): string {
+  const date = /^(\d{4})-(\d{2})-(\d{2})/.exec(isoDate);
+  const label = date
+    ? new Date(Number(date[1]), Number(date[2]) - 1, Number(date[3])).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : '';
+
+  // The customer field carries "TradeName : Full Legal Name"
+  // ("Pandora : บริษัท แพนดอร่า โพรดักชั่น จำกัด"), so take the trade name — that is
+  // what the existing filenames use, and it is what staff scan a folder for. A
+  // name with no colon (e.g. "Makro") is used whole.
+  //
+  // The split doubles as filename sanitisation for the colon specifically, but
+  // Windows rejects \ / * ? " < > | too, so those are stripped as well rather
+  // than left for the browser to substitute something arbitrary.
+  const customer = customerName
+    .split(':')[0]
+    .replace(/[\\/:*?"<>|]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 60)
+    .trim();
+
+  return [customer, `CM Report${label ? `-${label}` : ''}`].filter(Boolean).join(' - ');
+}
+
+/**
+ * Prints with a meaningful PDF filename.
+ *
+ * The browser derives the default filename from document.title, which is the app
+ * shell's — every saved report would otherwise be
+ * "RAAS PAL - Robot Recommendation System.pdf". Retitling for the duration of the
+ * print is the only hook available. Restored on `afterprint`, which also fires
+ * when the dialog is cancelled, so the tab title never stays changed.
+ */
+function printAs(filename: string) {
+  const original = document.title;
+  const restore = () => {
+    document.title = original;
+    window.removeEventListener('afterprint', restore);
+  };
+  window.addEventListener('afterprint', restore);
+  document.title = filename;
+  window.print();
+}
+
 function errorMessage(e: unknown, fallback: string): string {
   const ax = e as { response?: { data?: { message?: string } }; code?: string; message?: string };
   if (ax?.response?.data?.message) return ax.response.data.message;
@@ -464,7 +522,7 @@ export function CmReportPanel({
             </button>
             <button
               type="button"
-              onClick={() => window.print()}
+              onClick={() => printAs(cmReportFilename(form.customerName, form.reportDate))}
               className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 text-sm font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
             >
               <Printer className="h-4 w-4" />
