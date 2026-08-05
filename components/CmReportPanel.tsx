@@ -137,7 +137,15 @@ function toForm(r: CmReportResponse): CmReportRequest {
   };
 }
 
-/** One signature slot: upload, preview, remove. */
+/**
+ * One signature slot: upload from disk, paste from the clipboard, preview, remove.
+ *
+ * Paste is the primary path in practice — a technician crops the signed line with
+ * the OS snipping tool (Win+Shift+S) and pastes it straight in, with no detour
+ * through Save As and a file browser. The box is focusable so Ctrl+V has an
+ * unambiguous target: with two signature slots on screen, a document-level paste
+ * handler could not tell which one was meant.
+ */
 function SignatureField({
   label,
   value,
@@ -150,8 +158,9 @@ function SignatureField({
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [focused, setFocused] = useState(false);
 
-  async function handleFile(file: File | undefined) {
+  async function handleFile(file: File | undefined | null) {
     if (!file) return;
     setError(null);
     setBusy(true);
@@ -166,17 +175,54 @@ function SignatureField({
     }
   }
 
+  function handlePaste(e: React.ClipboardEvent) {
+    const image = Array.from(e.clipboardData.items).find((item) =>
+      item.type.startsWith('image/'),
+    );
+    if (!image) {
+      // Most often a screenshot that went to a file instead of the clipboard, or
+      // copied text — say which, rather than failing silently.
+      setError('No image on the clipboard. Take a screenshot (Win+Shift+S), then paste here.');
+      return;
+    }
+    e.preventDefault();
+    void handleFile(image.getAsFile());
+  }
+
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs font-semibold text-[var(--app-muted)]">{label}</span>
 
-      <div className="flex items-center gap-3 rounded-lg border border-dashed border-[var(--app-border)] bg-[var(--app-panel-alt)] p-2">
+      <div
+        // tabIndex makes this a real paste target: clicking it focuses, so Ctrl+V
+        // lands on this slot and not the other one.
+        tabIndex={0}
+        onPaste={handlePaste}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        role="group"
+        aria-label={`${label} — click and press Ctrl+V to paste a screenshot, or upload a file`}
+        className={`flex items-center gap-3 rounded-lg border border-dashed bg-[var(--app-panel-alt)] p-2 outline-none transition ${
+          focused
+            ? 'border-[var(--app-brand)] ring-2 ring-[var(--app-brand-soft)]'
+            : 'border-[var(--app-border)]'
+        }`}
+      >
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={value} alt={label} className="h-12 w-auto max-w-[160px] object-contain" />
         ) : (
           <span className="px-1 text-xs text-[var(--app-muted)]">
-            No image — the report prints a blank box to sign on paper.
+            {focused ? (
+              <span className="font-semibold text-[var(--app-brand-dark)]">
+                Press Ctrl+V to paste your screenshot
+              </span>
+            ) : (
+              <>
+                Click here and press <kbd className="font-semibold">Ctrl+V</kbd> to paste a
+                screenshot, or upload a file. Leave empty to sign on paper.
+              </>
+            )}
           </span>
         )}
 
