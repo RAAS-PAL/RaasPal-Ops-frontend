@@ -727,11 +727,17 @@
     "eyebrow": "ระบบส่งรายงานอัตโนมัติ",
     "title": "รายงาน",
     "searchPlaceholder": "จัดการการส่งรายงานประจำเดือน",
+    "groups": {
+      "performance": "รายงานประสิทธิภาพหุ่นยนต์",
+      "correctiveMaintenance": "การซ่อมบำรุงแก้ไข"
+    },
     "tabs": {
       "automation": "จัดการอัตโนมัติ",
       "email": "ส่งอีเมลถึงลูกค้า",
       "preview": "ตัวอย่างรายงาน",
-      "autoxing": "รายงาน AutoXing"
+      "autoxing": "รายงาน AutoXing",
+      "cmNew": "สร้างรายงานใหม่",
+      "cmHistory": "ประวัติรายงาน"
     }
   },
   "userMenu": {

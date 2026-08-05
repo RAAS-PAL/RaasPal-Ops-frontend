@@ -727,11 +727,17 @@
     "eyebrow": "Report automation",
     "title": "Reports",
     "searchPlaceholder": "Manage monthly report delivery",
+    "groups": {
+      "performance": "Robot performance reports",
+      "correctiveMaintenance": "Corrective maintenance"
+    },
     "tabs": {
       "automation": "Manage automation",
       "email": "Email customers",
       "preview": "Report preview",
-      "autoxing": "AutoXing report"
+      "autoxing": "AutoXing report",
+      "cmNew": "New report",
+      "cmHistory": "History"
     }
   },
   "userMenu": {

@@ -1,6 +1,13 @@
 import { ReportsClient, type ReportTab } from './ReportsClient';
 
-const VALID_TABS: readonly string[] = ['automation', 'email', 'preview', 'autoxing'];
+const VALID_TABS: readonly string[] = [
+  'automation',
+  'email',
+  'preview',
+  'autoxing',
+  'cm-new',
+  'cm-history',
+];
 
 export default async function ReportsPage({
   searchParams,

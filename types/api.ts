@@ -637,3 +637,62 @@ export interface AutoxingDeliveryReport {
   daily: AutoxingDailyStat[];
   note: string;
 }
+
+/* ─── Corrective Maintenance reports ──────────────────────────────────────── */
+
+/**
+ * What the AI pulled out of a pasted service ticket. Every field is nullable —
+ * a real ticket often omits several, and the prompt returns null rather than
+ * inventing a value. This is always reviewed before it becomes a CmReport.
+ */
+export interface CmReportDraft {
+  reportDate: string | null;
+  ticketNo: string | null;
+  customerName: string | null;
+  technicianName: string | null;
+  robotModel: string | null;
+  serialNumber: string | null;
+  causeDetail: string | null;
+  inspectionResult: string | null;
+  /** Repair steps, already stripped of any "1." prefix — the report numbers them. */
+  correctiveActions: string[];
+  testResult: string | null;
+}
+
+export interface CmReportRequest {
+  reportDate: string;
+  ticketNo: string;
+  customerName: string;
+  technicianName: string;
+  robotModel: string;
+  serialNumber: string;
+  causeDetail: string;
+  inspectionResult: string;
+  /** One repair step per line, unnumbered. */
+  correctiveActions: string;
+  testResult: string;
+  sourceText: string;
+  /** base64 data: URI, or '' to print a blank box for a wet signature. */
+  providerSignature: string;
+  receiverSignature: string;
+}
+
+export interface CmReportResponse {
+  id: string;
+  reportDate: string;
+  ticketNo: string | null;
+  customerName: string;
+  technicianName: string | null;
+  robotModel: string | null;
+  serialNumber: string | null;
+  causeDetail: string | null;
+  inspectionResult: string | null;
+  correctiveActions: string | null;
+  testResult: string | null;
+  /** Omitted on the history list, which serves summaries only. */
+  sourceText: string | null;
+  providerSignature: string | null;
+  receiverSignature: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

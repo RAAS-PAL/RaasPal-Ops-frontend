@@ -71,6 +71,9 @@ import type {
   ApiResponse,
   AutoxingDeliveryReport,
   AuthResponse,
+  CmReportDraft,
+  CmReportRequest,
+  CmReportResponse,
   CreateUserRequest,
   CvteDeviceResponse,
   CvteDeviceSyncRequest,
@@ -467,4 +470,42 @@ export const telemetryApi = {
   /** Progress of the running sync, or the outcome of the last finished one. */
   syncStatus: () =>
     api.get<ApiResponse<TelemetrySyncStatus>>('/api/v1/telemetry/sync-status'),
+};
+
+/**
+ * Corrective Maintenance reports — paste a Monday.com service ticket, review the
+ * AI-extracted fields, save, and print the signed customer document.
+ */
+export const cmReportApi = {
+  /**
+   * Extract report fields from a pasted ticket for review. Persists nothing, so an
+   * abandoned parse leaves no row and re-parsing never duplicates a report.
+   *
+   * Runs a model call, so it gets a longer timeout and skips the automatic retry —
+   * a retry here would pay for a second extraction of the same ticket.
+   */
+  parse: (sourceText: string) =>
+    api.post<ApiResponse<CmReportDraft>>(
+      '/api/v1/cm-reports/parse',
+      { sourceText },
+      { timeout: 120_000, skipRetry: true },
+    ),
+
+  /** History, newest first. `q` matches ticket no., customer name, or serial number. */
+  list: (q?: string) =>
+    api.get<ApiResponse<CmReportResponse[]>>('/api/v1/cm-reports', {
+      params: { q: q?.trim() || undefined },
+    }),
+
+  get: (id: string) =>
+    api.get<ApiResponse<CmReportResponse>>(`/api/v1/cm-reports/${id}`),
+
+  create: (body: CmReportRequest) =>
+    api.post<ApiResponse<CmReportResponse>>('/api/v1/cm-reports', body),
+
+  update: (id: string, body: CmReportRequest) =>
+    api.put<ApiResponse<CmReportResponse>>(`/api/v1/cm-reports/${id}`, body),
+
+  delete: (id: string) =>
+    api.delete<ApiResponse<void>>(`/api/v1/cm-reports/${id}`),
 };
