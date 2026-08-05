@@ -61,7 +61,13 @@ function TableRow({
   minHeight?: string;
 }) {
   return (
-    <div className="grid grid-cols-[30%_1fr] border-b" style={{ borderColor: LINE, minHeight }}>
+    // break-inside-avoid keeps a label beside its value: without it a row can be
+    // split mid-cell across sheets, stranding the Thai label on one page and its
+    // content on the next.
+    <div
+      className="grid grid-cols-[30%_1fr] border-b print:break-inside-avoid"
+      style={{ borderColor: LINE, minHeight }}
+    >
       <div
         className="flex items-center justify-center border-r px-3 py-2 text-center font-bold"
         style={{ borderColor: LINE }}
@@ -93,11 +99,16 @@ export function CorrectiveMaintenanceReportView({ report }: { report: CmReportRe
     .filter(Boolean);
 
   return (
+    // print:min-h-0 on both boxes is what keeps this to one sheet. On screen the
+    // page mimics A4 (min-h-[297mm]) so the operator sees a realistic preview, but
+    // in print that is a *full* sheet's height added on top of the @page margins —
+    // so the footer no longer fits and spills onto a second page. In print the
+    // @page rule owns the geometry and the content simply flows.
     <main
-      className="min-h-dvh bg-[#eef1f6] py-8 print:bg-white print:py-0"
+      className="min-h-dvh bg-[#eef1f6] py-8 print:min-h-0 print:bg-white print:py-0"
       style={{ fontFamily: THAI_FONT_STACK, color: INK }}
     >
-      <div className="mx-auto flex min-h-[297mm] max-w-[210mm] flex-col bg-white px-10 py-8 shadow-sm print:shadow-none">
+      <div className="mx-auto flex min-h-[297mm] max-w-[210mm] flex-col bg-white px-10 py-8 shadow-sm print:min-h-0 print:max-w-none print:px-0 print:py-0 print:shadow-none">
         {/* ── Header ─────────────────────────────────────────────────────── */}
         {/* self-start is load-bearing: this is a direct child of a flex column, so
             the default align-items:stretch would override w-auto and smear the
@@ -162,7 +173,7 @@ export function CorrectiveMaintenanceReportView({ report }: { report: CmReportRe
             <SignatureCell src={report.providerSignature} alt="ลงนามผู้ให้บริการ" />
           </TableRow>
           {/* Last row: the table's own border closes it, so drop the row rule. */}
-          <div className="grid grid-cols-[30%_1fr]">
+          <div className="grid grid-cols-[30%_1fr] print:break-inside-avoid">
             <div
               className="flex items-center justify-center border-r px-3 py-2 text-center font-bold"
               style={{ borderColor: LINE }}
@@ -176,7 +187,10 @@ export function CorrectiveMaintenanceReportView({ report }: { report: CmReportRe
         </div>
 
         {/* ── Footer ─────────────────────────────────────────────────────── */}
-        <div className="mt-auto flex items-end justify-between gap-6 pt-10">
+        {/* mt-auto pins this to the bottom of the simulated sheet on screen; in
+            print there is no forced height to push against, so it simply trails
+            the table — which is what keeps it on the same page. */}
+        <div className="mt-auto flex items-end justify-between gap-6 pt-10 print:break-inside-avoid">
           <div className="text-[9px] leading-relaxed text-[#6b7785]">
             {COMPANY_FOOTER.map((line) => (
               <p key={line}>{line}</p>
