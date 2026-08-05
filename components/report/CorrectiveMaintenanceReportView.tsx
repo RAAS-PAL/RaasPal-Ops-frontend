@@ -99,13 +99,16 @@ export function CorrectiveMaintenanceReportView({ report }: { report: CmReportRe
     >
       <div className="mx-auto flex min-h-[297mm] max-w-[210mm] flex-col bg-white px-10 py-8 shadow-sm print:shadow-none">
         {/* ── Header ─────────────────────────────────────────────────────── */}
+        {/* self-start is load-bearing: this is a direct child of a flex column, so
+            the default align-items:stretch would override w-auto and smear the
+            wordmark across the full page width. */}
         <Image
           src="/raas-pal-wordmark.png"
           alt="RAAS PAL"
           width={240}
           height={60}
           priority
-          className="h-9 w-auto"
+          className="h-9 w-auto self-start"
         />
 
         <div className="mt-4 text-center">
