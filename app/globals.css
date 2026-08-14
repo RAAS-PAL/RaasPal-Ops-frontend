@@ -157,7 +157,9 @@
   --color-info:          var(--info);
 
   /* Fonts (resolved by next/font in [locale]/layout.tsx) */
-  --font-sans: var(--font-geist-sans);
+  /* Inter first, Noto Sans Thai behind it — Inter has no Thai glyphs, so the
+     browser resolves per character rather than per string. */
+  --font-sans: var(--font-inter), var(--font-noto-thai);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -209,12 +211,30 @@ summary,
   cursor: not-allowed;
 }
 
-/* ─── Scrollbar (WebKit) ──────────────────────────────────────────────────── */
+/* ─── Scrollbar ───────────────────────────────────────────────────────────────
+   Uses the --app-* palette, not --canvas/--elevated/--edge. Those three are
+   defined with DARK values inside :root (the light theme), so the old rule drew a
+   near-black 6px track on a light page — invisible in practice. They are only
+   correct once .dark overrides them, which is why this only looked wrong in light
+   mode.
 
-::-webkit-scrollbar               { width: 6px; height: 6px; }
-::-webkit-scrollbar-track         { background: var(--canvas); }
-::-webkit-scrollbar-thumb         { background: var(--elevated); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover   { background: var(--edge); }
+   12px rather than 6px because wide tables (the robot spec matrix in particular)
+   depend on the horizontal bar being findable and draggable.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+html {
+  scrollbar-color: var(--app-muted) var(--app-faint);   /* Firefox */
+}
+
+::-webkit-scrollbar               { width: 12px; height: 12px; }
+::-webkit-scrollbar-track         { background: var(--app-faint); }
+::-webkit-scrollbar-thumb         {
+  background: var(--app-muted);
+  border: 3px solid var(--app-faint);   /* inset look, keeps the thumb off the edges */
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover   { background: var(--app-text); }
+::-webkit-scrollbar-corner        { background: var(--app-faint); }
 
 /* ─── Selection ───────────────────────────────────────────────────────────── */
 

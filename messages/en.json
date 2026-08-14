@@ -599,6 +599,8 @@
   },
   "robots": {
     "title": "Robot Catalog",
+    "viewCatalog": "Catalog",
+    "viewSpecs": "Spec matrix",
     "empty": "No robots found",
     "addRobot": "Add Robot",
     "failedToLoad": "Failed to load robots. Please refresh the page.",
@@ -611,8 +613,12 @@
     "types": {
       "all": "All",
       "cleaning": "Cleaning",
+      "cleaning_equipment": "Cleaning Equipment",
       "delivery": "Delivery",
-      "mowing": "Mowing"
+      "mowing": "Mowing",
+      "security": "Security",
+      "cooking": "Cooking",
+      "reception": "Reception"
     }
   },
   "cvte": {

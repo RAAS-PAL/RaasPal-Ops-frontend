@@ -150,14 +150,11 @@ export default async function LoginPage({
 
               <LoginForm locale={locale} />
 
+              {/* No self-registration: this is an internal platform, and accounts are
+                  created by an admin from inside it. A public "create one" link on the
+                  sign-in page invites exactly the wrong thing. */}
               <p className="mt-6 text-center text-sm text-[var(--app-muted)]">
-                Don’t have an account?{' '}
-                <Link
-                  className="font-semibold text-[var(--app-brand-dark)] hover:underline"
-                  href="/register"
-                >
-                  Create one
-                </Link>
+                Need an account? Ask a RAASPAL administrator.
               </p>
             </div>
 

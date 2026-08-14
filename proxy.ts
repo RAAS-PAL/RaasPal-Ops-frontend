@@ -34,7 +34,7 @@ const handleI18nRouting = createMiddleware(routing);
 /** Paths that do NOT require a JWT. Matched against the path after locale strip. */
 // `/report` is public: customers open their monthly report from an email link
 // and have no account. The token in /report/<token> is the access control.
-const PUBLIC_PATHS = ['/login', '/register', '/report'];
+const PUBLIC_PATHS = ['/login', '/report'];
 
 /** Returns true if the path (locale stripped) is a public route. */
 function isPublic(pathname: string): boolean {

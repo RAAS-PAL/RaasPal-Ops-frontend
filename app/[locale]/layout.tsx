@@ -21,7 +21,7 @@
  * build time, so /en and /th are all statically generated.
  */
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist_Mono, Inter, Noto_Sans_Thai } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -30,11 +30,29 @@ import { Providers } from '@/app/providers';
 
 /* ─── Fonts ──────────────────────────────────────────────────────────────── */
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const inter = Inter({
+  variable: '--font-inter',
   subsets: ['latin'],
+  display: 'swap',
 });
 
+/**
+ * Inter carries no Thai glyphs (nor did Geist before it), so without a companion
+ * every Thai string — customer names, sites, the whole `th` locale — falls back
+ * to whatever font the operating system happens to pick, and looks different on
+ * every machine. Listing this after Inter in the stack lets the browser resolve
+ * per glyph: Latin from Inter, Thai from here.
+ *
+ * The printed CM report is unaffected either way — it pins its own Thai stack
+ * inline, because a signed document must not change appearance with the theme.
+ */
+const notoThai = Noto_Sans_Thai({
+  variable: '--font-noto-thai',
+  subsets: ['thai'],
+  display: 'swap',
+});
+
+/* Kept as-is: Inter has no monospace cut, and figures still need one. */
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
@@ -81,7 +99,7 @@ export default async function LocaleLayout({
   return (
     <html
       lang={locale}
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${inter.variable} ${notoThai.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
       <body className="min-h-dvh flex flex-col bg-canvas text-ink antialiased">

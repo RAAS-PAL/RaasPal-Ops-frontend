@@ -89,7 +89,6 @@ import type {
   CreatePartnerRequest,
   UpdatePartnerRequest,
   CreateApiKeyRequest,
-  RegisterRequest,
   RecommendationResponse,
   RequirementResponse,
   RobotImportResult,
@@ -98,6 +97,7 @@ import type {
   CustomerResponse,
   RobotRequest,
   RobotResponse,
+  RobotSpecMatrixRow,
   RobotType,
   RobotUnitResponse,
   RegisterRobotRequest,
@@ -128,6 +128,14 @@ export const robotApi = {
 
   getById: (id: string) =>
     api.get<ApiResponse<RobotResponse>>(`/api/v1/robots/${id}`),
+
+  /**
+   * Every cleaning model that has specs, for the side-by-side matrix.
+   * Unpaginated — comparing models is the point, and a page break through the
+   * middle of the comparison defeats it.
+   */
+  specMatrix: () =>
+    api.get<ApiResponse<RobotSpecMatrixRow[]>>('/api/v1/robots/spec-matrix'),
 
   create: (body: RobotRequest) =>
     api.post<ApiResponse<RobotResponse>>('/api/v1/robots', body),
@@ -254,14 +262,11 @@ export const authApi = {
   verifyPassword: (password: string) =>
     api.post<ApiResponse<void>>('/api/v1/auth/verify-password', { password }),
 
-  /**
-   * Public self-service registration.
-   * ⚠ The backend endpoint does not exist yet — calling this today will 404.
-   * The /register page keeps it behind a feature flag (REGISTRATION_ENABLED)
-   * until `POST /api/v1/auth/register` ships and is whitelisted in SecurityConfig.
+  /*
+   * Self-service registration was removed along with the /register page. This is an
+   * internal platform: accounts are created by an admin through POST /api/v1/users,
+   * which is now ADMIN-only. There is deliberately no public signup path.
    */
-  register: (body: RegisterRequest) =>
-    api.post<ApiResponse<AuthResponse>>('/api/v1/auth/register', body),
 };
 
 // File upload

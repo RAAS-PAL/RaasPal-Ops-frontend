@@ -51,18 +51,11 @@ export interface CreateUserRequest {
   role: 'ADMIN' | 'SPECIALIST';
 }
 
-/**
- * Public self-service sign-up payload.
- * NOTE: the backend does not expose `POST /api/v1/auth/register` yet — this
- * shape is defined ahead of time so the /register page can be wired with a
- * single flag flip once that endpoint exists. No `role` here: a public sign-up
- * would default server-side (e.g. SPECIALIST) rather than letting users self-assign.
+/*
+ * RegisterRequest was removed along with the /register page. This is an internal
+ * platform: accounts are created by an admin via CreateUserRequest against
+ * POST /api/v1/users (now ADMIN-only). There is deliberately no public signup.
  */
-export interface RegisterRequest {
-  fullName: string;
-  email: string;
-  password: string;
-}
 
 /* ─── File upload ─────────────────────────────────────────────────────────── */
 
@@ -78,7 +71,15 @@ export interface FileUploadResponse {
 
 /* ─── Requirements ────────────────────────────────────────────────────────── */
 
-export type RobotType = 'CLEANING' | 'DELIVERY' | 'MOWING';
+/** Mirrors the backend `RobotType` enum. Both must be changed together. */
+export type RobotType =
+  | 'CLEANING'
+  | 'CLEANING_EQUIPMENT'
+  | 'DELIVERY'
+  | 'MOWING'
+  | 'SECURITY'
+  | 'COOKING'
+  | 'RECEPTION';
 
 export interface RequirementResponse {
   id: string;
@@ -109,6 +110,22 @@ export interface RobotResponse {
   datasheetUrl: string | null;
   createdAt: string;
   spec: RobotSpecResponse | null;
+}
+
+/**
+ * One model's row in the spec matrix.
+ *
+ * `specs` is deliberately untyped: it comes from `to_jsonb(robot_specs_cleaning)`,
+ * so the keys are database column names and the set changes whenever the datasheet
+ * gains a field. Presentation metadata (label, unit, group) lives in
+ * `lib/robot-spec-fields.ts`, keyed by those same column names.
+ */
+export interface RobotSpecMatrixRow {
+  robotId: string;
+  brand: string;
+  model: string;
+  testStatus: TestStatus;
+  specs: Record<string, string | number | boolean | null>;
 }
 
 export interface RobotSpecResponse {

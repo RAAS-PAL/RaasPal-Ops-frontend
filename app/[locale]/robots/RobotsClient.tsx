@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Bot, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { Bot, ChevronLeft, ChevronRight, LayoutGrid, Plus, Table2 } from 'lucide-react';
+import { RobotSpecMatrix } from '@/components/RobotSpecMatrix';
 import { Link } from '@/i18n/navigation';
 import { robotApi } from '@/lib/api';
+import { ROBOT_TYPES, TYPE_LABELS, TYPE_STYLES } from '@/lib/robot-types';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { RobotDetailModal } from '@/components/RobotDetailModal';
@@ -14,6 +16,8 @@ import { StatusBadge, toneForStatus } from '@/components/ui/status-badge';
 import type { RobotResponse, RobotType } from '@/types/api';
 
 const ITEMS_PER_PAGE = 9;
+
+export type RobotsView = 'catalog' | 'specs';
 
 const BRAND_ALIASES: Record<string, string> = {
   gs:  'gausium',
@@ -25,14 +29,9 @@ const BRAND_ALIASES: Record<string, string> = {
 /* ─── Badges ──────────────────────────────────────────────────────────────── */
 
 function TypeBadge({ type }: { type: RobotType }) {
-  const styles: Record<RobotType, string> = {
-    CLEANING:  'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400',
-    DELIVERY:  'bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400',
-    MOWING: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
-  };
   return (
-    <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${styles[type]}`}>
-      {type}
+    <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${TYPE_STYLES[type]}`}>
+      {TYPE_LABELS[type]}
     </span>
   );
 }
@@ -177,16 +176,30 @@ function Pagination({
 
 /* ─── Filter tabs ─────────────────────────────────────────────────────────── */
 
-const TYPE_KEYS: Array<RobotType | 'ALL'> = ['ALL', 'CLEANING', 'DELIVERY', 'MOWING'];
+const TYPE_KEYS: Array<RobotType | 'ALL'> = ['ALL', ...ROBOT_TYPES];
 
 /* ─── Main ────────────────────────────────────────────────────────────────── */
 
-export function RobotsClient() {
+export function RobotsClient({ initialView = 'catalog' }: { initialView?: RobotsView }) {
   const [activeType, setActiveType] = useState<RobotType | 'ALL'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRobot, setSelectedRobot] = useState<RobotResponse | null>(null);
+  const [view, setViewState] = useState<RobotsView>(initialView);
   const t = useTranslations('robots');
+
+  // Same approach as ReportsClient: the initial value arrives as a prop from the
+  // server component, and switching rewrites the URL directly. Reading it with
+  // useSearchParams instead would force the whole page behind a Suspense
+  // boundary, since Next cannot prerender a component that reads the query string.
+  function setView(next: RobotsView) {
+    setViewState(next);
+    window.history.replaceState(
+      null,
+      '',
+      next === 'catalog' ? window.location.pathname : `?view=${next}`,
+    );
+  }
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['robots'],
@@ -237,6 +250,32 @@ export function RobotsClient() {
           />
           <div className="space-y-5 p-4 sm:p-6">
 
+      {/* View switcher — browse the catalogue, or compare every spec side by side */}
+      <div className="flex gap-2 border-b border-[var(--app-border)] pb-3">
+        {([
+          { id: 'catalog' as const, label: t('viewCatalog'), Icon: LayoutGrid },
+          { id: 'specs'   as const, label: t('viewSpecs'),   Icon: Table2 },
+        ]).map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setView(id)}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+              view === id
+                ? 'bg-[var(--app-brand)] text-white'
+                : 'border border-[var(--app-border)] text-[var(--app-muted)] hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)]'
+            }`}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === 'specs' && <RobotSpecMatrix />}
+
+      {view === 'catalog' && (
+       <>
       {/* Filter tabs + Add button */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-2">
@@ -336,6 +375,8 @@ export function RobotsClient() {
         totalPages={totalPages}
         onPageChange={setCurrentPage}
       />
+       </>
+      )}
 
       {/* Detail modal */}
       {selectedRobot && (
