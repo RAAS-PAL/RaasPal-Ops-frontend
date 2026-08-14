@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Upload } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { robotApi } from '@/lib/api';
+import { ROBOT_TYPES, TYPE_LABELS } from '@/lib/robot-types';
 import type { BudgetBand, RobotImportResult, RobotSpecRequest, RobotType, TestStatus } from '@/types/api';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -334,9 +335,9 @@ export function AddRobotClient() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <Field label="Robot Type" required>
                 <select className={selectCls} value={robotType} onChange={(e) => setRobotType(e.target.value as RobotType)}>
-                  <option value="CLEANING">Cleaning</option>
-                  <option value="DELIVERY">Delivery</option>
-                  <option value="MOWING">Mowing</option>
+                  {ROBOT_TYPES.map((t) => (
+                    <option key={t} value={t}>{TYPE_LABELS[t]}</option>
+                  ))}
                 </select>
               </Field>
               <Field label="Test Status">
@@ -560,9 +561,9 @@ export function AddRobotClient() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Robot Type" required>
                 <select className={selectCls} value={importType} onChange={(e) => setImportType(e.target.value as RobotType)}>
-                  <option value="CLEANING">Cleaning</option>
-                  <option value="DELIVERY">Delivery</option>
-                  <option value="MOWING">Mowing</option>
+                  {ROBOT_TYPES.map((t) => (
+                    <option key={t} value={t}>{TYPE_LABELS[t]}</option>
+                  ))}
                 </select>
               </Field>
               <Field label="Test Status">

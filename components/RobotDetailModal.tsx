@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Bot, Loader2, Pencil, Trash2, X } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { authApi, robotApi } from '@/lib/api';
+import { TYPE_LABELS, TYPE_STYLES } from '@/lib/robot-types';
 import type { RobotResponse, RobotSpecResponse } from '@/types/api';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -243,12 +244,6 @@ export function RobotDetailModal({ robot, onClose }: Props) {
     }
   }
 
-  const typeBg: Record<string, string> = {
-    CLEANING:  'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400',
-    DELIVERY:  'bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400',
-    MOWING: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
-  };
-
   const statusBg: Record<string, string> = {
     VERIFIED:     'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
     PENDING:      'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
@@ -285,8 +280,8 @@ export function RobotDetailModal({ robot, onClose }: Props) {
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-end">
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${typeBg[robot.robotType] ?? ''}`}>
-                {robot.robotType}
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${TYPE_STYLES[robot.robotType] ?? ''}`}>
+                {TYPE_LABELS[robot.robotType] ?? robot.robotType}
               </span>
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${statusBg[robot.testStatus] ?? ''}`}>
                 {robot.testStatus}
