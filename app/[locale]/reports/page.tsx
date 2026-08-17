@@ -2,6 +2,7 @@ import { ReportsClient, type ReportTab } from './ReportsClient';
 
 const VALID_TABS: readonly string[] = [
   'automation',
+  'company',
   'email',
   'preview',
   'autoxing',

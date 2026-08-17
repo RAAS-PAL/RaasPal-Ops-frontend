@@ -3,6 +3,8 @@
  * Mirrors the backend DTO shapes used in robot-recommendation-api.
  */
 
+import type { MonthlyPerformanceReport } from '@/lib/reports/types';
+
 /* ─── Common wrappers ─────────────────────────────────────────────────────── */
 
 export interface ApiResponse<T> {
@@ -712,4 +714,33 @@ export interface CmReportResponse {
   receiverSignature: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/* ─── Customer report bundle curation ─────────────────────────────────────── */
+
+/**
+ * One robot inside the staff review view of a customer's combined report.
+ *
+ * `hasData` is false when the robot logged no tasks that month — almost always
+ * because it was offline. Its report still renders, as a page of zeros, which is
+ * why the UI offers to hold it back.
+ */
+export interface CustomerBundleRobot {
+  robotUnitId: string;
+  serialNumber: string;
+  robotName: string;
+  site: string;
+  hasData: boolean;
+  excluded: boolean;
+  report: MonthlyPerformanceReport;
+}
+
+export interface CustomerBundlePreview {
+  customerProfileId: string;
+  customerName: string;
+  periodLabel: string;
+  month: string;
+  /** How many robots the customer would currently see. */
+  includedCount: number;
+  robots: CustomerBundleRobot[];
 }
