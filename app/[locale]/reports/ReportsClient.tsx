@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { CalendarClock, FileSearch, Gauge, History, Mail, Wrench } from 'lucide-react';
+import { Building2, CalendarClock, FileSearch, Gauge, History, Mail, Wrench } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { ReportAutomationPanel } from '@/components/ReportAutomationPanel';
+import { CustomerBundlePanel } from '@/components/CustomerBundlePanel';
 import { CustomerEmailPanel } from '@/components/CustomerEmailPanel';
 import { ReportPreviewPanel } from '@/components/ReportPreviewPanel';
 import { AutoxingReportPanel } from '@/components/AutoxingReportPanel';
@@ -14,6 +15,7 @@ import { CmReportHistoryPanel } from '@/components/CmReportHistoryPanel';
 
 const REPORT_TABS = [
   'automation',
+  'company',
   'email',
   'preview',
   'autoxing',
@@ -33,6 +35,7 @@ export type ReportTab = (typeof REPORT_TABS)[number];
  */
 const TAB_GROUP: Record<ReportTab, 'performance' | 'cm'> = {
   automation: 'performance',
+  company: 'performance',
   email: 'performance',
   preview: 'performance',
   autoxing: 'performance',
@@ -67,6 +70,7 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
     group === 'performance'
       ? [
           { id: 'automation', label: t('tabs.automation'), icon: <CalendarClock className="h-4 w-4" /> },
+          { id: 'company', label: t('tabs.company'), icon: <Building2 className="h-4 w-4" /> },
           { id: 'email', label: t('tabs.email'), icon: <Mail className="h-4 w-4" /> },
           { id: 'preview', label: t('tabs.preview'), icon: <FileSearch className="h-4 w-4" /> },
           { id: 'autoxing', label: t('tabs.autoxing'), icon: <Gauge className="h-4 w-4" /> },
@@ -129,6 +133,7 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
             </div>
 
             {tab === 'automation' && <ReportAutomationPanel />}
+            {tab === 'company' && <CustomerBundlePanel />}
             {tab === 'email' && <CustomerEmailPanel />}
             {tab === 'preview' && <ReportPreviewPanel />}
             {tab === 'autoxing' && <AutoxingReportPanel />}

@@ -74,6 +74,7 @@ import type {
   CmReportDraft,
   CmReportRequest,
   CmReportResponse,
+  CustomerBundlePreview,
   CreateUserRequest,
   CvteDeviceResponse,
   CvteDeviceSyncRequest,
@@ -513,4 +514,35 @@ export const cmReportApi = {
 
   delete: (id: string) =>
     api.delete<ApiResponse<void>>(`/api/v1/cm-reports/${id}`),
+};
+
+/**
+ * Curating a customer's combined monthly report before it is sent.
+ *
+ * The preview is the staff view — every deployed robot, flagged with whether it
+ * logged any activity. Exclusions are stored server-side and applied to the
+ * customer's public link too, so what the team approves is what the customer
+ * opens.
+ */
+export const customerBundleApi = {
+  /** Every robot for the customer+month, including ones currently held back. */
+  preview: (customerProfileId: string, month: string) =>
+    api.get<ApiResponse<CustomerBundlePreview>>('/api/v1/reports/customer-bundle/preview', {
+      params: { customerProfileId, month },
+      // A large site means one cached report per robot; the first build of a
+      // month can be slow, and a retry would just duplicate that work.
+      timeout: 180_000,
+      skipRetry: true,
+    }),
+
+  /**
+   * Replaces the held-back set for this customer+month. An empty array puts every
+   * robot back into the report — the choice is always reversible.
+   */
+  setExclusions: (customerProfileId: string, month: string, excludedRobotUnitIds: string[]) =>
+    api.put<ApiResponse<{ excludedRobotUnitIds: string[] }>>(
+      '/api/v1/reports/customer-bundle/exclusions',
+      { excludedRobotUnitIds },
+      { params: { customerProfileId, month } },
+    ),
 };
