@@ -72,6 +72,9 @@ function isoDate(daysAgo = 0): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** An empty date input is '', which the backend cannot parse as a LocalDate. */
+const emptyToNull = (v: string | null | undefined) => (v && v.trim() ? v : null);
+
 const EMPTY_FORM: RegisterRobotRequest = {
   serialNumber: '',
   brand: 'GAUSIUM',
@@ -80,6 +83,7 @@ const EMPTY_FORM: RegisterRobotRequest = {
   customerProfileId: '',
   site: '',
   reportCadence: 'MONTHLY',
+  contractStartDate: '',
 };
 
 /** Prefill the form from an existing robot (for the edit flow). */
@@ -92,6 +96,7 @@ function toForm(r: RobotUnitResponse): RegisterRobotRequest {
     customerProfileId: r.deployment?.customerProfileId ?? '',
     site: r.deployment?.site ?? '',
     reportCadence: r.deployment?.reportCadence ?? 'MONTHLY',
+    contractStartDate: r.deployment?.contractStartDate ?? '',
   };
 }
 
@@ -298,10 +303,11 @@ export function RobotsPanel() {
           customerProfileId: form.customerProfileId,
           site: form.site,
           reportCadence: form.reportCadence,
+          contractStartDate: emptyToNull(form.contractStartDate),
         },
       });
     } else {
-      registerMutation.mutate(form);
+      registerMutation.mutate({ ...form, contractStartDate: emptyToNull(form.contractStartDate) });
     }
   }
 
@@ -372,6 +378,16 @@ export function RobotsPanel() {
                 <option key={c} value={c}>{cadenceLabel(c)}</option>
               ))}
             </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-[var(--app-muted)]">{t('contractStartDate')}</label>
+            <input
+              type="date"
+              className={inputClass}
+              value={form.contractStartDate ?? ''}
+              onChange={(e) => field('contractStartDate', e.target.value)}
+            />
+            <p className="text-xs text-[var(--app-muted)]">{t('contractStartDateHint')}</p>
           </div>
         </div>
 

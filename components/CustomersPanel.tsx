@@ -39,7 +39,6 @@ const EMPTY_FORM: CustomerRequest = {
   contactPhone: '',
   branch: '',
   notes: '',
-  contractStartDate: '',
 };
 
 function toForm(c: CustomerResponse): CustomerRequest {
@@ -50,7 +49,6 @@ function toForm(c: CustomerResponse): CustomerRequest {
     contactPhone: c.contactPhone ?? '',
     branch: c.branch ?? '',
     notes: c.notes ?? '',
-    contractStartDate: c.contractStartDate ?? '',
   };
 }
 
@@ -158,12 +156,7 @@ export function CustomersPanel() {
       setFormError(t('companyRequired'));
       return;
     }
-    // An empty date input is '', which the backend cannot parse as a LocalDate.
-    // "No contract start" is null, so normalise before sending.
-    saveMutation.mutate({
-      ...form,
-      contractStartDate: form.contractStartDate?.trim() ? form.contractStartDate : null,
-    });
+    saveMutation.mutate(form);
   }
 
   /* ── Add / edit form ───────────────────────────────────────────────────── */
@@ -199,16 +192,6 @@ export function CustomersPanel() {
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-[var(--app-muted)]">{t('branch')}</label>
               <input className={inputClass} value={form.branch ?? ''} onChange={(e) => field('branch', e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[var(--app-muted)]">{t('contractStartDate')}</label>
-              <input
-                type="date"
-                className={inputClass}
-                value={form.contractStartDate ?? ''}
-                onChange={(e) => field('contractStartDate', e.target.value)}
-              />
-              <p className="text-xs text-[var(--app-muted)]">{t('contractStartDateHint')}</p>
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <label className="text-xs font-semibold text-[var(--app-muted)]">{t('notes')}</label>
