@@ -406,6 +406,12 @@ export interface CustomerResponse {
   contactPhone: string | null;
   branch: string | null;
   notes: string | null;
+  /**
+   * ISO date the contract began. Monthly reports clip to it, so a customer who
+   * signed mid-month is not shown work done before they were a customer.
+   * Null reports the whole month.
+   */
+  contractStartDate: string | null;
   /** Active deployments (robots) currently linked to this customer. */
   robotCount: number;
   createdAt: string;
@@ -430,6 +436,8 @@ export interface CustomerRequest {
   contactPhone?: string | null;
   branch?: string | null;
   notes?: string | null;
+  /** ISO date (YYYY-MM-DD), or null for no clipping. */
+  contractStartDate?: string | null;
 }
 
 /* ─── Robot units & deployments ───────────────────────────────────────────── */
