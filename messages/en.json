@@ -45,6 +45,8 @@
     "contactPhone": "Contact phone",
     "industry": "Industry",
     "branch": "Branch",
+    "contractStartDate": "Contract start date",
+    "contractStartDateHint": "Reports for the first month start from this date. Leave empty to report whole months.",
     "notes": "Notes",
     "createCustomer": "Create customer",
     "saveChanges": "Save changes",
