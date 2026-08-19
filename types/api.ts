@@ -406,12 +406,6 @@ export interface CustomerResponse {
   contactPhone: string | null;
   branch: string | null;
   notes: string | null;
-  /**
-   * ISO date the contract began. Monthly reports clip to it, so a customer who
-   * signed mid-month is not shown work done before they were a customer.
-   * Null reports the whole month.
-   */
-  contractStartDate: string | null;
   /** Active deployments (robots) currently linked to this customer. */
   robotCount: number;
   createdAt: string;
@@ -436,8 +430,6 @@ export interface CustomerRequest {
   contactPhone?: string | null;
   branch?: string | null;
   notes?: string | null;
-  /** ISO date (YYYY-MM-DD), or null for no clipping. */
-  contractStartDate?: string | null;
 }
 
 /* ─── Robot units & deployments ───────────────────────────────────────────── */
@@ -455,6 +447,12 @@ export interface DeploymentInfo {
   active: boolean;
   /** Distributor/service partner servicing this deployment; null = RAASPAL-direct. */
   partnerId: string | null;
+  /**
+   * ISO date this robot's contract with the customer began. The first monthly report
+   * clips to it, so a robot deployed mid-month does not report work done before the
+   * customer had it. Null reports whole months.
+   */
+  contractStartDate: string | null;
 }
 
 export interface RobotUnitResponse {
@@ -475,6 +473,8 @@ export interface RegisterRobotRequest {
   customerProfileId: string;
   site?: string | null;
   reportCadence?: ReportCadence | null;
+  /** ISO date (YYYY-MM-DD), or null for whole-month reports. */
+  contractStartDate?: string | null;
 }
 
 // Edit an existing robot — serial number is immutable, so it is not included.
@@ -485,6 +485,8 @@ export interface UpdateRobotRequest {
   customerProfileId: string;
   site?: string | null;
   reportCadence?: ReportCadence | null;
+  /** ISO date (YYYY-MM-DD), or null for whole-month reports. */
+  contractStartDate?: string | null;
 }
 
 /* ─── Partners (distributor/service partners + their API keys) ─────────────── */
