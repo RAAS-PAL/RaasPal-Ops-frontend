@@ -3,11 +3,15 @@
 /**
  * ReportPreviewPanel — internal tool to preview the customer report layout.
  *
- * Search a registered robot (by SN / name / customer), pick it, choose a month,
- * and render the real <MonthlyReportView> with that robot's customer/site/SN.
- * A built-in "sample data" option always works so the format can be demoed even
- * before any robot is registered. Metrics are representative placeholders — this
- * is for confirming layout, not live numbers.
+ * Search a registered robot (by SN / name / customer), pick it, choose a period —
+ * a calendar month or an ISO week (Mon–Sun) — and render the real
+ * <MonthlyReportView> with that robot's customer/site/SN. A built-in "sample data"
+ * option always works so the format can be demoed even before any robot is
+ * registered.
+ *
+ * Sharing and emailing stay monthly-only: a report link is keyed on robot+month,
+ * so a weekly report has nowhere to be sent yet. The buttons are disabled rather
+ * than hidden, so it is obvious *why* rather than looking like they vanished.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -31,10 +35,26 @@ import { reportApi, robotUnitApi, telemetryApi } from '@/lib/api';
 import { MonthlyReportView } from '@/components/report/MonthlyReportView';
 import { sampleGausiumReport } from '@/lib/reports/gausium';
 import { monthYearLabel } from '@/lib/reports/preview';
+import { isoWeekRange, previousIsoWeek, weekRangeLabel } from '@/lib/report-week';
 import type { MonthlyPerformanceReport } from '@/lib/reports/types';
 import type { RobotUnitResponse } from '@/types/api';
 
 type Selection = { kind: 'sample' } | { kind: 'robot'; robot: RobotUnitResponse };
+
+/** Which window the report covers. */
+type PeriodKind = 'month' | 'week';
+
+const PERIOD_TABS: { kind: PeriodKind; label: string }[] = [
+  { kind: 'month', label: 'Monthly' },
+  { kind: 'week', label: 'Weekly' },
+];
+
+/** Why sharing and email are unavailable on a weekly report. */
+const WEEKLY_SEND_NOTE =
+  'Report links are keyed to a month, so weekly reports cannot be shared or emailed yet — switch to Monthly to send one.';
+
+const PERIOD_INPUT_CLASS =
+  'h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]';
 
 /** Previous calendar month as "YYYY-MM". */
 function previousMonth(): string {
@@ -83,10 +103,23 @@ export function ReportPreviewPanel() {
   const [query, setQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selection, setSelection] = useState<Selection | null>(null);
+  const [periodKind, setPeriodKind] = useState<PeriodKind>('month');
   const [month, setMonth] = useState(previousMonth);
+  const [week, setWeek] = useState(previousIsoWeek);
   const locale = useLocale();
 
+  // Both pickers default to the last *finished* period: the current one is still
+  // accumulating tasks, so its numbers are not yet a report.
   const maxMonth = useMemo(previousMonth, []);
+  const maxWeek = useMemo(previousIsoWeek, []);
+
+  const isWeekly = periodKind === 'week';
+  /** The single period value the request, the cache key and the sync range share. */
+  const periodValue = isWeekly ? week : month;
+  const periodParam = isWeekly ? { week } : { month };
+  const periodLabel = isWeekly ? weekRangeLabel(week) : monthYearLabel(month);
+  // Null only when the week input is cleared or malformed — the sync is blocked then.
+  const syncRange = isWeekly ? isoWeekRange(week) : monthRange(month);
 
   const { data: robots = [], isLoading, isError } = useQuery({
     queryKey: ['robot-units'],
@@ -109,18 +142,20 @@ export function ReportPreviewPanel() {
     isLoading: reportLoading,
     isError: reportError,
   } = useQuery({
-    queryKey: ['report-preview', robotSn, month],
-    queryFn: () => reportApi.preview(robotSn!, month).then((r) => r.data.data),
+    queryKey: ['report-preview', robotSn, periodKind, periodValue],
+    queryFn: () => reportApi.preview(robotSn!, periodParam).then((r) => r.data.data),
     enabled: !!robotSn,
   });
 
   const queryClient = useQueryClient();
   const syncMutation = useMutation({
     mutationFn: () => {
-      const { from, to } = monthRange(month);
-      return telemetryApi.sync(robotSn!, from, to).then((r) => r.data);
+      if (!syncRange) return Promise.reject(new Error('Choose a valid week before syncing.'));
+      return telemetryApi.sync(robotSn!, syncRange.from, syncRange.to).then((r) => r.data);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['report-preview', robotSn, month] }),
+    // Invalidate every period for this robot, not just the visible one: newly
+    // synced tasks change the month the week sits in as well as the week itself.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['report-preview', robotSn] }),
   });
 
   // Mint (or reuse) the public token and open the standalone customer link in a new tab.
@@ -138,7 +173,7 @@ export function ReportPreviewPanel() {
 
   const report: MonthlyPerformanceReport | null | undefined =
     selection?.kind === 'sample'
-      ? { ...sampleGausiumReport, periodLabel: monthYearLabel(month) }
+      ? { ...sampleGausiumReport, periodLabel }
       : robotReport;
 
   /* ── Selected: show the report with a control bar ──────────────────────── */
@@ -156,22 +191,54 @@ export function ReportPreviewPanel() {
           </button>
 
           <div className="flex flex-wrap items-center gap-3">
+            <div
+              role="group"
+              aria-label="Report period"
+              className="flex items-center gap-0.5 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] p-0.5"
+            >
+              {PERIOD_TABS.map((tab) => (
+                <button
+                  key={tab.kind}
+                  type="button"
+                  onClick={() => setPeriodKind(tab.kind)}
+                  aria-pressed={periodKind === tab.kind}
+                  className={
+                    periodKind === tab.kind
+                      ? 'rounded-md bg-[var(--app-brand)] px-3 py-1.5 text-sm font-semibold text-white'
+                      : 'rounded-md px-3 py-1.5 text-sm font-semibold text-[var(--app-muted)] transition hover:text-[var(--app-text)]'
+                  }
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
             <label className="flex items-center gap-2 text-sm text-[var(--app-muted)]">
-              Report month
-              <input
-                type="month"
-                value={month}
-                max={maxMonth}
-                onChange={(e) => setMonth(e.target.value)}
-                className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
-              />
+              {isWeekly ? 'Report week' : 'Report month'}
+              {isWeekly ? (
+                <input
+                  type="week"
+                  value={week}
+                  max={maxWeek}
+                  onChange={(e) => setWeek(e.target.value)}
+                  className={PERIOD_INPUT_CLASS}
+                />
+              ) : (
+                <input
+                  type="month"
+                  value={month}
+                  max={maxMonth}
+                  onChange={(e) => setMonth(e.target.value)}
+                  className={PERIOD_INPUT_CLASS}
+                />
+              )}
             </label>
             {isRobot && (
               <button
                 type="button"
                 onClick={() => syncMutation.mutate()}
-                disabled={syncMutation.isPending}
-                title="Pull this robot's task reports from the Gausium API for the selected month"
+                disabled={syncMutation.isPending || !syncRange}
+                title={`Pull this robot's task reports from the Gausium API for the selected ${periodKind}`}
                 className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
               >
                 {syncMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -182,8 +249,12 @@ export function ReportPreviewPanel() {
               <button
                 type="button"
                 onClick={() => linkMutation.mutate()}
-                disabled={linkMutation.isPending}
-                title="Open the standalone customer report link (real data) in a new tab — same link the monthly email uses"
+                disabled={linkMutation.isPending || isWeekly}
+                title={
+                  isWeekly
+                    ? WEEKLY_SEND_NOTE
+                    : 'Open the standalone customer report link (real data) in a new tab — same link the monthly email uses'
+                }
                 className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm font-semibold text-[var(--app-brand-dark)] transition hover:border-[var(--app-brand)] disabled:opacity-50"
               >
                 {linkMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
@@ -194,8 +265,8 @@ export function ReportPreviewPanel() {
               <button
                 type="button"
                 onClick={() => emailMutation.mutate()}
-                disabled={emailMutation.isPending}
-                title="Email this report link to the customer's contact email"
+                disabled={emailMutation.isPending || isWeekly}
+                title={isWeekly ? WEEKLY_SEND_NOTE : "Email this report link to the customer's contact email"}
                 className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
               >
                 {emailMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
@@ -204,6 +275,13 @@ export function ReportPreviewPanel() {
             )}
           </div>
         </div>
+
+        {isRobot && isWeekly && (
+          <p className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            {WEEKLY_SEND_NOTE}
+          </p>
+        )}
 
         {isRobot && syncMutation.isSuccess && (
           <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
@@ -265,7 +343,7 @@ export function ReportPreviewPanel() {
       <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4">
         <p className="text-sm font-semibold text-[var(--app-text)]">Report layout preview</p>
         <p className="mt-1 text-xs text-[var(--app-muted)]">
-          Pick a robot to preview its monthly report page, or use sample data to confirm the format.
+          Pick a robot to preview its report page for a month or a week, or use sample data to confirm the format.
         </p>
         <a
           href={`/${locale}/report/example`}

@@ -347,10 +347,14 @@ export const cvteApi = {
 };
 
 export const reportApi = {
-  /** Aggregated monthly report for one robot, computed from its synced task reports. */
-  preview: (serialNumber: string, month: string) =>
+  /**
+   * Aggregated report for one robot, computed from its synced task reports.
+   * The period is either a calendar month ("YYYY-MM") or an ISO week
+   * ("YYYY-Www", Mon–Sun) — the backend rejects both at once.
+   */
+  preview: (serialNumber: string, period: { month: string } | { week: string }) =>
     api.get<ApiResponse<MonthlyPerformanceReport>>('/api/v1/reports/preview', {
-      params: { serialNumber, month },
+      params: { serialNumber, ...period },
     }),
 
   /** Mint (or reuse) the shareable public link token for a robot+month. */
