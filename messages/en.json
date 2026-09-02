@@ -17,7 +17,7 @@
     "recMonitor": "Monitor {part} wear — residual at {value}%.",
     "recCompletion": "Investigate incomplete tasks — average completion is {value}%.",
     "recHealthy": "Continue the current operation plan — performance is within a healthy range.",
-    "recNoData": "No task data found for this robot in this period. Connect Gausium telemetry or choose a month with synced tasks.",
+    "recNoData": "No task data found for this robot in this period. Connect Gausium telemetry or choose a month or week with synced tasks.",
     "downloadPdf": "Download PDF",
     "totalTasksCompleted": "Total Tasks Completed",
     "totalOperatingHours": "Total Operating Hours",
