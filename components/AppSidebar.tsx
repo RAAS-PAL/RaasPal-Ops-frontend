@@ -9,6 +9,7 @@ import {
   FileText,
   LayoutDashboard,
   Sparkles,
+  TrendingUp,
   Wrench,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -20,6 +21,7 @@ import { useAuthStore } from '@/store/auth';
 export const navigationItems = [
   { title: 'Team Dashboard', labelKey: 'teamDashboard', href: '/', icon: LayoutDashboard },
   { title: 'Reports', labelKey: 'reports', href: '/reports', icon: CalendarClock },
+  { title: 'KPI', labelKey: 'kpi', href: '/kpi', icon: TrendingUp },
   { title: 'Generate Solution', labelKey: 'generateSolution', href: '/generate-solution', icon: ClipboardList },
   { title: 'Solutions', labelKey: 'solutions', href: '/solutions', icon: Sparkles },
   { title: 'Proposals', labelKey: 'proposals', href: '/proposals', icon: FileText },

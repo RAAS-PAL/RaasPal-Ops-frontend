@@ -141,7 +141,8 @@
     "users": "Users",
     "login": "Login",
     "logout": "Logout",
-    "settings": "Settings"
+    "settings": "Settings",
+    "kpi": "KPI"
   },
   "sidebar": {
     "teamOperations": "Team operations",
@@ -775,5 +776,78 @@
     "feature3Desc": "Get a detailed proposal with ranked robots, scores, and AI explanations.",
     "currentLocale": "Current language",
     "i18nStatus": "i18n is working"
+  },
+  "kpi": {
+    "eyebrow": "Team performance",
+    "title": "RE Team KPI Report",
+    "searchPlaceholder": "Installation • PM • CM • FTFR • SLA • CSAT",
+    "placeholderNotice": "Placeholder data from the Jan–Jun 2026 deck. No backend source is wired yet and the formulas are not defined — these figures are not computed.",
+    "notBuiltYet": "Not built yet.",
+    "boardTakeaways": "Board Takeaways",
+    "tabs": {
+      "report": "KPI Report",
+      "utilization": "Utilization",
+      "repeatCost": "Repeat Cost"
+    },
+    "kpis": {
+      "firstTimeInstall": "1st Time Install",
+      "pmComplete": "PM Complete",
+      "totalCmCases": "Total CM Cases",
+      "firstTimeFix": "First Time Fix",
+      "sla": "SLA / Over SLA",
+      "csat": "CSAT Top Box"
+    },
+    "panels": {
+      "firstTimeInstall": "First Time Installation",
+      "pmComplete": "PM Complete",
+      "totalCmCases": "Total CM Case",
+      "firstTimeFix": "First Time Fix",
+      "sla": "SLA / Over SLA",
+      "csat": "CSAT Top Box"
+    },
+    "segments": {
+      "cleaning": "Cleaning",
+      "delivery": "Delivery"
+    },
+    "legend": {
+      "install": "Installation",
+      "pm": "PM",
+      "within": "Within",
+      "over": "Over",
+      "csat": "CSAT"
+    },
+    "chart": {
+      "avg": "Average",
+      "avgSla": "Average SLA"
+    },
+    "stats": {
+      "overall": "Overall",
+      "total": "Total",
+      "avgPerMonth": "Avg / Month",
+      "yip": "YIP",
+      "raaspal": "Raaspal",
+      "install": "Install",
+      "pm": "PM",
+      "cmDelivery": "CM Delivery",
+      "cmCleaning": "CM Cleaning"
+    },
+    "takeaways": {
+      "installFtfr": {
+        "title": "Installation & FTFR",
+        "body": "First Time Installation 60.9% and FTFR 72.3% are the primary recovery priorities."
+      },
+      "pm": {
+        "title": "PM Performance",
+        "body": "Overall 90.3%; Raaspal 95.1% vs YIP 80.0%. Delivery PM is 81.2%."
+      },
+      "sla": {
+        "title": "SLA Performance",
+        "body": "Within SLA 77.2%; Cleaning 66.7% trails Delivery 83.5%."
+      },
+      "customer": {
+        "title": "Customer Experience",
+        "body": "Top Box 86.2%; Cleaning Repair 70.3% and survey response 53.5% need focus."
+      }
+    }
   }
 }

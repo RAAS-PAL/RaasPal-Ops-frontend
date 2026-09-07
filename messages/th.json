@@ -141,7 +141,8 @@
     "users": "ผู้ใช้",
     "login": "เข้าสู่ระบบ",
     "logout": "ออกจากระบบ",
-    "settings": "ตั้งค่า"
+    "settings": "ตั้งค่า",
+    "kpi": "KPI"
   },
   "sidebar": {
     "teamOperations": "การทำงานของทีม",
@@ -775,5 +776,78 @@
     "feature3Desc": "รับข้อเสนอโดยละเอียดพร้อมอันดับหุ่นยนต์ คะแนน และคำอธิบายจาก AI",
     "currentLocale": "ภาษาปัจจุบัน",
     "i18nStatus": "i18n ทำงานอยู่"
+  },
+  "kpi": {
+    "eyebrow": "ผลการดำเนินงานของทีม",
+    "title": "รายงาน KPI ทีม RE",
+    "searchPlaceholder": "ติดตั้ง • PM • CM • FTFR • SLA • CSAT",
+    "placeholderNotice": "ข้อมูลตัวอย่างจากสไลด์ ม.ค.–มิ.ย. 2026 ยังไม่ได้เชื่อมต่อแหล่งข้อมูลจริงและยังไม่ได้กำหนดสูตรคำนวณ ตัวเลขเหล่านี้ยังไม่ได้คำนวณจากระบบ",
+    "notBuiltYet": "ยังไม่ได้พัฒนา",
+    "boardTakeaways": "สรุปสำหรับผู้บริหาร",
+    "tabs": {
+      "report": "รายงาน KPI",
+      "utilization": "การใช้กำลังคน",
+      "repeatCost": "ต้นทุนงานซ้ำ"
+    },
+    "kpis": {
+      "firstTimeInstall": "ติดตั้งสำเร็จครั้งแรก",
+      "pmComplete": "PM สำเร็จ",
+      "totalCmCases": "เคส CM ทั้งหมด",
+      "firstTimeFix": "ซ่อมสำเร็จครั้งแรก",
+      "sla": "ภายใน SLA / เกิน SLA",
+      "csat": "CSAT Top Box"
+    },
+    "panels": {
+      "firstTimeInstall": "การติดตั้งสำเร็จครั้งแรก",
+      "pmComplete": "PM สำเร็จ",
+      "totalCmCases": "เคส CM ทั้งหมด",
+      "firstTimeFix": "ซ่อมสำเร็จครั้งแรก",
+      "sla": "ภายใน SLA / เกิน SLA",
+      "csat": "CSAT Top Box"
+    },
+    "segments": {
+      "cleaning": "ทำความสะอาด",
+      "delivery": "ขนส่ง"
+    },
+    "legend": {
+      "install": "ติดตั้ง",
+      "pm": "PM",
+      "within": "ภายใน",
+      "over": "เกิน",
+      "csat": "CSAT"
+    },
+    "chart": {
+      "avg": "ค่าเฉลี่ย",
+      "avgSla": "ค่าเฉลี่ย SLA"
+    },
+    "stats": {
+      "overall": "ภาพรวม",
+      "total": "รวม",
+      "avgPerMonth": "เฉลี่ย / เดือน",
+      "yip": "YIP",
+      "raaspal": "Raaspal",
+      "install": "ติดตั้ง",
+      "pm": "PM",
+      "cmDelivery": "CM ขนส่ง",
+      "cmCleaning": "CM ทำความสะอาด"
+    },
+    "takeaways": {
+      "installFtfr": {
+        "title": "การติดตั้งและ FTFR",
+        "body": "การติดตั้งสำเร็จครั้งแรก 60.9% และ FTFR 72.3% เป็นสิ่งที่ต้องเร่งแก้ไขเป็นอันดับแรก"
+      },
+      "pm": {
+        "title": "ผลงาน PM",
+        "body": "ภาพรวม 90.3%; Raaspal 95.1% เทียบกับ YIP 80.0% และ PM ขนส่งอยู่ที่ 81.2%"
+      },
+      "sla": {
+        "title": "ผลงาน SLA",
+        "body": "ภายใน SLA 77.2%; งานทำความสะอาด 66.7% ต่ำกว่างานขนส่ง 83.5%"
+      },
+      "customer": {
+        "title": "ประสบการณ์ลูกค้า",
+        "body": "Top Box 86.2%; งานซ่อมทำความสะอาด 70.3% และอัตราการตอบแบบสำรวจ 53.5% ต้องเร่งปรับปรุง"
+      }
+    }
   }
 }

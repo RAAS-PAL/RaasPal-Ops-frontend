@@ -1,0 +1,94 @@
+/**
+ * Shapes for the RE Team KPI report.
+ *
+ * These are deliberately written as the response the backend WILL return, not as
+ * whatever is convenient for the current fixtures. Nothing in the backend
+ * produces these numbers yet (see docs/re-kpi-dashboard-plan.md), so when the
+ * API lands the only change here should be where the data comes from — the
+ * components already consume this shape.
+ */
+
+/** Service line every KPI is split by. */
+export type Segment = 'cleaning' | 'delivery';
+
+/** One month of a series. `null` means "no data", which is not the same as 0. */
+export type MonthlyPoint = {
+  /** Short month label, already localised by the caller. */
+  month: string;
+  value: number | null;
+};
+
+/** A named series drawn on a chart (one bar colour). */
+export type Series = {
+  key: string;
+  /** Message key for the legend label; resolved in the component. */
+  labelKey: string;
+  color: string;
+  points: MonthlyPoint[];
+};
+
+/** A supporting figure shown beside a chart (the grey boxes in the deck). */
+export type SideStat = {
+  labelKey: string;
+  /** Pre-formatted for display — percent, ratio or count. */
+  value: string;
+  /** Optional smaller line under the value, e.g. "10/17". */
+  detail?: string;
+  /** When set, the box is tinted with the KPI's accent colour. */
+  emphasis?: boolean;
+};
+
+/** One of the six numbered panels. */
+export type KpiPanelData = {
+  id: KpiId;
+  /** 1–6, as printed in the deck. */
+  index: number;
+  titleKey: string;
+  accent: string;
+  chart: {
+    mode: 'single' | 'grouped' | 'stacked';
+    /** Percent charts fix the axis at 0–100; count charts scale to the data. */
+    unit: 'percent' | 'count';
+    series: Series[];
+    /** Horizontal reference line — the period average. */
+    average?: { value: number; labelKey: string; display: string };
+    /** Whether to print each bar's value above it. */
+    showValueLabels: boolean;
+    /** Small line under the chart, e.g. "Cleaning 95.6% | Delivery 81.2%". */
+    footnote?: string;
+  };
+  sideStats: SideStat[];
+};
+
+export type KpiId =
+  | 'firstTimeInstall'
+  | 'pmComplete'
+  | 'totalCmCases'
+  | 'firstTimeFix'
+  | 'sla'
+  | 'csat';
+
+/** The coloured summary tiles across the top. */
+export type KpiHeadline = {
+  id: KpiId;
+  labelKey: string;
+  value: string;
+  detail: string;
+  color: string;
+};
+
+export type BoardTakeaway = {
+  index: number;
+  color: string;
+  titleKey: string;
+  bodyKey: string;
+};
+
+export type KpiReport = {
+  /** Period label, e.g. "Jan - Jun 2026". */
+  period: string;
+  months: string[];
+  headlines: KpiHeadline[];
+  panels: KpiPanelData[];
+  takeaways: BoardTakeaway[];
+};
