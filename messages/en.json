@@ -782,7 +782,6 @@
     "title": "RE Team KPI Report",
     "searchPlaceholder": "Installation • PM • CM • FTFR • SLA • CSAT",
     "placeholderNotice": "Placeholder data from the Jan–Jun 2026 deck. No backend source is wired yet and the formulas are not defined — these figures are not computed.",
-    "notBuiltYet": "Not built yet.",
     "boardTakeaways": "Board Takeaways",
     "tabs": {
       "report": "KPI Report",
@@ -847,6 +846,94 @@
       "customer": {
         "title": "Customer Experience",
         "body": "Top Box 86.2%; Cleaning Repair 70.3% and survey response 53.5% need focus."
+      }
+    },
+    "utilization": {
+      "awaitingSource": "Chart data is not in the source deck — needs the RE_Productivity sheet.",
+      "factorsTitle": "MD factor definitions",
+      "actionsTitle": "Executive actions",
+      "boardView": "Board view: use “type of work + travel manday” as the primary workload utilization KPI; use “type of work only” for core output, and treat “travel manday” as efficiency loss to optimise dispatch planning.",
+      "metrics": {
+        "work": "Work MD",
+        "workDetail": "Top 15 field work only",
+        "travel": "Travel MD",
+        "travelDetail": "46.2% of field workload",
+        "total": "Total workload MD",
+        "totalDetail": "Work + travel",
+        "utilization": "Utilization",
+        "utilizationDetail": "Capacity 1,980 MD",
+        "helpdesk": "Helpdesk MD",
+        "helpdeskDetail": "Not included in field utilization",
+        "topWorkType": "Top work type",
+        "topWorkTypeDetail": "303.0 MD • 23.7%"
+      },
+      "sections": {
+        "perPerson": "Utilization by person (top 15)",
+        "workMix": "Type of work / workload mix",
+        "monthlyTrend": "Monthly trend"
+      },
+      "factors": {
+        "standard": "Demo / Installation / Training / Modify = 1.0 MD",
+        "cm": "CM = 0.5 MD per job",
+        "pm": "PM: 3 jobs = 1.0 MD; 2 units = 0.5 MD",
+        "half": "Robot send/receive, unbox, QC, customer support, site survey, other = 0.5 MD",
+        "meeting": "Meeting = 0.375 MD",
+        "travel": "Travel MD = round-trip time from Software Park ÷ 8 hrs",
+        "estimate": "Jan–Apr travel is estimated from the May–Jun average by type."
+      },
+      "actions": {
+        "cm": "CM is the dominant load — review recurring root causes.",
+        "travel": "Travel is high — use zone dispatch and route planning.",
+        "capacity": "Capacity gap — add PM, training, documentation and RCA."
+      }
+    },
+    "repeat": {
+      "exampleNotice": "Example cost model from the Jan–Jun 2026 deck. Rates are illustrative and must be adjusted to real km, manday and parts — no backend source is wired yet.",
+      "costSummary": "Cost summary",
+      "vsIncentive": "Cost vs incentive",
+      "keyFactor": "Repeat cost must be calculated from verifiable ticket events, not by multiplying a KPI denominator.",
+      "headlines": {
+        "installRepeat": "Install repeat ≤30 days",
+        "installCost": "Cost after install",
+        "cmRepeat": "CM repeat ≤7 days",
+        "cmCost": "Cost after CM"
+      },
+      "breakdowns": {
+        "installation": "Repeat cost after installation",
+        "cm": "Repeat cost after repair (CM)"
+      },
+      "channels": {
+        "onsite": "On-site",
+        "online": "Online",
+        "logistics": "Logistics"
+      },
+      "labels": {
+        "kpiVolumeInstall": "KPI volume (cases)",
+        "kpiVolumeCm": "KPI volume (cases)",
+        "costEvents": "Cost events (tickets)",
+        "local": "Local / BKK",
+        "province": "Province",
+        "avgKm": "Avg km (round trip)",
+        "unitCost": "Unit cost (local · province)",
+        "subtotal": "Subtotal",
+        "repeatCostTotal": "Total repeat cost",
+        "incentive": "Incentive at 500/case",
+        "gap": "Gap after incentive"
+      },
+      "table": {
+        "line": "Line",
+        "qty": "Qty",
+        "unit": "Unit",
+        "total": "Total",
+        "grandTotal": "Grand total"
+      },
+      "lines": {
+        "installLocal": "Install local on-site",
+        "installProvince": "Install province on-site",
+        "installOnline": "Install online",
+        "cmLocal": "CM local on-site",
+        "cmProvince": "CM province on-site",
+        "cmOnlineLogistics": "CM online + logistics"
       }
     }
   }

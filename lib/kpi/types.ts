@@ -92,3 +92,65 @@ export type KpiReport = {
   panels: KpiPanelData[];
   takeaways: BoardTakeaway[];
 };
+
+/* ── Utilization & productivity (deck slide 3) ─────────────────────────────── */
+
+export type UtilizationMetric = {
+  key: string;
+  labelKey: string;
+  value: string;
+  detailKey: string;
+  color: string;
+};
+
+export type UtilizationReport = {
+  period: string;
+  metrics: UtilizationMetric[];
+  /** MD conversion rules, printed verbatim — the aggregation must match these. */
+  factorKeys: string[];
+  actionKeys: string[];
+  sections: { key: string; titleKey: string }[];
+};
+
+/* ── Repeat cost (deck slides 4–5) ─────────────────────────────────────────── */
+
+export type RepeatHeadline = {
+  key: string;
+  labelKey: string;
+  value: string;
+  detail: string;
+  color: string;
+};
+
+/** Ticket breakdown behind one repeat type. */
+export type RepeatBreakdown = {
+  key: string;
+  titleKey: string;
+  accent: string;
+  kpiVolume: string;
+  kpiVolumeLabelKey: string;
+  costEvents: string;
+  costEventsLabelKey: string;
+  channels: { labelKey: string; count: number }[];
+  /** Local/BKK vs province split of the cost events. */
+  split: { localLabelKey: string; local: number; provinceLabelKey: string; province: number };
+  avgKm: { local: number; province: number };
+  unitCost: { localBaht: number; provinceBaht: number };
+  totalBaht: number;
+};
+
+export type CostLine = {
+  key: string;
+  labelKey: string;
+  qty: string;
+  unit: string;
+  total: number;
+};
+
+export type RepeatCostReport = {
+  period: string;
+  headlines: RepeatHeadline[];
+  breakdowns: RepeatBreakdown[];
+  costLines: CostLine[];
+  totals: { repeatCost: number; incentive: number; gap: number; incentiveBasis: string };
+};

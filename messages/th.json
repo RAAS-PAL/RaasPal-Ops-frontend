@@ -782,7 +782,6 @@
     "title": "รายงาน KPI ทีม RE",
     "searchPlaceholder": "ติดตั้ง • PM • CM • FTFR • SLA • CSAT",
     "placeholderNotice": "ข้อมูลตัวอย่างจากสไลด์ ม.ค.–มิ.ย. 2026 ยังไม่ได้เชื่อมต่อแหล่งข้อมูลจริงและยังไม่ได้กำหนดสูตรคำนวณ ตัวเลขเหล่านี้ยังไม่ได้คำนวณจากระบบ",
-    "notBuiltYet": "ยังไม่ได้พัฒนา",
     "boardTakeaways": "สรุปสำหรับผู้บริหาร",
     "tabs": {
       "report": "รายงาน KPI",
@@ -847,6 +846,94 @@
       "customer": {
         "title": "ประสบการณ์ลูกค้า",
         "body": "Top Box 86.2%; งานซ่อมทำความสะอาด 70.3% และอัตราการตอบแบบสำรวจ 53.5% ต้องเร่งปรับปรุง"
+      }
+    },
+    "utilization": {
+      "awaitingSource": "ยังไม่มีข้อมูลกราฟในสไลด์ต้นทาง ต้องใช้ไฟล์ RE_Productivity",
+      "factorsTitle": "นิยาม Factor (MD)",
+      "actionsTitle": "ข้อเสนอผู้บริหาร",
+      "boardView": "Board View: ใช้ “Type of Work + Travel Manday” เป็น KPI หลักด้าน Workload Utilization; ใช้ “Type of Work Only” ดู Core Output และใช้ “Travel Manday” เป็น Efficiency Loss เพื่อ Optimize Dispatch Planning",
+      "metrics": {
+        "work": "วันงานจริง (Work MD)",
+        "workDetail": "เฉพาะงานภาคสนาม 15 อันดับแรก",
+        "travel": "วันเดินทาง (Travel MD)",
+        "travelDetail": "46.2% ของงานภาคสนาม",
+        "total": "งานรวม (Total MD)",
+        "totalDetail": "งาน + เดินทาง",
+        "utilization": "การใช้ Capacity",
+        "utilizationDetail": "Capacity 1,980 MD",
+        "helpdesk": "Helpdesk MD",
+        "helpdeskDetail": "ไม่รวมในการคำนวณงานภาคสนาม",
+        "topWorkType": "งานหลัก",
+        "topWorkTypeDetail": "303.0 MD • 23.7%"
+      },
+      "sections": {
+        "perPerson": "Utilization รายบุคคล (15 อันดับแรก)",
+        "workMix": "รายละเอียด Type of Work",
+        "monthlyTrend": "แนวโน้มรายเดือน"
+      },
+      "factors": {
+        "standard": "Demo / Installation / Training / Modify = 1.0 MD",
+        "cm": "CM = 0.5 MD ต่องาน",
+        "pm": "PM: 3 งาน = 1.0 MD; 2 เครื่อง = 0.5 MD",
+        "half": "ส่ง/รับหุ่นยนต์, Unbox, QC, Customer Support, Site Survey, อื่นๆ = 0.5 MD",
+        "meeting": "Meeting = 0.375 MD",
+        "travel": "Travel MD = เวลาเดินทางไป-กลับจาก Software Park ÷ 8 ชม.",
+        "estimate": "Travel เดือน ม.ค.–เม.ย. ประมาณการจากค่าเฉลี่ย พ.ค.–มิ.ย. แยกตามประเภทงาน"
+      },
+      "actions": {
+        "cm": "CM เป็นภาระหลัก: review recurring root causes",
+        "travel": "Travel สูง: ใช้ Zone dispatch & route planning",
+        "capacity": "Capacity gap: เติม PM, Training, Documentation, RCA"
+      }
+    },
+    "repeat": {
+      "exampleNotice": "ตัวอย่างการคำนวณต้นทุนจากสไลด์ ม.ค.–มิ.ย. 2026 อัตราที่แสดงเป็นตัวอย่างเท่านั้น ต้องปรับตาม KM / Manday / Parts จริง และยังไม่ได้เชื่อมต่อข้อมูลจากระบบ",
+      "costSummary": "สรุปต้นทุน",
+      "vsIncentive": "ต้นทุนเทียบกับ Incentive",
+      "keyFactor": "ต้นทุนงานเข้าซ้ำต้องคิดจาก Event/Ticket ที่ตรวจสอบได้ ไม่ใช่คูณจากตัวหาร KPI เพียงอย่างเดียว",
+      "headlines": {
+        "installRepeat": "เข้าซ้ำหลังติดตั้ง ≤30 วัน",
+        "installCost": "ต้นทุนหลังติดตั้ง",
+        "cmRepeat": "ซ่อมซ้ำ ≤7 วัน",
+        "cmCost": "ต้นทุนหลังงานซ่อม"
+      },
+      "breakdowns": {
+        "installation": "ต้นทุนจากการเข้าซ้ำหลังติดตั้ง",
+        "cm": "ต้นทุนจากการเข้าซ้ำงานซ่อม (CM)"
+      },
+      "channels": {
+        "onsite": "On-site",
+        "online": "Online",
+        "logistics": "Logistics"
+      },
+      "labels": {
+        "kpiVolumeInstall": "ฐาน KPI (เคส)",
+        "kpiVolumeCm": "ฐาน KPI (เคส)",
+        "costEvents": "ฐานต้นทุน (Tickets)",
+        "local": "ในกรุงเทพฯ/ปริมณฑล",
+        "province": "ต่างจังหวัด",
+        "avgKm": "ระยะทางเฉลี่ย (ไป-กลับ)",
+        "unitCost": "ต้นทุนต่อครั้ง (ใน กทม. · ต่างจังหวัด)",
+        "subtotal": "รวม",
+        "repeatCostTotal": "ต้นทุนงานซ้ำรวม",
+        "incentive": "Incentive 500/เคส",
+        "gap": "ส่วนต่างหลัง Incentive"
+      },
+      "table": {
+        "line": "รายการ",
+        "qty": "จำนวน",
+        "unit": "ต่อหน่วย",
+        "total": "รวม",
+        "grandTotal": "รวมทั้งสิ้น"
+      },
+      "lines": {
+        "installLocal": "ติดตั้ง On-site ใน กทม.",
+        "installProvince": "ติดตั้ง On-site ต่างจังหวัด",
+        "installOnline": "ติดตั้ง Online",
+        "cmLocal": "CM On-site ใน กทม.",
+        "cmProvince": "CM On-site ต่างจังหวัด",
+        "cmOnlineLogistics": "CM Online + Logistics"
       }
     }
   }

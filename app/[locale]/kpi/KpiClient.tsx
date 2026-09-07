@@ -3,9 +3,9 @@
 /**
  * KPI section — one tab per area of the RE Team KPI deck.
  *
- * Only the KPI report tab is built. Utilization and Repeat Cost are declared
- * here so the structure is visible and the routes work, but they render an
- * explicit "not built yet" state rather than a half-finished panel.
+ * All three tabs are scaffolded against the deck. Where the deck's own text
+ * layer carries no data — the utilization analysis charts — that section shows
+ * an empty state naming the missing source rather than invented figures.
  */
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -13,6 +13,8 @@ import { BarChart3, Banknote, Users } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { ReKpiReportTab } from '@/components/kpi/ReKpiReportTab';
+import { UtilizationTab } from '@/components/kpi/UtilizationTab';
+import { RepeatCostTab } from '@/components/kpi/RepeatCostTab';
 
 export type KpiTab = 'report' | 'utilization' | 'repeat-cost';
 
@@ -62,14 +64,8 @@ export function KpiClient({ initialTab = 'report' }: { initialTab?: KpiTab }) {
             </div>
 
             {tab === 'report' && <ReKpiReportTab />}
-            {tab !== 'report' && (
-              <div className="rounded-xl border border-dashed border-[var(--app-border-strong)] bg-[var(--app-panel-soft)] p-10 text-center">
-                <p className="text-sm font-semibold text-[var(--app-text)]">
-                  {tab === 'utilization' ? t('tabs.utilization') : t('tabs.repeatCost')}
-                </p>
-                <p className="mt-1 text-xs text-[var(--app-muted)]">{t('notBuiltYet')}</p>
-              </div>
-            )}
+            {tab === 'utilization' && <UtilizationTab />}
+            {tab === 'repeat-cost' && <RepeatCostTab />}
           </div>
         </section>
       </div>
