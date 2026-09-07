@@ -935,6 +935,25 @@
         "cmProvince": "CM province on-site",
         "cmOnlineLogistics": "CM online + logistics"
       }
+    },
+    "period": {
+      "label": "Reporting period",
+      "year": "Year",
+      "from": "From month",
+      "to": "To month",
+      "showing": "Showing",
+      "invalidRange": "End month is before start month.",
+      "invalidTitle": "That range runs backwards",
+      "invalidBody": "The end month falls before the start month. Pick an end month on or after the start.",
+      "noDataTitle": "No data for this period",
+      "noDataBody": "Placeholder data currently covers only Jan – Jun 2026, the period of the source deck. Other periods will fill in once a data source is wired.",
+      "backToDeck": "Show Jan – Jun 2026",
+      "presets": {
+        "last6": "Last 6 months",
+        "h1": "First half (Jan – Jun)",
+        "h2": "Second half (Jul – Dec)",
+        "custom": "Custom range"
+      }
     }
   }
 }
