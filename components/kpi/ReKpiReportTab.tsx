@@ -1,34 +1,94 @@
 'use client';
 
 /**
- * RE Team KPI Report — the six-KPI board view (slide 2 of the source deck).
+ * RE Team KPI Report — the board view (slide 2 of the source deck).
  *
- * Scaffold: the figures come from lib/kpi/fixtures.ts, which holds the Jan–Jun
- * 2026 deck numbers as typed constants. No backend endpoint produces these yet
- * and the formulas are still to be defined, so the page renders a standing
- * notice rather than implying the numbers are computed. Swapping in the API
- * means replacing the `report` constant with a query — nothing below changes.
+ * Live: the four KPIs the monday ticket mirror can produce — 1st Time Install,
+ * Total CM Cases, First Time Fix and SLA — are fetched from
+ * `GET /api/v1/kpi/cm-cases` for the selected period.
+ *
+ * PM Complete and CSAT are NOT shown. Nothing in the backend sources them (they
+ * come from the RE team's spreadsheets), and a tile that looks like the other
+ * four but is secretly a constant is worse than an absent one on a board slide.
+ * They are named in a notice instead.
  */
 import { useTranslations } from 'next-intl';
-import { Info } from 'lucide-react';
-import { RE_KPI_REPORT_JAN_JUN_2026 } from '@/lib/kpi/fixtures';
+import { useLocale } from 'next-intl';
+import { useQuery } from '@tanstack/react-query';
+import { AlertTriangle, Info, Loader2 } from 'lucide-react';
+import { kpiApi } from '@/lib/api';
+import { toLiveReport, UNSOURCED_KPIS } from '@/lib/kpi/from-api';
+import type { Period } from '@/lib/kpi/period';
 import { KpiHeadlineTile } from './KpiHeadlineTile';
 import { KpiPanel } from './KpiPanel';
 
-export function ReKpiReportTab() {
+type Props = { period: Period };
+
+export function ReKpiReportTab({ period }: Props) {
   const t = useTranslations('kpi');
-  const report = RE_KPI_REPORT_JAN_JUN_2026;
+  const locale = useLocale();
+
+  const query = useQuery({
+    queryKey: ['kpi', 'cm-cases', period.from, period.to],
+    queryFn: async () => (await kpiApi.cmCases(period.from, period.to)).data.data,
+  });
+
+  if (query.isLoading) {
+    return (
+      <div className="flex items-center justify-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] py-16 text-sm text-[var(--app-muted)]">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        {t('live.loading')}
+      </div>
+    );
+  }
+
+  if (query.isError || !query.data) {
+    return (
+      <div className="flex items-start gap-2 rounded-lg border border-[var(--app-danger-border,#fca5a5)] bg-[var(--app-panel)] px-3 py-4">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+        <div className="text-sm">
+          <p className="font-medium text-[var(--app-text)]">{t('live.errorTitle')}</p>
+          <p className="mt-0.5 text-xs text-[var(--app-muted)]">
+            {query.error instanceof Error ? query.error.message : t('live.errorBody')}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const data = query.data;
+  const report = toLiveReport(data, locale);
+  const syncedAt = data.lastSyncedAt ? new Date(data.lastSyncedAt).toLocaleString(locale) : null;
 
   return (
     <div className="space-y-4">
-      {/* Placeholder banner — remove once the data source is wired. */}
+      {/* What these numbers are, and what they are not. */}
       <div className="flex items-start gap-2 rounded-lg border border-dashed border-[var(--app-border-strong)] bg-[var(--app-panel-soft)] px-3 py-2">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--app-muted)]" />
-        <p className="text-xs text-[var(--app-muted)]">{t('placeholderNotice')}</p>
+        <div className="text-xs text-[var(--app-muted)]">
+          <p>
+            {t('live.sourceNotice', {
+              tickets: data.ticketCount.toLocaleString(),
+              synced: syncedAt ?? t('live.neverSynced'),
+            })}
+          </p>
+          <p className="mt-1">
+            {t('live.unsourcedNotice', {
+              kpis: UNSOURCED_KPIS.map((id) => t(`kpis.${id}`)).join(', '),
+            })}
+          </p>
+          {data.provisional && <p className="mt-1">{t('live.provisionalNotice')}</p>}
+        </div>
       </div>
 
+      {report.empty && (
+        <div className="rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-3 py-6 text-center text-sm text-[var(--app-muted)]">
+          {t('live.emptyRange')}
+        </div>
+      )}
+
       {/* Headline tiles */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         {report.headlines.map((h) => (
           <KpiHeadlineTile
             key={h.id}
@@ -40,8 +100,8 @@ export function ReKpiReportTab() {
         ))}
       </div>
 
-      {/* Six panels */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+      {/* Panels */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {report.panels.map((panel) => (
           <KpiPanel
             key={panel.id}
@@ -56,30 +116,6 @@ export function ReKpiReportTab() {
           />
         ))}
       </div>
-
-      {/* Board takeaways */}
-      <section className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4 shadow-sm">
-        <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-[var(--app-text)]">
-          {t('boardTakeaways')}
-        </h3>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {report.takeaways.map((item) => (
-            <div key={item.index} className="flex gap-2.5">
-              <span
-                aria-hidden
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                style={{ background: item.color }}
-              >
-                {item.index}
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-[var(--app-text)]">{t(item.titleKey)}</p>
-                <p className="mt-0.5 text-xs leading-relaxed text-[var(--app-muted)]">{t(item.bodyKey)}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

@@ -67,6 +67,7 @@ api.interceptors.response.use(
 
 /* ─── Typed helpers ───────────────────────────────────────────────────────── */
 
+import type { KpiCaseMetrics, MondaySyncConfig } from './kpi/api-types';
 import type {
   ApiResponse,
   AutoxingDeliveryReport,
@@ -549,4 +550,31 @@ export const customerBundleApi = {
       { excludedRobotUnitIds },
       { params: { customerProfileId, month } },
     ),
+};
+
+/**
+ * RE Team KPI dashboard.
+ *
+ * Backed by the monday.com ticket mirror: `cmCases` returns Total CM Cases,
+ * First Time Fix, SLA and 1st Time Install per month and per robot type. The
+ * remaining deck KPIs (PM Complete, CSAT) have no source yet and are not part
+ * of this response.
+ *
+ * Internal only — the backend restricts every /api/v1/kpi route to ADMIN and
+ * RAASPAL_TEAM, so a signed-in inventory account gets a 403 here.
+ */
+export const kpiApi = {
+  /**
+   * Metrics for an inclusive month range, both 'YYYY-MM'.
+   *
+   * The backend reads past the end of the range by its longest follow-up window
+   * so a ticket in the final month can still see the repeat that disqualifies
+   * it; that is why a range can legitimately return numbers that change once
+   * later months are synced.
+   */
+  cmCases: (from: string, to: string) =>
+    api.get<ApiResponse<KpiCaseMetrics>>('/api/v1/kpi/cm-cases', { params: { from, to } }),
+
+  /** Board and column mapping, and whether a monday token is configured. Never returns the token. */
+  config: () => api.get<ApiResponse<MondaySyncConfig>>('/api/v1/kpi/monday/config'),
 };

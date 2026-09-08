@@ -84,7 +84,12 @@ export function KpiClient({
   ];
 
   const rangeUsable = isValidPeriod(period);
-  const dataAvailable = rangeUsable && hasPlaceholderData(period);
+  // The report tab is computed from synced tickets, so it answers for any valid
+  // range — an empty one included, which it says plainly. Utilization and Repeat
+  // Cost are still deck constants and can only honestly show the deck's own
+  // period, so they keep the placeholder gate.
+  const fixtureTabAvailable = rangeUsable && hasPlaceholderData(period);
+  const gated = tab === 'report' ? !rangeUsable : !fixtureTabAvailable;
 
   return (
     <main className="min-h-dvh bg-[var(--app-bg)] text-[var(--app-text)] transition-colors">
@@ -133,7 +138,7 @@ export function KpiClient({
               </p>
             )}
 
-            {!dataAvailable ? (
+            {gated ? (
               <NoPeriodData
                 title={rangeUsable ? t('period.noDataTitle') : t('period.invalidTitle')}
                 body={rangeUsable ? t('period.noDataBody') : t('period.invalidBody')}
@@ -142,7 +147,7 @@ export function KpiClient({
               />
             ) : (
               <>
-                {tab === 'report' && <ReKpiReportTab />}
+                {tab === 'report' && <ReKpiReportTab period={period} />}
                 {tab === 'utilization' && <UtilizationTab />}
                 {tab === 'repeat-cost' && <RepeatCostTab />}
               </>

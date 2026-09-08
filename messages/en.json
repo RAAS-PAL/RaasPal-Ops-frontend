@@ -954,6 +954,16 @@
         "h2": "Second half (Jul – Dec)",
         "custom": "Custom range"
       }
+    },
+    "live": {
+      "loading": "Loading KPIs from the ticket mirror…",
+      "errorTitle": "Could not load the KPIs",
+      "errorBody": "The backend did not answer. Check that it is running and that you have an ADMIN or RAASPAL_TEAM account.",
+      "sourceNotice": "Computed from {tickets} synced monday.com ticket(s). Mirror last refreshed: {synced}.",
+      "neverSynced": "never",
+      "unsourcedNotice": "Not shown: {kpis}. These come from the RE team's spreadsheets and have no backend source yet.",
+      "provisionalNotice": "Formulas are provisional and awaiting RE-team sign-off.",
+      "emptyRange": "No tickets in this period yet. Run a monday sync, or pick a period the boards cover."
     }
   }
 }
