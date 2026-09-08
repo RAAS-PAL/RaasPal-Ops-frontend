@@ -961,10 +961,13 @@
       "errorBody": "The backend did not answer. Check that it is running and that you have an ADMIN or RAASPAL_TEAM account.",
       "sourceNotice": "Computed from {tickets} synced monday.com ticket(s). Mirror last refreshed: {synced}.",
       "neverSynced": "never",
-      "unsourcedNotice": "Not shown: {kpis}. These come from the RE team's spreadsheets and have no backend source yet.",
       "provisionalNotice": "Formulas are provisional and awaiting RE-team sign-off.",
       "emptyRange": "No tickets in this period yet. Run a monday sync, or pick a period the boards cover.",
-      "scopeNotice": "{excluded} row(s) in this period are on the boards but are not KPI cases (surveys, demos, parts shipments) and are left out; {unclassified} count in the fleet total but could not be placed as cleaning or delivery."
+      "scopeNotice": "{excluded} row(s) in this period are on the boards but are not KPI cases (surveys, demos, parts shipments) and are left out; {unclassified} count in the fleet total but could not be placed as cleaning or delivery.",
+      "placeholderBadge": "Placeholder",
+      "placeholderNotice": "{kpis} are placeholders copied from the Jan–Jun 2026 deck — no backend source yet, not computed.",
+      "awaitingSourceNotice": "{kpis} have no backend source yet and show no figures for this period.",
+      "awaitingSourceBody": "No source for this period. PM Complete needs the PM boards and the visits-due rule; CSAT needs the survey export."
     }
   }
 }

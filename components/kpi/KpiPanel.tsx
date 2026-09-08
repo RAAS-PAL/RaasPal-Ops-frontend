@@ -4,6 +4,10 @@
  *
  * The side stats stack under the chart on narrow screens rather than squeezing
  * beside it, since the deck's fixed 16:9 layout has no mobile equivalent.
+ *
+ * A panel may carry a badge (a placeholder with no backend source) or, when
+ * there is nothing honest to chart for the period, an `emptyMessage` that
+ * replaces the chart and figures entirely.
  */
 import type { SideStat } from '@/lib/kpi/types';
 import { KpiBarChart, type ChartSeries } from './KpiBarChart';
@@ -21,19 +25,37 @@ type Props = {
     footnote?: string;
   };
   sideStats: (SideStat & { label: string })[];
+  /** Badge text; its presence marks the panel as a placeholder. */
+  badge?: string;
+  /** When set, shown instead of the chart and side stats. */
+  emptyMessage?: string;
 };
 
-export function KpiPanel({ index, title, accent, chart, sideStats }: Props) {
+export function KpiPanel({ index, title, accent, chart, sideStats, badge, emptyMessage }: Props) {
   return (
-    <section className="flex overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] shadow-sm">
+    <section
+      className={`flex overflow-hidden rounded-xl border bg-[var(--app-panel)] shadow-sm ${
+        badge ? 'border-dashed border-[var(--app-border-strong)]' : 'border-[var(--app-border)]'
+      }`}
+    >
       <div aria-hidden className="w-1.5 shrink-0" style={{ background: accent }} />
 
       <div className="flex min-w-0 flex-1 flex-col p-3.5">
-        <h3 className="mb-3 text-sm font-bold text-[var(--app-text)]">
-          <span className="mr-1.5 text-[var(--app-muted)]">{index}</span>
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-[var(--app-text)]">
+          <span className="text-[var(--app-muted)]">{index}</span>
           {title}
+          {badge && (
+            <span className="rounded border border-[var(--app-border-strong)] bg-[var(--app-panel-soft)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--app-muted)]">
+              {badge}
+            </span>
+          )}
         </h3>
 
+        {emptyMessage ? (
+          <div className="flex min-h-[190px] flex-1 items-center justify-center rounded-lg border border-dashed border-[var(--app-border-strong)] bg-[var(--app-panel-soft)] p-4 text-center">
+            <p className="max-w-xs text-xs leading-relaxed text-[var(--app-muted)]">{emptyMessage}</p>
+          </div>
+        ) : (
         <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row">
           <div className="flex min-h-[190px] min-w-0 flex-1">
             <KpiBarChart {...chart} />
@@ -75,6 +97,7 @@ export function KpiPanel({ index, title, accent, chart, sideStats }: Props) {
             ))}
           </div>
         </div>
+        )}
       </div>
     </section>
   );

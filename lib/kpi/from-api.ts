@@ -7,7 +7,9 @@
  * 1st Time Install, Total CM Cases, First Time Fix and SLA. The other two —
  * PM Complete and CSAT — have no source anywhere in the backend, so they are
  * deliberately absent here rather than filled with a plausible-looking number.
- * The tab lists them as unsourced instead.
+ * The tab slots badged placeholders into their positions (see
+ * lib/kpi/placeholders.ts), which is why the panel indices here are the deck's
+ * 1, 3, 4 and 5 rather than 1–4.
  *
  * A `null` rate means the denominator was zero. It is rendered as an em dash,
  * never as 0%: "no cases to measure" and "nothing was fixed first time" are
@@ -21,9 +23,6 @@ const CLEANING = '#2563EB';
 const DELIVERY = '#6BA6F7';
 const WITHIN = '#34A853';
 const OVER = '#E8A33D';
-
-/** KPIs the backend cannot yet produce; shown as unsourced rather than invented. */
-export const UNSOURCED_KPIS = ['pmComplete', 'csat'] as const;
 
 /** '2026-01' → 'Jan', in the viewer's locale. */
 function monthLabel(month: string, locale: string): string {
@@ -144,7 +143,7 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string): LiveKpiRepor
     },
     {
       id: 'totalCmCases',
-      index: 2,
+      index: 3,
       titleKey: 'panels.totalCmCases',
       accent: KPI_COLORS.cmTotal,
       chart: {
@@ -186,7 +185,7 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string): LiveKpiRepor
     },
     {
       id: 'firstTimeFix',
-      index: 3,
+      index: 4,
       titleKey: 'panels.firstTimeFix',
       accent: KPI_COLORS.ftf,
       chart: {
@@ -237,7 +236,7 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string): LiveKpiRepor
     },
     {
       id: 'sla',
-      index: 4,
+      index: 5,
       titleKey: 'panels.sla',
       accent: KPI_COLORS.sla,
       chart: {
