@@ -72,6 +72,14 @@ export function ReKpiReportTab({ period }: Props) {
               synced: syncedAt ?? t('live.neverSynced'),
             })}
           </p>
+          {(data.excludedByCategory > 0 || data.unclassifiedTickets > 0) && (
+            <p className="mt-1">
+              {t('live.scopeNotice', {
+                excluded: data.excludedByCategory.toLocaleString(),
+                unclassified: data.unclassifiedTickets.toLocaleString(),
+              })}
+            </p>
+          )}
           <p className="mt-1">
             {t('live.unsourcedNotice', {
               kpis: UNSOURCED_KPIS.map((id) => t(`kpis.${id}`)).join(', '),

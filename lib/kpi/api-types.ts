@@ -51,6 +51,10 @@ export type KpiCaseMetrics = {
   months: KpiMonth[];
   totals: { all: KpiSegment; cleaning: KpiSegment; delivery: KpiSegment };
   ticketCount: number;
+  /** Rows in the range counted in the fleet total but in neither cleaning nor delivery. */
+  unclassifiedTickets: number;
+  /** Rows in the range whose category the board config does not count as a KPI case. */
+  excludedByCategory: number;
   /** When the monday mirror was last refreshed; null when it never has been. */
   lastSyncedAt: string | null;
   repeatWindowDays: number;
