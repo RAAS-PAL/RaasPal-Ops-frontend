@@ -81,7 +81,17 @@ export const RE_KPI_REPORT_JAN_JUN_2026: KpiReport = {
         mode: 'single',
         unit: 'percent',
         showValueLabels: true,
-        series: [{ key: 'pm', labelKey: 'legend.pm', color: WITHIN, points: points([100, 100, 91, 100, 87, 87]) }],
+        // The deck paints a month orange when PM fell short of 100%.
+        series: [
+          {
+            key: 'pm',
+            labelKey: 'legend.pm',
+            color: WITHIN,
+            points: points([100, 100, 91, 100, 87, 87]).map((p) =>
+              p.value !== null && p.value < 100 ? { ...p, color: OVER } : p,
+            ),
+          },
+        ],
         average: { value: 90.3, labelKey: 'chart.avg', display: 'Avg 90.3%' },
         footnote: 'Cleaning 95.6%  |  Delivery 81.2%',
       },

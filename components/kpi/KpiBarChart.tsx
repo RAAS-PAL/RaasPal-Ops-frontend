@@ -7,15 +7,23 @@
  * avoids a viewBox scaling pass that would shrink the text on narrow screens.
  *
  * Series colours are fixed hex from the deck rather than theme tokens — they are
- * data encoding, not chrome, so they must stay stable in light and dark.
+ * data encoding, not chrome, so they must stay stable in light and dark. A point
+ * may override its series colour, which is how the deck flags a month (PM below
+ * 100% is painted orange).
+ *
+ * Layout follows the deck: bars sit in a padded slot so there is air between
+ * months, gridlines are solid and faint, and the period average is a dark rule
+ * with its label on the right.
  */
+
+export type ChartPoint = { month: string; value: number | null; color?: string };
 
 export type ChartSeries = {
   key: string;
   /** Already-resolved legend label (the parent owns translation). */
   label: string;
   color: string;
-  points: { month: string; value: number | null }[];
+  points: ChartPoint[];
 };
 
 type Props = {
@@ -27,6 +35,8 @@ type Props = {
   footnote?: string;
   /** Legend is hidden for single-series charts, where it says nothing. */
   showLegend?: boolean;
+  /** Tailwind min-height class for the plot; the detail view asks for a taller one. */
+  heightClass?: string;
 };
 
 /** Round a count axis up to a readable maximum divisible by 4. */
@@ -47,6 +57,7 @@ export function KpiBarChart({
   showValueLabels = true,
   footnote,
   showLegend,
+  heightClass = 'min-h-[190px]',
 }: Props) {
   const months = series[0]?.points.map((p) => p.month) ?? [];
 
@@ -63,7 +74,7 @@ export function KpiBarChart({
   const legendVisible = showLegend ?? series.length > 1;
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
+    <div className={`flex min-w-0 flex-1 flex-col ${heightClass}`}>
       {legendVisible && (
         <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1">
           {series.map((s) => (
@@ -75,7 +86,7 @@ export function KpiBarChart({
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 gap-1.5">
+      <div className="flex min-h-0 min-w-0 flex-1 gap-1.5">
         {/* Y axis */}
         <div className="flex w-9 shrink-0 flex-col-reverse justify-between pb-5 text-right text-[10px] leading-none text-[var(--app-muted)]">
           {ticks.map((t) => (
@@ -84,10 +95,13 @@ export function KpiBarChart({
         </div>
 
         <div className="relative min-w-0 flex-1 pb-5">
-          {/* Gridlines */}
+          {/* Gridlines — solid and faint, as on the slide */}
           <div className="absolute inset-x-0 bottom-5 top-0 flex flex-col justify-between" aria-hidden>
-            {ticks.map((t) => (
-              <div key={t} className="border-t border-dashed border-[var(--app-border)] opacity-60" />
+            {ticks.map((t, i) => (
+              <div
+                key={t}
+                className={`border-t border-[var(--app-border)] ${i === ticks.length - 1 ? 'opacity-90' : 'opacity-50'}`}
+              />
             ))}
           </div>
 
@@ -104,17 +118,14 @@ export function KpiBarChart({
             </div>
           )}
 
-          {/* Bars */}
-          <div className="absolute inset-x-0 bottom-5 top-0 flex items-end justify-around gap-1">
+          {/* Bars — each month owns a slot; the slot's padding is the gap between months */}
+          <div className="absolute inset-x-0 bottom-5 top-0 flex items-end">
             {months.map((month, i) => {
               const stackTotal = columnTotals[i];
 
-              // Stacked columns grow bottom-up from one shared base; single and
-              // grouped bars each own a full-height track so their value label
-              // can sit above the bar without stealing from its height.
               if (mode === 'stacked') {
                 return (
-                  <div key={month} className="flex h-full min-w-0 flex-1 flex-col justify-end">
+                  <div key={month} className="flex h-full min-w-0 flex-1 flex-col justify-end px-[14%]">
                     {showValueLabels && unit === 'count' && stackTotal > 0 && (
                       <span className="mb-0.5 text-center text-[10px] font-bold text-[var(--app-text)]">
                         {fmt(stackTotal, unit)}
@@ -122,14 +133,15 @@ export function KpiBarChart({
                     )}
                     <div className="flex min-h-0 flex-1 flex-col-reverse justify-start">
                       {series.map((s) => {
-                        const value = s.points[i]?.value;
+                        const point = s.points[i];
+                        const value = point?.value;
                         if (value === null || value === undefined) return null;
                         const heightPct = axisMax === 0 ? 0 : (value / axisMax) * 100;
                         return (
                           <div
                             key={s.key}
                             className="flex w-full items-center justify-center"
-                            style={{ background: s.color, height: `${heightPct}%` }}
+                            style={{ background: point?.color ?? s.color, height: `${heightPct}%` }}
                             title={`${s.label} ${month}: ${fmt(value, unit)}`}
                           >
                             {showValueLabels && heightPct >= 12 && (
@@ -143,10 +155,18 @@ export function KpiBarChart({
                 );
               }
 
+              // Single and grouped: each bar owns a full-height track so its value
+              // label sits above it without stealing from its height.
               return (
-                <div key={month} className="flex h-full min-w-0 flex-1 items-end justify-center gap-0.5">
+                <div
+                  key={month}
+                  className={`flex h-full min-w-0 flex-1 items-end justify-center ${
+                    mode === 'grouped' ? 'gap-[6%] px-[10%]' : 'px-[18%]'
+                  }`}
+                >
                   {series.map((s) => {
-                    const value = s.points[i]?.value;
+                    const point = s.points[i];
+                    const value = point?.value;
                     if (value === null || value === undefined) return null;
                     const heightPct = axisMax === 0 ? 0 : (value / axisMax) * 100;
                     return (
@@ -156,13 +176,17 @@ export function KpiBarChart({
                         title={`${s.label} ${month}: ${fmt(value, unit)}`}
                       >
                         {showValueLabels && (
-                          <span className="mb-0.5 block text-center text-[10px] font-semibold text-[var(--app-text)]">
+                          <span className="mb-0.5 block text-center text-[10px] font-bold text-[var(--app-text)]">
                             {fmt(value, unit)}
                           </span>
                         )}
                         <div
                           className="w-full rounded-t-[2px]"
-                          style={{ background: s.color, height: `${heightPct}%`, minHeight: value > 0 ? 2 : 0 }}
+                          style={{
+                            background: point?.color ?? s.color,
+                            height: `${heightPct}%`,
+                            minHeight: value > 0 ? 2 : 0,
+                          }}
                         />
                       </div>
                     );
@@ -173,7 +197,7 @@ export function KpiBarChart({
           </div>
 
           {/* X axis */}
-          <div className="absolute inset-x-0 bottom-0 flex justify-around gap-1">
+          <div className="absolute inset-x-0 bottom-0 flex">
             {months.map((m) => (
               <span key={m} className="min-w-0 flex-1 text-center text-[10px] text-[var(--app-muted)]">
                 {m}

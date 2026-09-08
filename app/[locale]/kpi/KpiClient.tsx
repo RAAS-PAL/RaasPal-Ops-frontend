@@ -30,6 +30,7 @@ import {
   type Period,
   type PeriodPresetId,
 } from '@/lib/kpi/period';
+import type { KpiId } from '@/lib/kpi/types';
 
 export type KpiTab = 'report' | 'utilization' | 'repeat-cost';
 
@@ -37,12 +38,15 @@ type Props = {
   initialTab?: KpiTab;
   initialPeriod?: Period;
   initialPreset?: PeriodPresetId;
+  /** A single KPI to open in detail, from `?kpi=`; null shows the grid. */
+  initialKpi?: KpiId | null;
 };
 
 export function KpiClient({
   initialTab = 'report',
   initialPeriod = DECK_PERIOD,
   initialPreset = 'h1',
+  initialKpi = null,
 }: Props) {
   const t = useTranslations('kpi');
   const locale = useLocale();
@@ -51,27 +55,36 @@ export function KpiClient({
   const [preset, setPreset] = useState<PeriodPresetId>(initialPreset);
   const [year, setYear] = useState<number>(Number(initialPeriod.from.slice(0, 4)));
   const [period, setPeriod] = useState<Period>(initialPeriod);
+  const [selectedKpi, setSelectedKpi] = useState<KpiId | null>(initialKpi);
 
-  const syncUrl = (nextTab: KpiTab, nextPeriod: Period, nextPreset: PeriodPresetId) => {
+  const syncUrl = (nextTab: KpiTab, nextPeriod: Period, nextPreset: PeriodPresetId, nextKpi: KpiId | null) => {
     const params = new URLSearchParams({
       tab: nextTab,
       from: nextPeriod.from,
       to: nextPeriod.to,
       preset: nextPreset,
     });
+    if (nextKpi) params.set('kpi', nextKpi);
     window.history.replaceState(null, '', `?${params}`);
   };
 
+  // Leaving the report tab also leaves the detail view; a detail belongs to it.
   const selectTab = (next: KpiTab) => {
     setTab(next);
-    syncUrl(next, period, preset);
+    setSelectedKpi(null);
+    syncUrl(next, period, preset, null);
   };
 
   const changePeriod = (next: { preset: PeriodPresetId; year: number; period: Period }) => {
     setPreset(next.preset);
     setYear(next.year);
     setPeriod(next.period);
-    syncUrl(tab, next.period, next.preset);
+    syncUrl(tab, next.period, next.preset, selectedKpi);
+  };
+
+  const selectKpi = (next: KpiId | null) => {
+    setSelectedKpi(next);
+    syncUrl(tab, period, preset, next);
   };
 
   const resetToDeckPeriod = () =>
@@ -147,7 +160,9 @@ export function KpiClient({
               />
             ) : (
               <>
-                {tab === 'report' && <ReKpiReportTab period={period} />}
+                {tab === 'report' && (
+                  <ReKpiReportTab period={period} selectedKpi={selectedKpi} onSelectKpi={selectKpi} />
+                )}
                 {tab === 'utilization' && <UtilizationTab />}
                 {tab === 'repeat-cost' && <RepeatCostTab />}
               </>

@@ -13,6 +13,10 @@
  * "awaiting source" frame for any other. A tile that looked like the other four
  * but was secretly a constant would be worse than an absent one on a board
  * slide, so the badge is not optional.
+ *
+ * Clicking a panel opens that KPI alone with its formula and arithmetic
+ * (KpiDetailView). The selection lives in the URL (`?kpi=`) so a specific
+ * number can be linked to.
  */
 import { useTranslations } from 'next-intl';
 import { useLocale } from 'next-intl';
@@ -20,15 +24,22 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, Info, Loader2 } from 'lucide-react';
 import { kpiApi } from '@/lib/api';
 import { toLiveReport } from '@/lib/kpi/from-api';
+import { kpiDetail } from '@/lib/kpi/detail';
+import { RE_KPI_REPORT_JAN_JUN_2026 } from '@/lib/kpi/fixtures';
 import { placeholderKpis, PLACEHOLDER_KPIS } from '@/lib/kpi/placeholders';
-import type { Period } from '@/lib/kpi/period';
-import type { KpiHeadline, KpiPanelData } from '@/lib/kpi/types';
+import { formatPeriod, hasPlaceholderData, type Period } from '@/lib/kpi/period';
+import type { KpiHeadline, KpiId, KpiPanelData } from '@/lib/kpi/types';
+import { KpiDetailView } from './KpiDetailView';
 import { KpiHeadlineTile } from './KpiHeadlineTile';
 import { KpiPanel } from './KpiPanel';
 
-type Props = { period: Period };
+type Props = {
+  period: Period;
+  selectedKpi: KpiId | null;
+  onSelectKpi: (id: KpiId | null) => void;
+};
 
-export function ReKpiReportTab({ period }: Props) {
+export function ReKpiReportTab({ period, selectedKpi, onSelectKpi }: Props) {
   const t = useTranslations('kpi');
   const locale = useLocale();
 
@@ -63,25 +74,56 @@ export function ReKpiReportTab({ period }: Props) {
   const data = query.data;
   const report = toLiveReport(data, locale);
   const syncedAt = data.lastSyncedAt ? new Date(data.lastSyncedAt).toLocaleString(locale) : null;
+  const badge = t('live.placeholderBadge');
+  const placeholderIds = new Set<string>(PLACEHOLDER_KPIS);
+
+  // Detail view: one KPI, its formula and arithmetic.
+  if (selectedKpi) {
+    const detail = kpiDetail(data, selectedKpi, period, locale);
+    if (detail) {
+      return (
+        <KpiDetailView
+          detail={detail}
+          onBack={() => onSelectKpi(null)}
+          badge={placeholderIds.has(selectedKpi) ? badge : undefined}
+        />
+      );
+    }
+  }
 
   // Slot the two unsourced KPIs into the deck's order. Live panels carry the
   // deck's own indices (1, 3, 4, 5), so sorting by index restores the slide.
   const placeholders = placeholderKpis(period);
-  const placeholderIds = new Set<string>(PLACEHOLDER_KPIS);
-  const badge = t('live.placeholderBadge');
-
   const tileOrder: KpiHeadline['id'][] = ['firstTimeInstall', 'pmComplete', 'totalCmCases', 'firstTimeFix', 'sla', 'csat'];
   const headlines: KpiHeadline[] = tileOrder
     .map((id) => report.headlines.find((h) => h.id === id) ?? placeholders.find((p) => p.headline.id === id)?.headline)
     .filter((h): h is KpiHeadline => Boolean(h));
-
   const panels: KpiPanelData[] = [...report.panels, ...placeholders.map((p) => p.panel)].sort(
     (a, b) => a.index - b.index,
   );
   const deckFiguresShown = placeholders.some((p) => p.hasDeckFigures);
 
+  // Board takeaways are written prose, not a computation; only the deck's own
+  // period has any, and they are marked as copied from it.
+  const takeaways = hasPlaceholderData(period) ? RE_KPI_REPORT_JAN_JUN_2026.takeaways : [];
+
   return (
     <div className="space-y-4">
+      {/* Report header band, as on the slide */}
+      <div className="flex flex-wrap items-end justify-between gap-3 rounded-xl bg-[#1d3a6e] px-5 py-4 text-white shadow-sm">
+        <div className="min-w-0">
+          <h2 className="text-xl font-bold leading-tight">
+            {t('title')}
+            <span className="mx-2 font-normal opacity-60">|</span>
+            <span className="font-semibold">{formatPeriod(period, locale)}</span>
+          </h2>
+          <p className="mt-1 text-xs opacity-80">{t('header.kpiList')}</p>
+        </div>
+        <p className="text-[11px] opacity-70">
+          {t('live.syncedShort', { synced: syncedAt ?? t('live.neverSynced') })}
+        </p>
+      </div>
+
       {/* What these numbers are, and what they are not. */}
       <div className="flex items-start gap-2 rounded-lg border border-dashed border-[var(--app-border-strong)] bg-[var(--app-panel-soft)] px-3 py-2">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--app-muted)]" />
@@ -106,6 +148,7 @@ export function ReKpiReportTab({ period }: Props) {
             })}
           </p>
           {data.provisional && <p className="mt-1">{t('live.provisionalNotice')}</p>}
+          <p className="mt-1">{t('detail.hint')}</p>
         </div>
       </div>
 
@@ -129,7 +172,7 @@ export function ReKpiReportTab({ period }: Props) {
         ))}
       </div>
 
-      {/* Panels — the deck's six, numbered as on the slide */}
+      {/* Panels — the deck's six, numbered as on the slide; click for detail */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
         {panels.map((panel) => {
           const isPlaceholder = placeholderIds.has(panel.id);
@@ -141,6 +184,8 @@ export function ReKpiReportTab({ period }: Props) {
               accent={panel.accent}
               badge={isPlaceholder ? badge : undefined}
               emptyMessage={isPlaceholder && !deckFiguresShown ? t('live.awaitingSourceBody') : undefined}
+              onSelect={() => onSelectKpi(panel.id)}
+              selectLabel={t('detail.viewDetails')}
               chart={{
                 ...panel.chart,
                 series: panel.chart.series.map((s) => ({ ...s, label: t(s.labelKey) })),
@@ -150,6 +195,42 @@ export function ReKpiReportTab({ period }: Props) {
           );
         })}
       </div>
+
+      {/* Board takeaways */}
+      <section className="flex overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] shadow-sm">
+        <div aria-hidden className="w-2 shrink-0 bg-[#1d3a6e]" />
+        <div className="min-w-0 flex-1 p-4">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-[#1d3a6e] dark:text-[var(--app-text)]">
+            {t('boardTakeaways')}
+            {takeaways.length > 0 && (
+              <span className="rounded border border-[var(--app-border-strong)] bg-[var(--app-panel-soft)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--app-muted)]">
+                {t('takeawaysPlaceholder.badge')}
+              </span>
+            )}
+          </h3>
+          {takeaways.length === 0 ? (
+            <p className="text-xs text-[var(--app-muted)]">{t('takeawaysPlaceholder.empty')}</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {takeaways.map((item) => (
+                <div key={item.index} className="flex gap-2.5">
+                  <span
+                    aria-hidden
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                    style={{ background: item.color }}
+                  >
+                    {item.index}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[var(--app-text)]">{t(item.titleKey)}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-[var(--app-muted)]">{t(item.bodyKey)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

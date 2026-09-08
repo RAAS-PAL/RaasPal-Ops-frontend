@@ -9,6 +9,7 @@
  * there is nothing honest to chart for the period, an `emptyMessage` that
  * replaces the chart and figures entirely.
  */
+import { ChevronRight } from 'lucide-react';
 import type { SideStat } from '@/lib/kpi/types';
 import { KpiBarChart, type ChartSeries } from './KpiBarChart';
 
@@ -29,13 +30,33 @@ type Props = {
   badge?: string;
   /** When set, shown instead of the chart and side stats. */
   emptyMessage?: string;
+  /** Makes the whole panel a button that opens the KPI's detail view. */
+  onSelect?: () => void;
+  /** Accessible hint for the click affordance, e.g. "View details". */
+  selectLabel?: string;
 };
 
-export function KpiPanel({ index, title, accent, chart, sideStats, badge, emptyMessage }: Props) {
+export function KpiPanel({ index, title, accent, chart, sideStats, badge, emptyMessage, onSelect, selectLabel }: Props) {
+  const interactive = Boolean(onSelect);
   return (
     <section
-      className={`flex overflow-hidden rounded-xl border bg-[var(--app-panel)] shadow-sm ${
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-label={interactive ? `${title} — ${selectLabel ?? ''}`.trim() : undefined}
+      onClick={onSelect}
+      onKeyDown={(e) => {
+        if (!onSelect) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      className={`group flex overflow-hidden rounded-xl border bg-[var(--app-panel)] shadow-sm transition ${
         badge ? 'border-dashed border-[var(--app-border-strong)]' : 'border-[var(--app-border)]'
+      } ${
+        interactive
+          ? 'cursor-pointer outline-none hover:border-[var(--app-brand)] hover:shadow-md focus-visible:ring-2 focus-visible:ring-[var(--app-brand)]'
+          : ''
       }`}
     >
       <div aria-hidden className="w-1.5 shrink-0" style={{ background: accent }} />
@@ -47,6 +68,12 @@ export function KpiPanel({ index, title, accent, chart, sideStats, badge, emptyM
           {badge && (
             <span className="rounded border border-[var(--app-border-strong)] bg-[var(--app-panel-soft)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--app-muted)]">
               {badge}
+            </span>
+          )}
+          {interactive && (
+            <span className="ml-auto inline-flex items-center gap-0.5 text-[11px] font-medium text-[var(--app-muted)] opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+              {selectLabel}
+              <ChevronRight className="h-3.5 w-3.5" />
             </span>
           )}
         </h3>

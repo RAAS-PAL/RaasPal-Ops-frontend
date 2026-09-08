@@ -16,6 +16,8 @@ export type MonthlyPoint = {
   /** Short month label, already localised by the caller. */
   month: string;
   value: number | null;
+  /** Overrides the series colour for this bar only (the deck flags months this way). */
+  color?: string;
 };
 
 /** A named series drawn on a chart (one bar colour). */

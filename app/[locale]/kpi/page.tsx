@@ -1,5 +1,6 @@
 import { KpiClient, type KpiTab } from './KpiClient';
 import { DECK_PERIOD, isValidPeriod, type Period, type PeriodPresetId } from '@/lib/kpi/period';
+import type { KpiId } from '@/lib/kpi/types';
 
 /**
  * Server shell. Tab and period both live in the URL so a KPI view is shareable —
@@ -10,14 +11,15 @@ import { DECK_PERIOD, isValidPeriod, type Period, type PeriodPresetId } from '@/
  */
 const VALID_TABS: readonly string[] = ['report', 'utilization', 'repeat-cost'];
 const VALID_PRESETS: readonly string[] = ['last6', 'h1', 'h2', 'custom'];
+const VALID_KPIS: readonly string[] = ['firstTimeInstall', 'pmComplete', 'totalCmCases', 'firstTimeFix', 'sla', 'csat'];
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 export default async function KpiPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; from?: string; to?: string; preset?: string }>;
+  searchParams: Promise<{ tab?: string; from?: string; to?: string; preset?: string; kpi?: string }>;
 }) {
-  const { tab, from, to, preset } = await searchParams;
+  const { tab, from, to, preset, kpi } = await searchParams;
 
   const initialTab: KpiTab = VALID_TABS.includes(tab ?? '') ? (tab as KpiTab) : 'report';
 
@@ -29,7 +31,16 @@ export default async function KpiPage({
     ? (preset as PeriodPresetId)
     : 'h1';
 
+  // A detail view only makes sense on the report tab.
+  const initialKpi: KpiId | null =
+    initialTab === 'report' && VALID_KPIS.includes(kpi ?? '') ? (kpi as KpiId) : null;
+
   return (
-    <KpiClient initialTab={initialTab} initialPeriod={initialPeriod} initialPreset={initialPreset} />
+    <KpiClient
+      initialTab={initialTab}
+      initialPeriod={initialPeriod}
+      initialPreset={initialPreset}
+      initialKpi={initialKpi}
+    />
   );
 }

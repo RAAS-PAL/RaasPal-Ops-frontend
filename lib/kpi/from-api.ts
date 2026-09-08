@@ -97,21 +97,17 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string): LiveKpiRepor
       titleKey: 'panels.firstTimeInstall',
       accent: KPI_COLORS.install,
       chart: {
-        mode: 'grouped',
+        // The deck draws one overall bar per month here; the cleaning/delivery
+        // split lives in the side stats (and the detail view's table).
+        mode: 'single',
         unit: 'percent',
         showValueLabels: true,
         series: [
           {
-            key: 'cleaning',
-            labelKey: 'segments.cleaning',
+            key: 'install',
+            labelKey: 'legend.install',
             color: CLEANING,
-            points: series(months, locale, (m) => m.cleaning, (s) => s.installation.firstTimeRate),
-          },
-          {
-            key: 'delivery',
-            labelKey: 'segments.delivery',
-            color: DELIVERY,
-            points: series(months, locale, (m) => m.delivery, (s) => s.installation.firstTimeRate),
+            points: series(months, locale, (m) => m.all, (s) => s.installation.firstTimeRate),
           },
         ],
         ...(all.installation.firstTimeRate !== null && {
