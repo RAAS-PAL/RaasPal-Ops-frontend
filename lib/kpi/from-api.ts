@@ -17,6 +17,7 @@
  */
 import type { KpiCaseMetrics, KpiMonth, KpiSegment } from './api-types';
 import { KPI_COLORS } from './fixtures';
+import { formatPeriod } from './period';
 import type { KpiHeadline, KpiPanelData, MonthlyPoint } from './types';
 
 const CLEANING = '#2563EB';
@@ -68,7 +69,7 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string): LiveKpiRepor
       id: 'totalCmCases',
       labelKey: 'kpis.totalCmCases',
       value: count(all.cm.total),
-      detail: `${data.from} – ${data.to}`,
+      detail: formatPeriod({ from: data.from, to: data.to }, locale),
       color: KPI_COLORS.cmTotal,
     },
     {

@@ -11,9 +11,9 @@
  * may override its series colour, which is how the deck flags a month (PM below
  * 100% is painted orange).
  *
- * Layout follows the deck: bars sit in a padded slot so there is air between
- * months, gridlines are solid and faint, and the period average is a dark rule
- * with its label on the right.
+ * Layout follows the deck: each month owns an equal slot and the bar takes a
+ * fraction of it (the rest is the gap), gridlines are solid and faint, and the
+ * period average is a dark rule with its label on the right.
  */
 
 export type ChartPoint = { month: string; value: number | null; color?: string };
@@ -75,14 +75,23 @@ export function KpiBarChart({
 
   return (
     <div className={`flex min-w-0 flex-1 flex-col ${heightClass}`}>
-      {legendVisible && (
+      {/* Legend on the left; the average on the right, off the plot so it never
+          covers a value label (on the slide it collides with June's). */}
+      {(legendVisible || average) && (
         <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-          {series.map((s) => (
-            <span key={s.key} className="inline-flex items-center gap-1.5 text-[11px] text-[var(--app-muted)]">
-              <span aria-hidden className="h-2.5 w-2.5 rounded-[2px]" style={{ background: s.color }} />
-              {s.label}
+          {legendVisible &&
+            series.map((s) => (
+              <span key={s.key} className="inline-flex items-center gap-1.5 text-[11px] text-[var(--app-muted)]">
+                <span aria-hidden className="h-2.5 w-2.5 rounded-[2px]" style={{ background: s.color }} />
+                {s.label}
+              </span>
+            ))}
+          {average && (
+            <span className="ml-auto inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--app-text)]">
+              <span aria-hidden className="inline-block h-0 w-4 border-t-2 border-[var(--app-text)]" />
+              {average.display}
             </span>
-          ))}
+          )}
         </div>
       )}
 
@@ -111,37 +120,40 @@ export function KpiBarChart({
               className="absolute inset-x-0 z-10 border-t-2 border-[var(--app-text)]"
               style={{ bottom: `calc(1.25rem + ${(average.value / axisMax) * 100}% - ${(average.value / axisMax) * 1.25}rem)` }}
               aria-hidden
-            >
-              <span className="absolute -top-4 right-0 rounded bg-[var(--app-panel)] px-1 text-[10px] font-semibold text-[var(--app-text)]">
-                {average.display}
-              </span>
-            </div>
+            />
           )}
 
-          {/* Bars — each month owns a slot; the slot's padding is the gap between months */}
+          {/* Bars — every month owns an equal slot; the bar takes a fraction of
+              its slot's width, and the remainder is the gap. (Percentage padding
+              would resolve against the chart, not the slot, and six slots of it
+              overflowed the row.) */}
           <div className="absolute inset-x-0 bottom-5 top-0 flex items-end">
             {months.map((month, i) => {
               const stackTotal = columnTotals[i];
 
               if (mode === 'stacked') {
+                // The column is as tall as its total against the axis, so the
+                // total label sits directly on it; segments are shares of the column.
+                const stackPct = axisMax === 0 ? 0 : (stackTotal / axisMax) * 100;
                 return (
-                  <div key={month} className="flex h-full min-w-0 flex-1 flex-col justify-end px-[14%]">
+                  <div key={month} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end">
                     {showValueLabels && unit === 'count' && stackTotal > 0 && (
                       <span className="mb-0.5 text-center text-[10px] font-bold text-[var(--app-text)]">
                         {fmt(stackTotal, unit)}
                       </span>
                     )}
-                    <div className="flex min-h-0 flex-1 flex-col-reverse justify-start">
+                    <div className="flex w-[62%] flex-col-reverse justify-start" style={{ height: `${stackPct}%` }}>
                       {series.map((s) => {
                         const point = s.points[i];
                         const value = point?.value;
                         if (value === null || value === undefined) return null;
+                        const sharePct = stackTotal === 0 ? 0 : (value / stackTotal) * 100;
                         const heightPct = axisMax === 0 ? 0 : (value / axisMax) * 100;
                         return (
                           <div
                             key={s.key}
                             className="flex w-full items-center justify-center"
-                            style={{ background: point?.color ?? s.color, height: `${heightPct}%` }}
+                            style={{ background: point?.color ?? s.color, height: `${sharePct}%` }}
                             title={`${s.label} ${month}: ${fmt(value, unit)}`}
                           >
                             {showValueLabels && heightPct >= 12 && (
@@ -158,39 +170,40 @@ export function KpiBarChart({
               // Single and grouped: each bar owns a full-height track so its value
               // label sits above it without stealing from its height.
               return (
-                <div
-                  key={month}
-                  className={`flex h-full min-w-0 flex-1 items-end justify-center ${
-                    mode === 'grouped' ? 'gap-[6%] px-[10%]' : 'px-[18%]'
-                  }`}
-                >
-                  {series.map((s) => {
-                    const point = s.points[i];
-                    const value = point?.value;
-                    if (value === null || value === undefined) return null;
-                    const heightPct = axisMax === 0 ? 0 : (value / axisMax) * 100;
-                    return (
-                      <div
-                        key={s.key}
-                        className="flex h-full min-w-0 flex-1 flex-col justify-end"
-                        title={`${s.label} ${month}: ${fmt(value, unit)}`}
-                      >
-                        {showValueLabels && (
-                          <span className="mb-0.5 block text-center text-[10px] font-bold text-[var(--app-text)]">
-                            {fmt(value, unit)}
-                          </span>
-                        )}
+                <div key={month} className="flex h-full min-w-0 flex-1 items-end justify-center">
+                  <div
+                    className={`flex h-full items-end justify-center ${
+                      mode === 'grouped' ? 'w-[84%] gap-[8%]' : 'w-[62%]'
+                    }`}
+                  >
+                    {series.map((s) => {
+                      const point = s.points[i];
+                      const value = point?.value;
+                      if (value === null || value === undefined) return null;
+                      const heightPct = axisMax === 0 ? 0 : (value / axisMax) * 100;
+                      return (
                         <div
-                          className="w-full rounded-t-[2px]"
-                          style={{
-                            background: point?.color ?? s.color,
-                            height: `${heightPct}%`,
-                            minHeight: value > 0 ? 2 : 0,
-                          }}
-                        />
-                      </div>
-                    );
-                  })}
+                          key={s.key}
+                          className="flex h-full min-w-0 flex-1 flex-col justify-end"
+                          title={`${s.label} ${month}: ${fmt(value, unit)}`}
+                        >
+                          {showValueLabels && (
+                            <span className="mb-0.5 block text-center text-[10px] font-bold text-[var(--app-text)]">
+                              {fmt(value, unit)}
+                            </span>
+                          )}
+                          <div
+                            className="w-full rounded-t-[2px]"
+                            style={{
+                              background: point?.color ?? s.color,
+                              height: `${heightPct}%`,
+                              minHeight: value > 0 ? 2 : 0,
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}

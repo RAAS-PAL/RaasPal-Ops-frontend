@@ -13,6 +13,13 @@ import type { KpiId, KpiPanelData, SideStat } from './types';
 
 export type DetailCell = { numerator: number | null; denominator: number | null; rate: number | null };
 
+export type Arithmetic = {
+  operator: 'divide' | 'add';
+  left: { value: number; key: string };
+  right: { value: number; key: string };
+  result: string;
+};
+
 export type KpiDetail = {
   id: KpiId;
   index: number;
@@ -25,8 +32,8 @@ export type KpiDetail = {
   computed: boolean;
   /** The backend's definition text for a computed KPI, or a message key for a placeholder. */
   formula: { text?: string; key?: string };
-  /** "numerator ÷ denominator = result", when the KPI is a rate. */
-  arithmetic?: { numerator: number; numeratorKey: string; denominator: number; denominatorKey: string; result: string };
+  /** The sum or the ratio behind the headline, shown as an equation. */
+  arithmetic?: Arithmetic;
   /** Configured windows that shape the number. */
   windows: { key: string; days: number }[];
   /** Figures that qualify the rate — each is a count with a label key. */
@@ -72,7 +79,7 @@ function monthlyRows(months: KpiMonth[], locale: string, extract: Extract) {
 export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, locale: string): KpiDetail | null {
   const live = toLiveReport(data, locale);
   const def = data.definitions ?? {};
-  const notes = [def.matching, def.split, def.category].filter((n): n is string => Boolean(n));
+  const pick = (...keys: string[]) => keys.map((k) => def[k]).filter((n): n is string => Boolean(n));
 
   if ((PLACEHOLDER_KPIS as readonly KpiId[]).includes(id)) {
     const p = placeholderKpis(period).find((x) => x.panel.id === id);
@@ -111,7 +118,7 @@ export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, local
     chart: panel.chart,
     sideStats: panel.sideStats,
     computed: true,
-    notes,
+    notes: [],
     monthly: monthlyRows(data.months, locale, extract),
   };
 
@@ -121,13 +128,13 @@ export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, local
         ...base,
         formula: { text: def.firstTimeInstall },
         arithmetic: {
-          numerator: all.installation.firstTime,
-          numeratorKey: 'detail.num.installFirstTime',
-          denominator: all.installation.total,
-          denominatorKey: 'detail.den.installs',
+          operator: 'divide',
+          left: { value: all.installation.firstTime, key: 'detail.num.installFirstTime' },
+          right: { value: all.installation.total, key: 'detail.den.installs' },
           result: pct(totals.rate),
         },
         windows: [{ key: 'detail.window.install', days: data.installFollowUpDays }],
+        notes: pick('bucketing', 'matching', 'split'),
         caveats: [
           { key: 'detail.caveat.installWithoutSerial', value: all.installation.withoutSerial },
           { key: 'detail.caveat.installFollowedByCm', value: all.installation.followedByCm },
@@ -139,11 +146,17 @@ export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, local
       return {
         ...base,
         formula: { text: [def.bucketing, def.category].filter(Boolean).join(' ') },
+        // A count, not a rate: the equation is the sum of the two lines. The CM
+        // boards are single-line, so no CM is ever unclassified — that caveat
+        // belongs to installations and would mislead here.
+        arithmetic: {
+          operator: 'add',
+          left: { value: data.totals.cleaning.cm.total, key: 'detail.caveat.cleaningCases' },
+          right: { value: data.totals.delivery.cm.total, key: 'detail.caveat.deliveryCases' },
+          result: all.cm.total.toLocaleString(),
+        },
         windows: [],
         caveats: [
-          { key: 'detail.caveat.cleaningCases', value: data.totals.cleaning.cm.total },
-          { key: 'detail.caveat.deliveryCases', value: data.totals.delivery.cm.total },
-          { key: 'detail.caveat.unclassified', value: data.unclassifiedTickets },
           { key: 'detail.caveat.excludedByCategory', value: data.excludedByCategory },
         ],
       };
@@ -152,13 +165,13 @@ export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, local
         ...base,
         formula: { text: def.firstTimeFix },
         arithmetic: {
-          numerator: all.cm.firstTimeFix,
-          numeratorKey: 'detail.num.fixedFirstTime',
-          denominator: all.cm.total,
-          denominatorKey: 'detail.den.cmCases',
+          operator: 'divide',
+          left: { value: all.cm.firstTimeFix, key: 'detail.num.fixedFirstTime' },
+          right: { value: all.cm.total, key: 'detail.den.cmCases' },
           result: pct(totals.rate),
         },
         windows: [{ key: 'detail.window.repeat', days: data.repeatWindowDays }],
+        notes: pick('bucketing', 'matching', 'category'),
         caveats: [
           { key: 'detail.caveat.repeat', value: all.cm.repeat },
           { key: 'detail.caveat.cmWithoutSerial', value: all.cm.withoutSerial },
@@ -170,13 +183,13 @@ export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, local
         ...base,
         formula: { text: def.sla },
         arithmetic: {
-          numerator: all.cm.slaWithin,
-          numeratorKey: 'detail.num.slaWithin',
-          denominator: all.cm.slaWithin + all.cm.slaOver,
-          denominatorKey: 'detail.den.slaMeasured',
+          operator: 'divide',
+          left: { value: all.cm.slaWithin, key: 'detail.num.slaWithin' },
+          right: { value: all.cm.slaWithin + all.cm.slaOver, key: 'detail.den.slaMeasured' },
           result: pct(totals.rate),
         },
         windows: [],
+        notes: pick('bucketing', 'category'),
         caveats: [
           { key: 'detail.caveat.slaOver', value: all.cm.slaOver },
           { key: 'detail.caveat.slaUnknown', value: all.cm.slaUnknown },

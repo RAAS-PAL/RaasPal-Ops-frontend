@@ -1015,11 +1015,13 @@
         "cmWithoutSerial": "CMs with no serial (counted as success)",
         "slaOver": "Cases checked after the SLA",
         "slaUnknown": "Cases with no RE Action date (not counted)",
-        "unclassified": "Tickets in the fleet total but neither cleaning nor delivery",
+        "unclassified": "Installs in the fleet total that could not be placed as cleaning or delivery",
         "excludedByCategory": "Board rows left out as non-KPI cases",
         "cleaningCases": "Cleaning cases",
         "deliveryCases": "Delivery cases"
-      }
+      },
+      "result": "Result",
+      "notesShow": "show"
     }
   }
 }
