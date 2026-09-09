@@ -40,7 +40,7 @@ export function RepeatCostTab() {
           >
             <p className="truncate text-[11px] font-medium leading-tight opacity-95">{t(h.labelKey)}</p>
             <p className="mt-1 text-2xl font-bold leading-none">{h.value}</p>
-            <p className="mt-1 text-[10px] leading-tight opacity-90">{h.detail}</p>
+            <p className="mt-1 text-[10px] leading-tight opacity-90">{t(h.detailKey)}</p>
           </div>
         ))}
       </div>
@@ -161,7 +161,7 @@ export function RepeatCostTab() {
             <div>
               <dt className="text-[11px] text-[var(--app-muted)]">{t('repeat.labels.incentive')}</dt>
               <dd className="text-xl font-bold text-[var(--app-text)]">{baht(report.totals.incentive)}</dd>
-              <p className="text-[10px] text-[var(--app-muted)]">{report.totals.incentiveBasis}</p>
+              <p className="text-[10px] text-[var(--app-muted)]">{t(report.totals.incentiveBasisKey)}</p>
             </div>
             <div className="border-t border-[var(--app-border)] pt-2">
               <dt className="text-[11px] text-[var(--app-muted)]">{t('repeat.labels.gap')}</dt>

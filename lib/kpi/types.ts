@@ -8,6 +8,14 @@
  * components already consume this shape.
  */
 
+/**
+ * A next-intl translate function, narrowed to what this layer needs. The lib
+ * modules build display strings (counts, footnotes, averages) that must be
+ * localised, so the component passes its `t` down rather than these modules
+ * importing a hook they cannot use.
+ */
+export type Translate = (key: string, values?: Record<string, string | number>) => string;
+
 /** Service line every KPI is split by. */
 export type Segment = 'cleaning' | 'delivery';
 
@@ -120,7 +128,8 @@ export type RepeatHeadline = {
   key: string;
   labelKey: string;
   value: string;
-  detail: string;
+  /** Message key for the supporting line, so the deck's wording is localised. */
+  detailKey: string;
   color: string;
 };
 
@@ -154,5 +163,5 @@ export type RepeatCostReport = {
   headlines: RepeatHeadline[];
   breakdowns: RepeatBreakdown[];
   costLines: CostLine[];
-  totals: { repeatCost: number; incentive: number; gap: number; incentiveBasis: string };
+  totals: { repeatCost: number; incentive: number; gap: number; incentiveBasisKey: string };
 };

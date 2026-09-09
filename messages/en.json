@@ -817,7 +817,9 @@
     },
     "chart": {
       "avg": "Average",
-      "avgSla": "Average SLA"
+      "avgSla": "Average SLA",
+      "avgValue": "Avg {value}",
+      "avgSlaValue": "Avg SLA {value}"
     },
     "stats": {
       "overall": "Overall",
@@ -896,7 +898,11 @@
         "installRepeat": "Install repeat ≤30 days",
         "installCost": "Cost after install",
         "cmRepeat": "CM repeat ≤7 days",
-        "cmCost": "Cost after CM"
+        "cmCost": "Cost after CM",
+        "installRepeatDetail": "39.1% of 23 installs",
+        "installCostDetail": "8 on-site • 4 online",
+        "cmRepeatDetail": "27.7% of all cases",
+        "cmCostDetail": "85 on-site • 55 online • 6 logistics"
       },
       "breakdowns": {
         "installation": "Repeat cost after installation",
@@ -918,7 +924,8 @@
         "subtotal": "Subtotal",
         "repeatCostTotal": "Total repeat cost",
         "incentive": "Incentive at 500/case",
-        "gap": "Gap after incentive"
+        "gap": "Gap after incentive",
+        "incentiveBasis": "Install 14 × 500 + CM 919 × 500"
       },
       "table": {
         "line": "Line",
@@ -968,7 +975,13 @@
       "placeholderNotice": "{kpis} are placeholders copied from the Jan–Jun 2026 deck — no backend source yet, not computed.",
       "awaitingSourceNotice": "{kpis} have no backend source yet and show no figures for this period.",
       "awaitingSourceBody": "No source for this period. PM Complete needs the PM boards and the visits-due rule; CSAT needs the survey export.",
-      "syncedShort": "Synced {synced}"
+      "syncedShort": "Synced {synced}",
+      "headlineInstalls": "{done}/{total} installs",
+      "headlineCases": "{done}/{total} cases",
+      "headlineSla": "{within} within | {over} over",
+      "footnoteUnplaced": "{unplaced} of {total} installs have no matching serial and sit in neither line",
+      "footnoteRepeatWindow": "Repeat window {days} days",
+      "footnoteSlaUnknown": "{count} case(s) have no RE Action date and are not counted"
     },
     "header": {
       "kpiList": "Installation • PM • CM • FTFR • SLA • CSAT"
@@ -1036,7 +1049,29 @@
         "slaUnknown": "No RE Action date — not counted",
         "cleaningCases": "Cleaning cases",
         "deliveryCases": "Delivery cases"
+      },
+      "formulaText": {
+        "firstTimeInstall": "An installation scores 1 when no corrective-maintenance case names the same serial within {days} days after the installation's TimeLine end date; 0 when one does.",
+        "firstTimeFix": "A CM case scores 1 when no later CM names the same serial within {days} days of it being reported; 0 when one does.",
+        "sla": "The case was checked within the board's configured SLA days of being reported: RE Action date minus Open Date. Exactly the limit counts as within. No action date recorded means unknown, not a breach. Neither board has a close date, so this is time-to-first-action, not time-to-close.",
+        "totalCmCases": "Installations are counted in the month their TimeLine ends; CM cases in the month they were reported. Each board may name a category column (Job Type, Type of case) and the values that count as a KPI case; rows outside that list are synced and archived but not counted here."
+      },
+      "apiNotes": {
+        "bucketing": "Installations are counted in the month their TimeLine ends; CM cases in the month they were reported.",
+        "matching": "Both windows join on serial number alone, across boards. Tickets naming no serial cannot be matched and are counted as successes.",
+        "split": "The installation board does not say which kind of robot a case concerns, so the serial is looked up among CM cases: the cleaning and delivery boards each handle one kind, so a serial seen on one of them identifies the robot. A case that still cannot be placed counts in the fleet total but in neither line.",
+        "category": "Each board may name a category column and the values that count as a KPI case. Rows outside that list are synced and archived but not counted. A follow-up CM is still a follow-up whatever its category."
       }
+    },
+    "units": {
+      "cases": "cases"
+    },
+    "placeholderDetail": {
+      "pm": "247.9/274.5 tasks (est.)",
+      "csat": "CSAT 96.3% | Response 53.5%"
+    },
+    "placeholderFootnote": {
+      "pm": "Cleaning 95.6%  |  Delivery 81.2%"
     }
   }
 }

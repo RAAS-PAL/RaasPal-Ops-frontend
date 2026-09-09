@@ -12,6 +12,18 @@
 
 export type Period = { from: string; to: string };
 
+/**
+ * The locale to format dates with.
+ *
+ * Thai defaults to the Buddhist calendar, which would print 2569 for 2026 — but
+ * the deck, the monday boards and this page's own period selector are all
+ * Gregorian, so an unpinned locale puts 2026 and 2569 on the same screen. Pin
+ * the calendar rather than let the mix through.
+ */
+export function dateLocale(locale: string): string {
+  return locale.includes('-u-ca-') ? locale : `${locale}-u-ca-gregory`;
+}
+
 export type PeriodPresetId = 'last6' | 'h1' | 'h2' | 'custom';
 
 /** The only period the placeholder data covers. */
@@ -50,7 +62,7 @@ export function monthsIn(period: Period): string[] {
 
 /** Short month labels for chart axes, in the viewer's locale. */
 export function monthLabels(period: Period, locale: string): string[] {
-  const fmt = new Intl.DateTimeFormat(locale, { month: 'short' });
+  const fmt = new Intl.DateTimeFormat(dateLocale(locale), { month: 'short' });
   return monthsIn(period).map((value) => {
     const { year, month } = parseMonth(value);
     return fmt.format(new Date(Date.UTC(year, month - 1, 1)));
@@ -59,7 +71,7 @@ export function monthLabels(period: Period, locale: string): string[] {
 
 /** "Jan – Jun 2026", or "Nov 2025 – Apr 2026" when the range spans a year end. */
 export function formatPeriod(period: Period, locale: string): string {
-  const fmt = new Intl.DateTimeFormat(locale, { month: 'short' });
+  const fmt = new Intl.DateTimeFormat(dateLocale(locale), { month: 'short' });
   const a = parseMonth(period.from);
   const b = parseMonth(period.to);
   const label = (p: { year: number; month: number }) =>

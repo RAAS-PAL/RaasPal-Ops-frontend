@@ -17,10 +17,10 @@ export const RE_REPEAT_COST_JAN_JUN_2026: RepeatCostReport = {
   period: 'Jan - Jun 2026',
 
   headlines: [
-    { key: 'installRepeat', labelKey: 'repeat.headlines.installRepeat', value: '9', detail: '39.1% of 23 installs', color: KPI_COLORS.install },
-    { key: 'installCost', labelKey: 'repeat.headlines.installCost', value: '12', detail: '8 on-site • 4 online', color: KPI_COLORS.pm },
-    { key: 'cmRepeat', labelKey: 'repeat.headlines.cmRepeat', value: '351', detail: '27.7% of all cases', color: KPI_COLORS.cmTotal },
-    { key: 'cmCost', labelKey: 'repeat.headlines.cmCost', value: '146', detail: '85 on-site • 55 online • 6 logistics', color: KPI_COLORS.csat },
+    { key: 'installRepeat', labelKey: 'repeat.headlines.installRepeat', value: '9', detailKey: 'repeat.headlines.installRepeatDetail', color: KPI_COLORS.install },
+    { key: 'installCost', labelKey: 'repeat.headlines.installCost', value: '12', detailKey: 'repeat.headlines.installCostDetail', color: KPI_COLORS.pm },
+    { key: 'cmRepeat', labelKey: 'repeat.headlines.cmRepeat', value: '351', detailKey: 'repeat.headlines.cmRepeatDetail', color: KPI_COLORS.cmTotal },
+    { key: 'cmCost', labelKey: 'repeat.headlines.cmCost', value: '146', detailKey: 'repeat.headlines.cmCostDetail', color: KPI_COLORS.csat },
   ],
 
   breakdowns: [
@@ -75,6 +75,6 @@ export const RE_REPEAT_COST_JAN_JUN_2026: RepeatCostReport = {
     repeatCost: 806000,
     incentive: 466500,
     gap: 340000,
-    incentiveBasis: 'Install 14 × 500 + CM 919 × 500',
+    incentiveBasisKey: 'repeat.labels.incentiveBasis',
   },
 };

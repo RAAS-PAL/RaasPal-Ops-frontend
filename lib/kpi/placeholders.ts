@@ -13,8 +13,8 @@
  * takes over — nothing in the tab needs to change.
  */
 import { RE_KPI_REPORT_JAN_JUN_2026 } from './fixtures';
-import { DECK_PERIOD, samePeriod, type Period } from './period';
-import type { KpiHeadline, KpiId, KpiPanelData } from './types';
+import { DECK_PERIOD, monthLabels, samePeriod, type Period } from './period';
+import type { KpiHeadline, KpiId, KpiPanelData, Translate } from './types';
 
 export const PLACEHOLDER_KPIS: readonly KpiId[] = ['pmComplete', 'csat'];
 
@@ -25,9 +25,24 @@ export type PlaceholderKpi = {
   hasDeckFigures: boolean;
 };
 
-export function placeholderKpis(period: Period): PlaceholderKpi[] {
+/**
+ * The deck's own supporting text for these two tiles is English in the fixture,
+ * so it is replaced here with a localised string rather than shown raw.
+ */
+const DETAIL_KEY: Record<string, string> = {
+  pmComplete: 'placeholderDetail.pm',
+  csat: 'placeholderDetail.csat',
+};
+const FOOTNOTE_KEY: Record<string, string> = { pmComplete: 'placeholderFootnote.pm' };
+
+export function placeholderKpis(period: Period, t: Translate, locale: string): PlaceholderKpi[] {
   const deck = RE_KPI_REPORT_JAN_JUN_2026;
   const showFigures = samePeriod(period, DECK_PERIOD);
+  // The fixture hard-codes English month labels and an "Avg …" caption, because
+  // it is a transcription of the deck. Both are re-rendered in the viewer's
+  // language here so a placeholder panel does not sit in an otherwise Thai page
+  // with an English axis.
+  const labels = monthLabels(DECK_PERIOD, locale);
 
   return PLACEHOLDER_KPIS.map((id) => {
     const headline = deck.headlines.find((h) => h.id === id);
@@ -35,10 +50,28 @@ export function placeholderKpis(period: Period): PlaceholderKpi[] {
     if (!headline || !panel) {
       throw new Error(`Deck fixture has no ${id}`);
     }
+    const localisedDetail = DETAIL_KEY[id] ? t(DETAIL_KEY[id]) : headline.detail;
+    const footnoteKey = FOOTNOTE_KEY[id];
+    const chart: KpiPanelData['chart'] = {
+      ...panel.chart,
+      series: panel.chart.series.map((sr) => ({
+        ...sr,
+        points: sr.points.map((pt, i) => ({ ...pt, month: labels[i] ?? pt.month })),
+      })),
+      ...(panel.chart.average && {
+        average: {
+          ...panel.chart.average,
+          display: t('chart.avgValue', { value: `${panel.chart.average.value}%` }),
+        },
+      }),
+      ...(footnoteKey && { footnote: t(footnoteKey) }),
+    };
     return {
       hasDeckFigures: showFigures,
-      headline: showFigures ? headline : { ...headline, value: '—', detail: '' },
-      panel,
+      headline: showFigures
+        ? { ...headline, detail: localisedDetail }
+        : { ...headline, value: '—', detail: '' },
+      panel: { ...panel, chart },
     };
   });
 }

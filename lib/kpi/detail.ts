@@ -5,6 +5,11 @@
  * count involved. For the two placeholders it is the deck's stated basis and a
  * plain statement that nothing was computed.
  *
+ * The formula and notes shown here are localised message strings rather than
+ * the backend's `definitions` text, which the API only returns in English. They
+ * mirror it deliberately and must be updated together; the window lengths are
+ * interpolated from the response so the numbers in them cannot drift.
+ *
  * Breakdowns are trees, not lists. Each one names the total it partitions
  * ("59 installs") and every row is either a part of that total (level 0) or an
  * "of which" part of the row above it (level 1). That is what makes a figure
@@ -15,8 +20,8 @@
 import type { KpiCaseMetrics, KpiMonth, KpiSegment } from './api-types';
 import { toLiveReport } from './from-api';
 import { placeholderKpis, PLACEHOLDER_KPIS } from './placeholders';
-import type { Period } from './period';
-import type { KpiId, KpiPanelData, SideStat } from './types';
+import { dateLocale, type Period } from './period';
+import type { KpiId, KpiPanelData, SideStat, Translate } from './types';
 
 export type DetailCell = { numerator: number | null; denominator: number | null; rate: number | null };
 
@@ -89,7 +94,7 @@ const extractors: Record<Exclude<KpiId, 'pmComplete' | 'csat'>, Extract> = {
 };
 
 function monthlyRows(months: KpiMonth[], locale: string, extract: Extract) {
-  const fmt = new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric' });
+  const fmt = new Intl.DateTimeFormat(dateLocale(locale), { month: 'short', year: 'numeric' });
   return months.map((m) => {
     const [y, mo] = m.month.split('-').map(Number);
     return {
@@ -113,13 +118,20 @@ function byLine(total: number, unitKey: string, cleaning: number, delivery: numb
   };
 }
 
-export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, locale: string): KpiDetail | null {
-  const live = toLiveReport(data, locale);
+export function kpiDetail(
+  data: KpiCaseMetrics,
+  id: KpiId,
+  period: Period,
+  locale: string,
+  t: Translate,
+): KpiDetail | null {
+  const live = toLiveReport(data, locale, t);
+  /** The backend's own wording, kept as a fallback if a translation is missing. */
   const def = data.definitions ?? {};
-  const pick = (...keys: string[]) => keys.map((k) => def[k]).filter((n): n is string => Boolean(n));
+  const notes = (...keys: string[]) => keys.map((k) => t(`detail.apiNotes.${k}`) || def[k]).filter(Boolean);
 
   if ((PLACEHOLDER_KPIS as readonly KpiId[]).includes(id)) {
-    const p = placeholderKpis(period).find((x) => x.panel.id === id);
+    const p = placeholderKpis(period, t, locale).find((x) => x.panel.id === id);
     if (!p) return null;
     return {
       id,
@@ -171,7 +183,7 @@ export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, local
       const unplacedNoSerial = Math.min(inst.withoutSerial, unplaced);
       return {
         ...base,
-        formula: { text: def.firstTimeInstall },
+        formula: { text: t('detail.formulaText.firstTimeInstall', { days: data.installFollowUpDays }) },
         arithmetic: {
           operator: 'divide',
           left: { value: inst.firstTime, key: 'detail.num.installFirstTime' },
@@ -203,13 +215,13 @@ export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, local
             ],
           },
         ],
-        notes: pick('bucketing', 'matching', 'split'),
+        notes: notes('bucketing', 'matching', 'split'),
       };
     }
     case 'totalCmCases':
       return {
         ...base,
-        formula: { text: [def.bucketing, def.category].filter(Boolean).join(' ') },
+        formula: { text: t('detail.formulaText.totalCmCases') },
         arithmetic: {
           operator: 'add',
           left: { value: cleaning.cm.total, key: 'detail.row.cleaningCases' },
@@ -224,7 +236,7 @@ export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, local
       const cm = all.cm;
       return {
         ...base,
-        formula: { text: def.firstTimeFix },
+        formula: { text: t('detail.formulaText.firstTimeFix', { days: data.repeatWindowDays }) },
         arithmetic: {
           operator: 'divide',
           left: { value: cm.firstTimeFix, key: 'detail.num.fixedFirstTime' },
@@ -245,14 +257,14 @@ export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, local
           },
           byLine(cm.total, 'detail.den.cmCases', cleaning.cm.total, delivery.cm.total),
         ],
-        notes: pick('bucketing', 'matching', 'category'),
+        notes: notes('bucketing', 'matching', 'category'),
       };
     }
     case 'sla': {
       const cm = all.cm;
       return {
         ...base,
-        formula: { text: def.sla },
+        formula: { text: t('detail.formulaText.sla') },
         arithmetic: {
           operator: 'divide',
           left: { value: cm.slaWithin, key: 'detail.num.slaWithin' },
@@ -272,7 +284,7 @@ export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, local
             ],
           },
         ],
-        notes: pick('bucketing', 'category'),
+        notes: notes('bucketing', 'category'),
       };
     }
     default:

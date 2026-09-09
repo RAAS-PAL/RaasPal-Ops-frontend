@@ -27,8 +27,8 @@ import { toLiveReport } from '@/lib/kpi/from-api';
 import { kpiDetail } from '@/lib/kpi/detail';
 import { RE_KPI_REPORT_JAN_JUN_2026 } from '@/lib/kpi/fixtures';
 import { placeholderKpis, PLACEHOLDER_KPIS } from '@/lib/kpi/placeholders';
-import { formatPeriod, hasPlaceholderData, type Period } from '@/lib/kpi/period';
-import type { KpiHeadline, KpiId, KpiPanelData } from '@/lib/kpi/types';
+import { dateLocale, formatPeriod, hasPlaceholderData, type Period } from '@/lib/kpi/period';
+import type { KpiHeadline, KpiId, KpiPanelData, Translate } from '@/lib/kpi/types';
 import { KpiDetailView } from './KpiDetailView';
 import { KpiHeadlineTile } from './KpiHeadlineTile';
 import { KpiPanel } from './KpiPanel';
@@ -41,6 +41,9 @@ type Props = {
 
 export function ReKpiReportTab({ period, selectedKpi, onSelectKpi }: Props) {
   const t = useTranslations('kpi');
+  // The lib layer builds display strings (counts, footnotes, averages) and needs
+  // to localise them, so it takes the translator rather than importing a hook.
+  const tr = t as unknown as Translate;
   const locale = useLocale();
 
   const query = useQuery({
@@ -72,14 +75,16 @@ export function ReKpiReportTab({ period, selectedKpi, onSelectKpi }: Props) {
   }
 
   const data = query.data;
-  const report = toLiveReport(data, locale);
-  const syncedAt = data.lastSyncedAt ? new Date(data.lastSyncedAt).toLocaleString(locale) : null;
+  const report = toLiveReport(data, locale, tr);
+  const syncedAt = data.lastSyncedAt
+    ? new Date(data.lastSyncedAt).toLocaleString(dateLocale(locale))
+    : null;
   const badge = t('live.placeholderBadge');
   const placeholderIds = new Set<string>(PLACEHOLDER_KPIS);
 
   // Detail view: one KPI, its formula and arithmetic.
   if (selectedKpi) {
-    const detail = kpiDetail(data, selectedKpi, period, locale);
+    const detail = kpiDetail(data, selectedKpi, period, locale, tr);
     if (detail) {
       return (
         <KpiDetailView
@@ -93,7 +98,7 @@ export function ReKpiReportTab({ period, selectedKpi, onSelectKpi }: Props) {
 
   // Slot the two unsourced KPIs into the deck's order. Live panels carry the
   // deck's own indices (1, 3, 4, 5), so sorting by index restores the slide.
-  const placeholders = placeholderKpis(period);
+  const placeholders = placeholderKpis(period, tr, locale);
   const tileOrder: KpiHeadline['id'][] = ['firstTimeInstall', 'pmComplete', 'totalCmCases', 'firstTimeFix', 'sla', 'csat'];
   const headlines: KpiHeadline[] = tileOrder
     .map((id) => report.headlines.find((h) => h.id === id) ?? placeholders.find((p) => p.headline.id === id)?.headline)

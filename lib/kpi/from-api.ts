@@ -17,8 +17,8 @@
  */
 import type { KpiCaseMetrics, KpiMonth, KpiSegment } from './api-types';
 import { KPI_COLORS } from './fixtures';
-import { formatPeriod } from './period';
-import type { KpiHeadline, KpiPanelData, MonthlyPoint } from './types';
+import { dateLocale, formatPeriod } from './period';
+import type { KpiHeadline, KpiPanelData, MonthlyPoint, Translate } from './types';
 
 const CLEANING = '#2563EB';
 const DELIVERY = '#6BA6F7';
@@ -28,7 +28,7 @@ const OVER = '#E8A33D';
 /** '2026-01' → 'Jan', in the viewer's locale. */
 function monthLabel(month: string, locale: string): string {
   const [year, m] = month.split('-').map(Number);
-  return new Intl.DateTimeFormat(locale, { month: 'short' }).format(new Date(Date.UTC(year, m - 1, 1)));
+  return new Intl.DateTimeFormat(dateLocale(locale), { month: 'short' }).format(new Date(Date.UTC(year, m - 1, 1)));
 }
 
 const pct = (value: number | null): string => (value === null ? '—' : `${value.toFixed(1)}%`);
@@ -51,7 +51,7 @@ export type LiveKpiReport = {
   empty: boolean;
 };
 
-export function toLiveReport(data: KpiCaseMetrics, locale: string): LiveKpiReport {
+export function toLiveReport(data: KpiCaseMetrics, locale: string, t: Translate): LiveKpiReport {
   const { months, totals } = data;
   const all = totals.all;
   const cleaning = totals.cleaning;
@@ -64,7 +64,7 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string): LiveKpiRepor
       id: 'firstTimeInstall',
       labelKey: 'kpis.firstTimeInstall',
       value: pct(all.installation.firstTimeRate),
-      detail: `${all.installation.firstTime}/${all.installation.total} installs`,
+      detail: t('live.headlineInstalls', { done: all.installation.firstTime, total: all.installation.total }),
       color: KPI_COLORS.install,
     },
     {
@@ -78,7 +78,7 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string): LiveKpiRepor
       id: 'firstTimeFix',
       labelKey: 'kpis.firstTimeFix',
       value: pct(all.cm.firstTimeFixRate),
-      detail: `${all.cm.firstTimeFix}/${all.cm.total} cases`,
+      detail: t('live.headlineCases', { done: all.cm.firstTimeFix, total: all.cm.total }),
       color: KPI_COLORS.ftf,
     },
     {
@@ -88,7 +88,7 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string): LiveKpiRepor
         all.cm.slaWithinRate === null
           ? '—'
           : `${all.cm.slaWithinRate.toFixed(1)}% / ${(100 - all.cm.slaWithinRate).toFixed(1)}%`,
-      detail: `${all.cm.slaWithin} W | ${all.cm.slaOver} O`,
+      detail: t('live.headlineSla', { within: all.cm.slaWithin, over: all.cm.slaOver }),
       color: KPI_COLORS.sla,
     },
   ];
@@ -117,14 +117,14 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string): LiveKpiRepor
           average: {
             value: all.installation.firstTimeRate,
             labelKey: 'chart.avg',
-            display: `Avg ${pct(all.installation.firstTimeRate)}`,
+            display: t('chart.avgValue', { value: pct(all.installation.firstTimeRate) }),
           },
         }),
         // The two lines do not add up to the total here, unlike every CM panel:
         // an install with no matching serial counts in the total but in neither
         // line. Say so, or the side boxes look like a rounding fault.
         ...(unplacedInstalls > 0 && {
-          footnote: `${unplacedInstalls} of ${all.installation.total} installs have no matching serial and sit in neither line`,
+          footnote: t('live.footnoteUnplaced', { unplaced: unplacedInstalls, total: all.installation.total }),
         }),
       },
       sideStats: [
@@ -173,18 +173,18 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string): LiveKpiRepor
           average: {
             value: all.cm.total / months.length,
             labelKey: 'chart.avg',
-            display: `Avg ${Math.round(all.cm.total / months.length).toLocaleString()}`,
+            display: t('chart.avgValue', { value: Math.round(all.cm.total / months.length).toLocaleString() }),
           },
         }),
       },
       sideStats: [
-        { labelKey: 'stats.total', value: count(all.cm.total), detail: 'cases', emphasis: true },
-        { labelKey: 'segments.cleaning', value: count(cleaning.cm.total), detail: 'cases' },
-        { labelKey: 'segments.delivery', value: count(delivery.cm.total), detail: 'cases' },
+        { labelKey: 'stats.total', value: count(all.cm.total), detail: t('units.cases'), emphasis: true },
+        { labelKey: 'segments.cleaning', value: count(cleaning.cm.total), detail: t('units.cases') },
+        { labelKey: 'segments.delivery', value: count(delivery.cm.total), detail: t('units.cases') },
         {
           labelKey: 'stats.avgPerMonth',
           value: months.length ? Math.round(all.cm.total / months.length).toLocaleString() : '—',
-          detail: 'cases',
+          detail: t('units.cases'),
         },
       ],
     },
@@ -215,10 +215,10 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string): LiveKpiRepor
           average: {
             value: all.cm.firstTimeFixRate,
             labelKey: 'chart.avg',
-            display: `Avg ${pct(all.cm.firstTimeFixRate)}`,
+            display: t('chart.avgValue', { value: pct(all.cm.firstTimeFixRate) }),
           },
         }),
-        footnote: `Repeat window ${data.repeatWindowDays} days`,
+        footnote: t('live.footnoteRepeatWindow', { days: data.repeatWindowDays }),
       },
       sideStats: [
         {
@@ -268,12 +268,12 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string): LiveKpiRepor
           average: {
             value: all.cm.slaWithinRate,
             labelKey: 'chart.avgSla',
-            display: `Avg SLA ${pct(all.cm.slaWithinRate)}`,
+            display: t('chart.avgSlaValue', { value: pct(all.cm.slaWithinRate) }),
           },
         }),
         // Unknowns are excluded from the rate, so saying how many there are is
         // the difference between "77% on time" and "77% of the third we measured".
-        footnote: `${all.cm.slaUnknown.toLocaleString()} case(s) have no RE Action date and are not counted`,
+        footnote: t('live.footnoteSlaUnknown', { count: all.cm.slaUnknown.toLocaleString() }),
       },
       sideStats: [
         { labelKey: 'legend.within', value: pct(all.cm.slaWithinRate), detail: count(all.cm.slaWithin), emphasis: true },
