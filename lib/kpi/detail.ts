@@ -271,7 +271,7 @@ export function kpiDetail(
           right: { value: cm.slaWithin + cm.slaOver, key: 'detail.den.slaMeasured' },
           result: pct(totals.rate),
         },
-        windows: [],
+        windows: data.slaDays === null ? [] : [{ key: 'detail.window.sla', days: data.slaDays }],
         breakdowns: [
           {
             titleKey: 'detail.bd.slaJudged',

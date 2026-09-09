@@ -1018,7 +1018,8 @@
       },
       "window": {
         "install": "Installation follow-up window: {days} days after the TimeLine's later date.",
-        "repeat": "Repeat window: another CM on the same serial within {days} days."
+        "repeat": "Repeat window: another CM on the same serial within {days} days.",
+        "sla": "SLA: checked within {days} days of the case being reported (RE Action date minus Open Date). CM cases only."
       },
       "result": "Result",
       "notesShow": "show",

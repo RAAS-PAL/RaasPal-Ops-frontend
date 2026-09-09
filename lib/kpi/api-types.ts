@@ -59,6 +59,8 @@ export type KpiCaseMetrics = {
   lastSyncedAt: string | null;
   repeatWindowDays: number;
   installFollowUpDays: number;
+  /** SLA threshold in days when every CM board agrees on one; null when they differ. */
+  slaDays: number | null;
   /** True while the formulas await RE-team sign-off. */
   provisional: boolean;
   /** Each formula in words, keyed by metric. */
