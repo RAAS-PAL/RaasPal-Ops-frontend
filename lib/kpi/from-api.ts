@@ -56,6 +56,8 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string): LiveKpiRepor
   const all = totals.all;
   const cleaning = totals.cleaning;
   const delivery = totals.delivery;
+  const unplacedInstalls =
+    all.installation.total - cleaning.installation.total - delivery.installation.total;
 
   const headlines: KpiHeadline[] = [
     {
@@ -117,6 +119,12 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string): LiveKpiRepor
             labelKey: 'chart.avg',
             display: `Avg ${pct(all.installation.firstTimeRate)}`,
           },
+        }),
+        // The two lines do not add up to the total here, unlike every CM panel:
+        // an install with no matching serial counts in the total but in neither
+        // line. Say so, or the side boxes look like a rounding fault.
+        ...(unplacedInstalls > 0 && {
+          footnote: `${unplacedInstalls} of ${all.installation.total} installs have no matching serial and sit in neither line`,
         }),
       },
       sideStats: [

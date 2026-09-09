@@ -963,7 +963,7 @@
       "neverSynced": "never",
       "provisionalNotice": "Formulas are provisional and awaiting RE-team sign-off.",
       "emptyRange": "No tickets in this period yet. Run a monday sync, or pick a period the boards cover.",
-      "scopeNotice": "{excluded} row(s) in this period are on the boards but are not KPI cases (surveys, demos, parts shipments) and are left out; {unclassified} count in the fleet total but could not be placed as cleaning or delivery.",
+      "scopeNotice": "{excluded} row(s) in this period are on the boards but are not KPI cases (surveys, demos, parts shipments) and are left out. {unclassified} install(s) count in the fleet total but in neither line — no matching serial.",
       "placeholderBadge": "Placeholder",
       "placeholderNotice": "{kpis} are placeholders copied from the Jan–Jun 2026 deck — no backend source yet, not computed.",
       "awaitingSourceNotice": "{kpis} have no backend source yet and show no figures for this period.",
@@ -985,7 +985,6 @@
       "formula": "Formula",
       "arithmetic": "Arithmetic",
       "windows": "Windows",
-      "caveats": "What qualifies this number",
       "notes": "Notes",
       "monthly": "Monthly breakdown",
       "colMonth": "Month",
@@ -1008,20 +1007,36 @@
         "install": "Installation follow-up window: {days} days after the TimeLine's later date.",
         "repeat": "Repeat window: another CM on the same serial within {days} days."
       },
-      "caveat": {
-        "installWithoutSerial": "Installs with no serial (counted as success)",
-        "installFollowedByCm": "Installs followed by a CM (scored 0)",
-        "repeat": "CMs followed by another CM (scored 0)",
-        "cmWithoutSerial": "CMs with no serial (counted as success)",
-        "slaOver": "Cases checked after the SLA",
-        "slaUnknown": "Cases with no RE Action date (not counted)",
-        "unclassified": "Installs in the fleet total that could not be placed as cleaning or delivery",
-        "excludedByCategory": "Board rows left out as non-KPI cases",
+      "result": "Result",
+      "notesShow": "show",
+      "breakdown": "Breakdown",
+      "leftOut": "Left out before counting — not a KPI case",
+      "bd": {
+        "scoring": "How they were scored",
+        "split": "Cleaning / delivery split",
+        "byLine": "By service line",
+        "slaJudged": "How they were judged"
+      },
+      "row": {
+        "installPass": "Scored 1 — no CM within the window",
+        "installFail": "Scored 0 — a CM followed",
+        "ftfPass": "Scored 1 — no repeat within the window",
+        "ftfFail": "Scored 0 — another CM followed",
+        "passVerified": "of which verified: serial checked, none found",
+        "passNoSerial": "of which no serial: passed by default, unverified",
+        "placed": "Placed in a line",
+        "placedCleaning": "of which cleaning",
+        "placedDelivery": "of which delivery",
+        "unplaced": "Could not be placed — in the total, in neither line",
+        "unplacedNoSerial": "of which no serial on the ticket",
+        "unplacedUnknownSerial": "of which serial never seen on a CM board",
+        "slaMeasurable": "Has an RE Action date — measurable",
+        "slaWithin": "of which checked within the SLA",
+        "slaOver": "of which checked later than the SLA",
+        "slaUnknown": "No RE Action date — not counted",
         "cleaningCases": "Cleaning cases",
         "deliveryCases": "Delivery cases"
-      },
-      "result": "Result",
-      "notesShow": "show"
+      }
     }
   }
 }

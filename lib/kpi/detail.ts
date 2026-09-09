@@ -1,9 +1,16 @@
 /**
  * The single-KPI detail view's model: the chart, the headline, and — the point
  * of the view — how the number was reached. For the four live KPIs that is the
- * backend's own definition text plus the arithmetic and the caveats that move
- * it (blank serials, unknown SLA, unclassified rows). For the two placeholders
- * it is the deck's stated basis and a plain statement that nothing was computed.
+ * backend's own definition text plus the equation and a breakdown of every
+ * count involved. For the two placeholders it is the deck's stated basis and a
+ * plain statement that nothing was computed.
+ *
+ * Breakdowns are trees, not lists. Each one names the total it partitions
+ * ("59 installs") and every row is either a part of that total (level 0) or an
+ * "of which" part of the row above it (level 1). That is what makes a figure
+ * like "30 installs with no serial" readable: it sits under "52 scored 1" in
+ * one tree and under "38 could not be placed" in the other, so the reader can
+ * see it is the same 30 rows counted from two angles rather than a third group.
  */
 import type { KpiCaseMetrics, KpiMonth, KpiSegment } from './api-types';
 import { toLiveReport } from './from-api';
@@ -18,6 +25,22 @@ export type Arithmetic = {
   left: { value: number; key: string };
   right: { value: number; key: string };
   result: string;
+};
+
+export type BreakdownRow = {
+  key: string;
+  value: number;
+  /** 0 = a part of the total; 1 = "of which" — a part of the level-0 row above. */
+  level: 0 | 1;
+  /** Marks a row as the KPI's pass, fail, or a count that is neither. */
+  tone?: 'success' | 'failure' | 'muted';
+};
+
+export type Breakdown = {
+  titleKey: string;
+  /** What the level-0 rows add up to, e.g. 59 installs. */
+  total: { value: number; unitKey: string };
+  rows: BreakdownRow[];
 };
 
 export type KpiDetail = {
@@ -36,8 +59,10 @@ export type KpiDetail = {
   arithmetic?: Arithmetic;
   /** Configured windows that shape the number. */
   windows: { key: string; days: number }[];
-  /** Figures that qualify the rate — each is a count with a label key. */
-  caveats: { key: string; value: number }[];
+  /** Every count involved, as trees that add up. */
+  breakdowns: Breakdown[];
+  /** Board rows in the period that never entered the total (not a KPI case). */
+  leftOut: number;
   /** Further backend notes (matching, split, category rules). */
   notes: string[];
   /** Per-month numerator/denominator by segment, for the table. */
@@ -76,6 +101,18 @@ function monthlyRows(months: KpiMonth[], locale: string, extract: Extract) {
   });
 }
 
+/** Cleaning + delivery of one total — the two lines always add up for CMs. */
+function byLine(total: number, unitKey: string, cleaning: number, delivery: number): Breakdown {
+  return {
+    titleKey: 'detail.bd.byLine',
+    total: { value: total, unitKey },
+    rows: [
+      { key: 'segments.cleaning', value: cleaning, level: 0 },
+      { key: 'segments.delivery', value: delivery, level: 0 },
+    ],
+  };
+}
+
 export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, locale: string): KpiDetail | null {
   const live = toLiveReport(data, locale);
   const def = data.definitions ?? {};
@@ -95,7 +132,8 @@ export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, local
       computed: false,
       formula: { key: id === 'pmComplete' ? 'detail.pmFormula' : 'detail.csatFormula' },
       windows: [],
-      caveats: [],
+      breakdowns: [],
+      leftOut: 0,
       notes: [],
       monthly: [],
     };
@@ -105,11 +143,11 @@ export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, local
   const headline = live.headlines.find((x) => x.id === id);
   if (!panel || !headline) return null;
 
-  const all = data.totals.all;
+  const { all, cleaning, delivery } = data.totals;
   const extract = extractors[id as keyof typeof extractors];
   const totals = extract(all);
 
-  const base: Omit<KpiDetail, 'formula' | 'arithmetic' | 'windows' | 'caveats'> = {
+  const base = {
     id,
     index: panel.index,
     titleKey: panel.titleKey,
@@ -117,85 +155,126 @@ export function kpiDetail(data: KpiCaseMetrics, id: KpiId, period: Period, local
     headline: { value: headline.value, detail: headline.detail },
     chart: panel.chart,
     sideStats: panel.sideStats,
-    computed: true,
-    notes: [],
+    computed: true as const,
+    leftOut: data.excludedByCategory,
     monthly: monthlyRows(data.months, locale, extract),
   };
 
   switch (id) {
-    case 'firstTimeInstall':
+    case 'firstTimeInstall': {
+      const inst = all.installation;
+      // An install with no serial cannot be placed in a line, so every one of
+      // them is inside the unplaced count; the remainder carry a serial no CM
+      // board has ever named.
+      const placed = cleaning.installation.total + delivery.installation.total;
+      const unplaced = inst.total - placed;
+      const unplacedNoSerial = Math.min(inst.withoutSerial, unplaced);
       return {
         ...base,
         formula: { text: def.firstTimeInstall },
         arithmetic: {
           operator: 'divide',
-          left: { value: all.installation.firstTime, key: 'detail.num.installFirstTime' },
-          right: { value: all.installation.total, key: 'detail.den.installs' },
+          left: { value: inst.firstTime, key: 'detail.num.installFirstTime' },
+          right: { value: inst.total, key: 'detail.den.installs' },
           result: pct(totals.rate),
         },
         windows: [{ key: 'detail.window.install', days: data.installFollowUpDays }],
-        notes: pick('bucketing', 'matching', 'split'),
-        caveats: [
-          { key: 'detail.caveat.installWithoutSerial', value: all.installation.withoutSerial },
-          { key: 'detail.caveat.installFollowedByCm', value: all.installation.followedByCm },
-          { key: 'detail.caveat.unclassified', value: data.unclassifiedTickets },
-          { key: 'detail.caveat.excludedByCategory', value: data.excludedByCategory },
+        breakdowns: [
+          {
+            titleKey: 'detail.bd.scoring',
+            total: { value: inst.total, unitKey: 'detail.den.installs' },
+            rows: [
+              { key: 'detail.row.installPass', value: inst.firstTime, level: 0, tone: 'success' },
+              { key: 'detail.row.passVerified', value: inst.firstTime - inst.withoutSerial, level: 1 },
+              { key: 'detail.row.passNoSerial', value: inst.withoutSerial, level: 1, tone: 'muted' },
+              { key: 'detail.row.installFail', value: inst.followedByCm, level: 0, tone: 'failure' },
+            ],
+          },
+          {
+            titleKey: 'detail.bd.split',
+            total: { value: inst.total, unitKey: 'detail.den.installs' },
+            rows: [
+              { key: 'detail.row.placed', value: placed, level: 0 },
+              { key: 'detail.row.placedCleaning', value: cleaning.installation.total, level: 1 },
+              { key: 'detail.row.placedDelivery', value: delivery.installation.total, level: 1 },
+              { key: 'detail.row.unplaced', value: unplaced, level: 0, tone: 'muted' },
+              { key: 'detail.row.unplacedNoSerial', value: unplacedNoSerial, level: 1 },
+              { key: 'detail.row.unplacedUnknownSerial', value: unplaced - unplacedNoSerial, level: 1 },
+            ],
+          },
         ],
+        notes: pick('bucketing', 'matching', 'split'),
       };
+    }
     case 'totalCmCases':
       return {
         ...base,
         formula: { text: [def.bucketing, def.category].filter(Boolean).join(' ') },
-        // A count, not a rate: the equation is the sum of the two lines. The CM
-        // boards are single-line, so no CM is ever unclassified — that caveat
-        // belongs to installations and would mislead here.
         arithmetic: {
           operator: 'add',
-          left: { value: data.totals.cleaning.cm.total, key: 'detail.caveat.cleaningCases' },
-          right: { value: data.totals.delivery.cm.total, key: 'detail.caveat.deliveryCases' },
+          left: { value: cleaning.cm.total, key: 'detail.row.cleaningCases' },
+          right: { value: delivery.cm.total, key: 'detail.row.deliveryCases' },
           result: all.cm.total.toLocaleString(),
         },
         windows: [],
-        caveats: [
-          { key: 'detail.caveat.excludedByCategory', value: data.excludedByCategory },
-        ],
+        breakdowns: [byLine(all.cm.total, 'detail.den.cmCases', cleaning.cm.total, delivery.cm.total)],
+        notes: [],
       };
-    case 'firstTimeFix':
+    case 'firstTimeFix': {
+      const cm = all.cm;
       return {
         ...base,
         formula: { text: def.firstTimeFix },
         arithmetic: {
           operator: 'divide',
-          left: { value: all.cm.firstTimeFix, key: 'detail.num.fixedFirstTime' },
-          right: { value: all.cm.total, key: 'detail.den.cmCases' },
+          left: { value: cm.firstTimeFix, key: 'detail.num.fixedFirstTime' },
+          right: { value: cm.total, key: 'detail.den.cmCases' },
           result: pct(totals.rate),
         },
         windows: [{ key: 'detail.window.repeat', days: data.repeatWindowDays }],
-        notes: pick('bucketing', 'matching', 'category'),
-        caveats: [
-          { key: 'detail.caveat.repeat', value: all.cm.repeat },
-          { key: 'detail.caveat.cmWithoutSerial', value: all.cm.withoutSerial },
-          { key: 'detail.caveat.excludedByCategory', value: data.excludedByCategory },
+        breakdowns: [
+          {
+            titleKey: 'detail.bd.scoring',
+            total: { value: cm.total, unitKey: 'detail.den.cmCases' },
+            rows: [
+              { key: 'detail.row.ftfPass', value: cm.firstTimeFix, level: 0, tone: 'success' },
+              { key: 'detail.row.passVerified', value: cm.firstTimeFix - cm.withoutSerial, level: 1 },
+              { key: 'detail.row.passNoSerial', value: cm.withoutSerial, level: 1, tone: 'muted' },
+              { key: 'detail.row.ftfFail', value: cm.repeat, level: 0, tone: 'failure' },
+            ],
+          },
+          byLine(cm.total, 'detail.den.cmCases', cleaning.cm.total, delivery.cm.total),
         ],
+        notes: pick('bucketing', 'matching', 'category'),
       };
-    case 'sla':
+    }
+    case 'sla': {
+      const cm = all.cm;
       return {
         ...base,
         formula: { text: def.sla },
         arithmetic: {
           operator: 'divide',
-          left: { value: all.cm.slaWithin, key: 'detail.num.slaWithin' },
-          right: { value: all.cm.slaWithin + all.cm.slaOver, key: 'detail.den.slaMeasured' },
+          left: { value: cm.slaWithin, key: 'detail.num.slaWithin' },
+          right: { value: cm.slaWithin + cm.slaOver, key: 'detail.den.slaMeasured' },
           result: pct(totals.rate),
         },
         windows: [],
-        notes: pick('bucketing', 'category'),
-        caveats: [
-          { key: 'detail.caveat.slaOver', value: all.cm.slaOver },
-          { key: 'detail.caveat.slaUnknown', value: all.cm.slaUnknown },
-          { key: 'detail.caveat.excludedByCategory', value: data.excludedByCategory },
+        breakdowns: [
+          {
+            titleKey: 'detail.bd.slaJudged',
+            total: { value: cm.total, unitKey: 'detail.den.cmCases' },
+            rows: [
+              { key: 'detail.row.slaMeasurable', value: cm.slaWithin + cm.slaOver, level: 0 },
+              { key: 'detail.row.slaWithin', value: cm.slaWithin, level: 1, tone: 'success' },
+              { key: 'detail.row.slaOver', value: cm.slaOver, level: 1, tone: 'failure' },
+              { key: 'detail.row.slaUnknown', value: cm.slaUnknown, level: 0, tone: 'muted' },
+            ],
+          },
         ],
+        notes: pick('bucketing', 'category'),
       };
+    }
     default:
       return null;
   }

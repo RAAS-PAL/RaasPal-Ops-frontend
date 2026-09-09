@@ -15,7 +15,7 @@
  */
 import { useTranslations } from 'next-intl';
 import { ArrowLeft, Calculator, Info, ListChecks } from 'lucide-react';
-import type { KpiDetail, DetailCell, Arithmetic } from '@/lib/kpi/detail';
+import type { KpiDetail, DetailCell, Arithmetic, Breakdown } from '@/lib/kpi/detail';
 import { KpiBarChart } from './KpiBarChart';
 
 type Props = {
@@ -60,6 +60,46 @@ function Equation({ a, accent, resultLabel, t }: { a: Arithmetic; accent: string
       <Operand value={a.right.value.toLocaleString()} label={t(a.right.key)} />
       <span className="text-xl font-semibold text-[var(--app-muted)]">=</span>
       <Operand value={a.result} label={resultLabel} color={accent} />
+    </div>
+  );
+}
+
+const TONE: Record<NonNullable<Breakdown['rows'][number]['tone']>, string> = {
+  success: '#2FA36B',
+  failure: '#DC2F2F',
+  muted: '#9CA3AF',
+};
+
+/**
+ * One tree of counts: the total it partitions on the right of the title, then
+ * level-0 rows that add up to it and indented "of which" rows under them.
+ */
+function BreakdownTree({ b, t }: { b: Breakdown; t: (k: string) => string }) {
+  return (
+    <div>
+      <div className="mb-0.5 flex items-baseline justify-between gap-3 border-b border-[var(--app-border)] pb-1">
+        <p className="text-xs font-semibold text-[var(--app-text)]">{t(b.titleKey)}</p>
+        <p className="shrink-0 text-xs tabular-nums text-[var(--app-muted)]">
+          <span className="font-semibold text-[var(--app-text)]">{b.total.value.toLocaleString()}</span> {t(b.total.unitKey)}
+        </p>
+      </div>
+      <dl className="text-xs">
+        {b.rows.map((r) => {
+          const child = r.level === 1;
+          return (
+            <div key={r.key} className={`flex items-baseline justify-between gap-3 py-1 ${child ? 'pl-5' : ''}`}>
+              <dt className={`flex items-center gap-1.5 ${child ? 'text-[var(--app-muted)]' : 'font-medium text-[var(--app-text)]'}`}>
+                {child && <span aria-hidden className="text-[var(--app-muted)]">↳</span>}
+                {r.tone && <span aria-hidden className="h-2 w-2 shrink-0 rounded-full" style={{ background: TONE[r.tone] }} />}
+                {t(r.key)}
+              </dt>
+              <dd className={`shrink-0 tabular-nums ${child ? 'text-[var(--app-muted)]' : 'text-sm font-semibold text-[var(--app-text)]'}`}>
+                {r.value.toLocaleString()}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
     </div>
   );
 }
@@ -205,26 +245,21 @@ export function KpiDetailView({ detail, onBack, badge }: Props) {
             </div>
           </section>
 
-          {/* What qualifies this number */}
+          {/* Breakdown — every count, as trees that add up */}
           <section className={card}>
             <h3 className={cardTitle}>
               <ListChecks className="h-4 w-4 text-[var(--app-muted)]" />
-              {t('detail.caveats')}
+              {t('detail.breakdown')}
             </h3>
-            {detail.caveats.length === 0 ? (
-              <p className="text-xs text-[var(--app-muted)]">—</p>
-            ) : (
-              <dl className="divide-y divide-[var(--app-border)] text-xs">
-                {detail.caveats.map((c) => (
-                  <div key={c.key} className="flex items-baseline justify-between gap-3 py-1.5">
-                    <dt className="text-[var(--app-muted)]">{t(c.key)}</dt>
-                    <dd className="shrink-0 text-sm font-semibold tabular-nums text-[var(--app-text)]">
-                      {c.value.toLocaleString()}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            )}
+            <div className="space-y-4">
+              {detail.breakdowns.map((b) => (
+                <BreakdownTree key={b.titleKey} b={b} t={t} />
+              ))}
+              <p className="border-t border-[var(--app-border)] pt-2 text-[11px] text-[var(--app-muted)]">
+                {t('detail.leftOut')}:{' '}
+                <span className="font-semibold text-[var(--app-text)]">{detail.leftOut.toLocaleString()}</span>
+              </p>
+            </div>
           </section>
         </div>
       )}
