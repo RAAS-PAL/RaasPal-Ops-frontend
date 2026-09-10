@@ -188,7 +188,7 @@ export function KpiBarChart({
                           title={`${s.label} ${month}: ${fmt(value, unit)}`}
                         >
                           {showValueLabels && (
-                            <span className="mb-0.5 block text-center text-[10px] font-bold text-[var(--app-text)]">
+                            <span className="relative z-20 mx-auto mb-0.5 block w-fit rounded bg-[var(--app-panel)] px-px text-center text-[10px] font-bold text-[var(--app-text)]">
                               {fmt(value, unit)}
                             </span>
                           )}

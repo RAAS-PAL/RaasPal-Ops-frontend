@@ -827,7 +827,7 @@
       },
       "bySurvey": {
         "title": "Top Box by survey",
-        "hint": "Each survey on its own, month by month. Bars are the month sheets' Top Box cells; the figure beside each name is the survey's period total.",
+        "hint": "Each survey on its own, month by month. Bars are the month sheets' Top Box cells; the rule and the figure beside each name are the survey's period total.",
         "detail": "{responses} responses · Response {rate}",
         "empty": "No responses in this period."
       },

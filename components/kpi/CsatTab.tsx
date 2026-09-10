@@ -286,7 +286,9 @@ export function CsatTab({ period, selectedSurvey, onSelectSurvey }: Props) {
         <section>
           <h3 className="text-sm font-bold text-[var(--app-text)]">{t('csat.bySurvey.title')}</h3>
           <p className="mb-2.5 text-[10px] text-[var(--app-muted)]">{t('csat.bySurvey.hint')}</p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {/* Four across only from 2xl: at xl a card is ~230px, and six labelled
+              bars plus the average row do not fit that without labels touching. */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-4">
             {CSAT_SURVEYS.map((s) => {
               const bucket = totals[s.key];
               return (
@@ -309,6 +311,11 @@ export function CsatTab({ period, selectedSurvey, onSelectSurvey }: Props) {
                     month: monthLabel(m.month, locale),
                     value: m[s.key].topBoxRate,
                   }))}
+                  total={
+                    bucket.topBoxRate === null
+                      ? undefined
+                      : { value: bucket.topBoxRate, display: t('chart.avgValue', { value: pct(bucket.topBoxRate) }) }
+                  }
                   value={pct(bucket.topBoxRate)}
                 />
               );
@@ -365,14 +372,14 @@ export function CsatTab({ period, selectedSurvey, onSelectSurvey }: Props) {
 }
 
 /**
- * One survey's Top Box: its period total as the headline, its months as bars,
- * and a click through to that survey on its own.
+ * One survey's Top Box: its period total as the headline and as the rule across
+ * its months, and a click through to that survey on its own.
  *
- * No reference line. At this width the bars sit close to their own total, so the
- * rule crossed the value labels and struck them through — and the total is the
- * headline already. Note that it is not the mean of the bars: each bar is that
- * month sheet's own Top Box cell, and a month with five responses cannot count
- * as much as one with ninety. The total pools the ratings, the deck's way.
+ * The rule is labelled "Avg" because that is the deck's word for it, on the
+ * slide and on the overall panel above. It is not the mean of the bars: each bar
+ * is that month sheet's own Top Box cell, and a month with five responses cannot
+ * count as much as one with ninety. The total pools the ratings, the deck's way;
+ * the detail view spells that out.
  */
 function StreamCard({
   label,
@@ -380,6 +387,7 @@ function StreamCard({
   value,
   detail,
   points,
+  total,
   empty,
   onSelect,
   selectLabel,
@@ -389,6 +397,7 @@ function StreamCard({
   value: string;
   detail: string;
   points: ChartPoint[];
+  total?: { value: number; display: string };
   empty?: string;
   onSelect: () => void;
   selectLabel: string;
@@ -432,6 +441,7 @@ function StreamCard({
           </div>
         ) : (
           <KpiBarChart
+            average={total}
             heightClass="min-h-[150px]"
             mode="single"
             series={[{ key: 'topBox', label, color, points }]}

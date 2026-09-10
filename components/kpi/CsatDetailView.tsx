@@ -162,6 +162,11 @@ export function CsatDetailView({ selection, data, onBack }: Props) {
         <div className="flex min-w-0 flex-col gap-4 lg:flex-row">
           <div className="flex min-w-0 flex-1">
             <KpiBarChart
+              average={
+                total.topBoxRate === null
+                  ? undefined
+                  : { value: total.topBoxRate, display: t('chart.avgValue', { value: pct(total.topBoxRate) }) }
+              }
               heightClass="min-h-[300px]"
               mode="single"
               series={[
