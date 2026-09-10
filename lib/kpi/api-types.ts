@@ -98,10 +98,17 @@ export type CsatBucket = {
   responses: number;
   notEvaluated: number;
   /**
-   * The sheet's own Top Box, as a percentage — the CSAT the deck reports. For a
-   * range or the pool, each month's Top Box weighted by its responses.
+   * Top Box as a percentage — the CSAT the deck reports. For one survey in one
+   * month it is that sheet's own Top Box cell, read as the RE team wrote it.
+   * For a range or the pool, which no sheet holds, it is `fives / ratings`.
    */
   topBoxRate: number | null;
+  /** True when `topBoxRate` is one sheet's cell; false when it was combined. */
+  topBoxFromSheet: boolean;
+  /** Ratings of 5 given — the numerator of a combined Top Box. */
+  fives: number;
+  /** Ratings given at all — its denominator. */
+  ratings: number;
   /** `responses / customers`. */
   responseRate: number | null;
 };

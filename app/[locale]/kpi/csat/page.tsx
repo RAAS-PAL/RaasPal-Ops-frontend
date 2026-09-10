@@ -1,11 +1,19 @@
 import { KpiClient } from '../KpiClient';
-import { resolvePeriod, type KpiSearchParams } from '@/lib/kpi/params';
+import { resolvePeriod, resolveSurvey, type KpiSearchParams } from '@/lib/kpi/params';
 
 export default async function KpiCsatPage({
   searchParams,
 }: {
   searchParams: Promise<KpiSearchParams>;
 }) {
-  const { period, preset } = resolvePeriod(await searchParams);
-  return <KpiClient initialPeriod={period} initialPreset={preset} section="csat" />;
+  const sp = await searchParams;
+  const { period, preset } = resolvePeriod(sp);
+  return (
+    <KpiClient
+      initialPeriod={period}
+      initialPreset={preset}
+      initialSurvey={resolveSurvey(sp)}
+      section="csat"
+    />
+  );
 }

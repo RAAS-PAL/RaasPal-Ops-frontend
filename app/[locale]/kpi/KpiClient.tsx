@@ -32,6 +32,7 @@ import {
   type Period,
   type PeriodPresetId,
 } from '@/lib/kpi/period';
+import type { CsatSelection } from '@/lib/kpi/csat';
 import type { KpiId } from '@/lib/kpi/types';
 
 export type KpiSection = 'report' | 'utilization' | 'repeat-cost' | 'csat';
@@ -58,6 +59,8 @@ type Props = {
   initialPreset?: PeriodPresetId;
   /** A single KPI to open in detail, from `?kpi=`; report section only. */
   initialKpi?: KpiId | null;
+  /** A single survey to open in detail, from `?survey=`; CSAT section only. */
+  initialSurvey?: CsatSelection | null;
 };
 
 export function KpiClient({
@@ -65,6 +68,7 @@ export function KpiClient({
   initialPeriod = DECK_PERIOD,
   initialPreset = 'h1',
   initialKpi = null,
+  initialSurvey = null,
 }: Props) {
   const t = useTranslations('kpi');
   const locale = useLocale();
@@ -73,14 +77,21 @@ export function KpiClient({
   const [year, setYear] = useState<number>(Number(initialPeriod.from.slice(0, 4)));
   const [period, setPeriod] = useState<Period>(initialPeriod);
   const [selectedKpi, setSelectedKpi] = useState<KpiId | null>(initialKpi);
+  const [selectedSurvey, setSelectedSurvey] = useState<CsatSelection | null>(initialSurvey);
 
-  const syncUrl = (nextPeriod: Period, nextPreset: PeriodPresetId, nextKpi: KpiId | null) => {
+  const syncUrl = (
+    nextPeriod: Period,
+    nextPreset: PeriodPresetId,
+    nextKpi: KpiId | null,
+    nextSurvey: CsatSelection | null,
+  ) => {
     const params = new URLSearchParams({
       from: nextPeriod.from,
       to: nextPeriod.to,
       preset: nextPreset,
     });
     if (nextKpi) params.set('kpi', nextKpi);
+    if (nextSurvey) params.set('survey', nextSurvey);
     window.history.replaceState(null, '', `?${params}`);
   };
 
@@ -88,12 +99,17 @@ export function KpiClient({
     setPreset(next.preset);
     setYear(next.year);
     setPeriod(next.period);
-    syncUrl(next.period, next.preset, selectedKpi);
+    syncUrl(next.period, next.preset, selectedKpi, selectedSurvey);
   };
 
   const selectKpi = (next: KpiId | null) => {
     setSelectedKpi(next);
-    syncUrl(period, preset, next);
+    syncUrl(period, preset, next, selectedSurvey);
+  };
+
+  const selectSurvey = (next: CsatSelection | null) => {
+    setSelectedSurvey(next);
+    syncUrl(period, preset, selectedKpi, next);
   };
 
   const resetToDeckPeriod = () => changePeriod({ preset: 'h1', year: 2026, period: DECK_PERIOD });
@@ -143,7 +159,9 @@ export function KpiClient({
                 )}
                 {section === 'utilization' && <UtilizationTab />}
                 {section === 'repeat-cost' && <RepeatCostTab />}
-                {section === 'csat' && <CsatTab period={period} />}
+                {section === 'csat' && (
+                  <CsatTab period={period} selectedSurvey={selectedSurvey} onSelectSurvey={selectSurvey} />
+                )}
               </>
             )}
           </div>

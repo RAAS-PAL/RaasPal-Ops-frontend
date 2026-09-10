@@ -831,6 +831,53 @@
         "detail": "{responses} responses · Response {rate}",
         "empty": "No responses in this period."
       },
+      "detail": {
+        "hint": "Click the chart or any survey to see it on its own, with where its Top Box came from.",
+        "back": "Back to CSAT",
+        "title": "{survey} Top Box",
+        "notSurveyedBody": "No survey sheet covers this period.",
+        "topBox": "Top Box",
+        "fromSheetTitle": "Read from the month sheet",
+        "fromSheetBody": "One survey in one month has its own Top Box cell on the sheet. This is that cell, as the RE team computed it — nothing was recomputed here.",
+        "formulaSheet": "The month sheet's Top Box cell: for each of the five questions, the share of its ratings that were 5, averaged over the five.",
+        "formulaPooled": "Every rating of 5 over every rating given, across the months and surveys in view. No sheet holds a figure this wide, and this is how the deck combines them — so each person counts once, whichever month they answered in.",
+        "barsNote": "Each bar above is that month sheet's own Top Box cell, shown as written.",
+        "barsNoteOverall": "Each bar above pools that month's four surveys the same way. The four survey charts show the month sheets' own cells.",
+        "avgNote": "Averaging the {months} monthly cells instead would give {value}, which lets a month with one respondent count as much as one with ninety. The deck counts people, so this page does not.",
+        "avgNoteOverall": "Averaging the {months} monthly figures instead would give {value}, which lets a quiet month count as much as a busy one. The deck counts people, so this page does not.",
+        "ratingsNote": "Five questions per respondent, so one person leaves up to five ratings.",
+        "num": {
+          "fives": "ratings of 5"
+        },
+        "den": {
+          "ratings": "ratings given"
+        },
+        "stat": {
+          "responses": "Responses",
+          "contacted": "Contacted",
+          "responseRate": "Response"
+        },
+        "bd": {
+          "contacted": "Who was contacted",
+          "ratings": "Ratings given"
+        },
+        "row": {
+          "responded": "Responded",
+          "noAnswer": "Did not respond",
+          "fives": "Rated 5 — Top Box",
+          "lower": "Rated 4 or lower"
+        },
+        "unit": {
+          "customers": "customers",
+          "ratings": "ratings"
+        },
+        "table": {
+          "readFrom": "Read from",
+          "fives": "5s / ratings",
+          "sheet": "sheet cell",
+          "pooled": "pooled"
+        }
+      },
       "nResponses": "{n} responses"
     },
     "kpis": {

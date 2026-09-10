@@ -22,32 +22,25 @@
  * percentages side by side reads neither, and Top Box is the one the deck
  * headlines. Warnings cover only what could not be read — a sheet with no Top
  * Box cell, a file whose survey could not be told.
+ *
+ * Clicking the overall panel or any of the four survey charts opens that survey
+ * alone (CsatDetailView), where the figure's provenance is the subject: a sheet
+ * cell read as it is, or a pooled total with its arithmetic. The selection lives
+ * in the URL (`?survey=`) so one survey can be linked to, the same way the
+ * report page links to a single KPI.
  */
 import { useLocale, useTranslations } from 'next-intl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, FileSpreadsheet, Info, Loader2, RefreshCw } from 'lucide-react';
+import { AlertTriangle, ChevronRight, FileSpreadsheet, Info, Loader2, RefreshCw } from 'lucide-react';
 import { kpiApi } from '@/lib/api';
-import type { CsatBucket, CsatStreamKey, KpiCsat } from '@/lib/kpi/api-types';
+import type { CsatBucket, KpiCsat } from '@/lib/kpi/api-types';
+import { CSAT_OVERALL, CSAT_SURVEYS, type CsatSelection } from '@/lib/kpi/csat';
 import { KPI_COLORS } from '@/lib/kpi/fixtures';
 import { dateLocale, type Period } from '@/lib/kpi/period';
+import { CsatDetailView } from './CsatDetailView';
 import { KpiHeadlineTile } from './KpiHeadlineTile';
 import { KpiBarChart, type ChartPoint } from './KpiBarChart';
 import { KpiPanel } from './KpiPanel';
-
-/** The deck's bar colour for this panel. */
-const BAR = '#E8A33D';
-
-/**
- * The four surveys in the deck's side-stat order, labelled as the report already
- * labels them. The colours are each survey's colour elsewhere in the report, so
- * a survey looks the same here as it does on the CM and PM panels.
- */
-const STREAMS: { key: CsatStreamKey; labelKey: string; color: string }[] = [
-  { key: 'installation', labelKey: 'stats.install', color: KPI_COLORS.install },
-  { key: 'pm', labelKey: 'stats.pm', color: KPI_COLORS.pm },
-  { key: 'delivery', labelKey: 'stats.cmDelivery', color: '#6BA6F7' },
-  { key: 'cleaning', labelKey: 'stats.cmCleaning', color: '#2563EB' },
-];
 
 const pct = (value: number | null): string => (value === null ? '—' : `${value.toFixed(1)}%`);
 
@@ -75,7 +68,14 @@ function coverage(data: KpiCsat): { first: string; last: string } | null {
   return { first: firsts.sort()[0], last: lasts.sort().at(-1) as string };
 }
 
-export function CsatTab({ period }: { period: Period }) {
+type Props = {
+  period: Period;
+  /** Which survey to open on its own; null shows the charts. Lives in `?survey=`. */
+  selectedSurvey: CsatSelection | null;
+  onSelectSurvey: (next: CsatSelection | null) => void;
+};
+
+export function CsatTab({ period, selectedSurvey, onSelectSurvey }: Props) {
   const t = useTranslations('kpi');
   const locale = useLocale();
   const queryClient = useQueryClient();
@@ -112,6 +112,12 @@ export function CsatTab({ period }: { period: Period }) {
 
   const data = query.data;
   const { months, totals } = data;
+
+  // One survey on its own: where its Top Box came from and the counts behind it.
+  if (selectedSurvey) {
+    return <CsatDetailView data={data} onBack={() => onSelectSurvey(null)} selection={selectedSurvey} />;
+  }
+
   const surveyed = months.some((m) => m.overall.surveyed);
   const covered = coverage(data);
   const dateFmt = new Intl.DateTimeFormat(dateLocale(locale), { dateStyle: 'medium' });
@@ -139,6 +145,7 @@ export function CsatTab({ period }: { period: Period }) {
             )}
             {data.provisional && t('live.provisionalNotice')}
           </p>
+          <p className="mt-1">{t('csat.detail.hint')}</p>
         </div>
       </div>
 
@@ -243,7 +250,7 @@ export function CsatTab({ period }: { period: Period }) {
                 {
                   key: 'csat',
                   label: t('legend.csat'),
-                  color: BAR,
+                  color: CSAT_OVERALL.color,
                   points: months.map((m) => ({ month: monthLabel(m.month, locale), value: m.overall.topBoxRate })),
                 },
               ],
@@ -261,9 +268,11 @@ export function CsatTab({ period }: { period: Period }) {
               }),
             }}
             index={6}
+            onSelect={() => onSelectSurvey('overall')}
+            selectLabel={t('detail.viewDetails')}
             sideStats={[
               sideStat('stats.overall', totals.overall, true),
-              ...STREAMS.map((s) => sideStat(s.labelKey, totals[s.key])),
+              ...CSAT_SURVEYS.map((s) => sideStat(s.labelKey, totals[s.key])),
             ]}
             title={t('panels.csat')}
           />
@@ -278,7 +287,7 @@ export function CsatTab({ period }: { period: Period }) {
           <h3 className="text-sm font-bold text-[var(--app-text)]">{t('csat.bySurvey.title')}</h3>
           <p className="mb-2.5 text-[10px] text-[var(--app-muted)]">{t('csat.bySurvey.hint')}</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {STREAMS.map((s) => {
+            {CSAT_SURVEYS.map((s) => {
               const bucket = totals[s.key];
               return (
                 <StreamCard
@@ -294,6 +303,8 @@ export function CsatTab({ period }: { period: Period }) {
                   }
                   empty={bucket.surveyed ? undefined : t('csat.bySurvey.empty')}
                   label={t(s.labelKey)}
+                  onSelect={() => onSelectSurvey(s.key)}
+                  selectLabel={t('detail.viewDetails')}
                   points={months.map((m) => ({
                     month: monthLabel(m.month, locale),
                     value: m[s.key].topBoxRate,
@@ -316,7 +327,7 @@ export function CsatTab({ period }: { period: Period }) {
                 <tr className="border-b border-[var(--app-border)] text-[var(--app-muted)]">
                   <th className="px-3 py-2 text-left font-medium">{t('csat.table.month')}</th>
                   <th className="px-3 py-2 text-right font-medium">{t('stats.overall')}</th>
-                  {STREAMS.map((s) => (
+                  {CSAT_SURVEYS.map((s) => (
                     <th key={s.key} className="px-3 py-2 text-right font-medium">
                       {t(s.labelKey)}
                     </th>
@@ -330,7 +341,7 @@ export function CsatTab({ period }: { period: Period }) {
                       {monthLabel(m.month, locale, true)}
                     </td>
                     <Cell bucket={m.overall} strong />
-                    {STREAMS.map((s) => (
+                    {CSAT_SURVEYS.map((s) => (
                       <Cell key={s.key} bucket={m[s.key]} />
                     ))}
                   </tr>
@@ -340,7 +351,7 @@ export function CsatTab({ period }: { period: Period }) {
                 <tr className="border-t-2 border-[var(--app-border-strong)] font-semibold text-[var(--app-text)]">
                   <td className="whitespace-nowrap px-3 py-2">{t('csat.table.total')}</td>
                   <Cell bucket={totals.overall} strong />
-                  {STREAMS.map((s) => (
+                  {CSAT_SURVEYS.map((s) => (
                     <Cell key={s.key} bucket={totals[s.key]} strong />
                   ))}
                 </tr>
@@ -354,7 +365,8 @@ export function CsatTab({ period }: { period: Period }) {
 }
 
 /**
- * One survey's Top Box: its period total as the headline, its months as bars.
+ * One survey's Top Box: its period total as the headline, its months as bars,
+ * and a click through to that survey on its own.
  *
  * No reference line. At this width the bars sit close to their own total, so the
  * rule crossed the value labels and struck them through — and the total is the
@@ -369,6 +381,8 @@ function StreamCard({
   detail,
   points,
   empty,
+  onSelect,
+  selectLabel,
 }: {
   label: string;
   color: string;
@@ -376,9 +390,23 @@ function StreamCard({
   detail: string;
   points: ChartPoint[];
   empty?: string;
+  onSelect: () => void;
+  selectLabel: string;
 }) {
   return (
-    <section className="flex overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] shadow-sm">
+    <section
+      aria-label={`${label} — ${selectLabel}`}
+      className="group flex cursor-pointer overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] shadow-sm outline-none transition hover:border-[var(--app-brand)] hover:shadow-md focus-visible:ring-2 focus-visible:ring-[var(--app-brand)]"
+      onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+    >
       <div aria-hidden className="w-1.5 shrink-0" style={{ background: color }} />
       <div className="flex min-w-0 flex-1 flex-col p-3">
         <div className="mb-2 flex items-start justify-between gap-2">
@@ -390,9 +418,12 @@ function StreamCard({
               {detail}
             </p>
           </div>
-          <p className="shrink-0 text-lg font-bold leading-none tabular-nums" style={{ color }}>
-            {value}
-          </p>
+          <div className="flex shrink-0 items-center gap-1">
+            <p className="text-lg font-bold leading-none tabular-nums" style={{ color }}>
+              {value}
+            </p>
+            <ChevronRight className="h-4 w-4 text-[var(--app-muted)] opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100" />
+          </div>
         </div>
 
         {empty ? (
