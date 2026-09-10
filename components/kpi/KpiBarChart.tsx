@@ -73,6 +73,22 @@ export function KpiBarChart({
 
   const legendVisible = showLegend ?? series.length > 1;
 
+  // Where the average rule crosses, as a share of the plot's height.
+  const rulePct = average && axisMax > 0 ? (average.value / axisMax) * 100 : null;
+
+  /**
+   * Where a bar's value label sits: on the bar, unless the rule would run
+   * through it, in which case just above the rule instead. Two figures in the
+   * same place are neither readable, and a rule chopped into dashes around the
+   * labels is worse. The band is in axis percent because the plot's pixel
+   * height is unknown here; it is about one label height on the smallest panel,
+   * and on a taller one it only lifts a label that was already close.
+   */
+  const labelBottom = (barPct: number): string =>
+    rulePct !== null && rulePct >= barPct - 3 && rulePct <= barPct + 9
+      ? `calc(${rulePct}% + 4px)`
+      : `calc(${barPct}% + 2px)`;
+
   return (
     <div className={`flex min-w-0 flex-1 flex-col ${heightClass}`}>
       {/* Legend on the left; the average on the right, off the plot so it never
@@ -97,7 +113,7 @@ export function KpiBarChart({
 
       <div className="flex min-h-0 min-w-0 flex-1 gap-1.5">
         {/* Y axis */}
-        <div className="flex w-9 shrink-0 flex-col-reverse justify-between pb-5 text-right text-[10px] leading-none text-[var(--app-muted)]">
+        <div className="flex w-9 shrink-0 flex-col-reverse justify-between pb-5 pt-3.5 text-right text-[10px] leading-none text-[var(--app-muted)]">
           {ticks.map((t) => (
             <span key={t}>{fmt(t, unit)}</span>
           ))}
@@ -105,7 +121,7 @@ export function KpiBarChart({
 
         <div className="relative min-w-0 flex-1 pb-5">
           {/* Gridlines — solid and faint, as on the slide */}
-          <div className="absolute inset-x-0 bottom-5 top-0 flex flex-col justify-between" aria-hidden>
+          <div className="absolute inset-x-0 bottom-5 top-3.5 flex flex-col justify-between" aria-hidden>
             {ticks.map((t, i) => (
               <div
                 key={t}
@@ -118,7 +134,9 @@ export function KpiBarChart({
           {average && (
             <div
               className="absolute inset-x-0 z-10 border-t-2 border-[var(--app-text)]"
-              style={{ bottom: `calc(1.25rem + ${(average.value / axisMax) * 100}% - ${(average.value / axisMax) * 1.25}rem)` }}
+              // Bottom padding plus the rule's share of what is left once both
+              // paddings (1.25rem below, 0.875rem headroom above) are taken out.
+              style={{ bottom: `calc(1.25rem + ${(average.value / axisMax) * 100}% - ${(average.value / axisMax) * 2.125}rem)` }}
               aria-hidden
             />
           )}
@@ -127,7 +145,7 @@ export function KpiBarChart({
               its slot's width, and the remainder is the gap. (Percentage padding
               would resolve against the chart, not the slot, and six slots of it
               overflowed the row.) */}
-          <div className="absolute inset-x-0 bottom-5 top-0 flex items-end">
+          <div className="absolute inset-x-0 bottom-5 top-3.5 flex items-end">
             {months.map((month, i) => {
               const stackTotal = columnTotals[i];
 
@@ -136,9 +154,12 @@ export function KpiBarChart({
                 // total label sits directly on it; segments are shares of the column.
                 const stackPct = axisMax === 0 ? 0 : (stackTotal / axisMax) * 100;
                 return (
-                  <div key={month} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end">
+                  <div key={month} className="relative flex h-full min-w-0 flex-1 flex-col items-center justify-end">
                     {showValueLabels && unit === 'count' && stackTotal > 0 && (
-                      <span className="mb-0.5 text-center text-[10px] font-bold text-[var(--app-text)]">
+                      <span
+                        className="absolute inset-x-0 text-center text-[10px] font-bold text-[var(--app-text)]"
+                        style={{ bottom: labelBottom(stackPct) }}
+                      >
                         {fmt(stackTotal, unit)}
                       </span>
                     )}
@@ -184,11 +205,14 @@ export function KpiBarChart({
                       return (
                         <div
                           key={s.key}
-                          className="flex h-full min-w-0 flex-1 flex-col justify-end"
+                          className="relative flex h-full min-w-0 flex-1 flex-col justify-end"
                           title={`${s.label} ${month}: ${fmt(value, unit)}`}
                         >
                           {showValueLabels && (
-                            <span className="relative z-20 mx-auto mb-0.5 block w-fit rounded bg-[var(--app-panel)] px-px text-center text-[10px] font-bold text-[var(--app-text)]">
+                            <span
+                              className="absolute inset-x-0 text-center text-[10px] font-bold text-[var(--app-text)]"
+                              style={{ bottom: labelBottom(heightPct) }}
+                            >
                               {fmt(value, unit)}
                             </span>
                           )}
