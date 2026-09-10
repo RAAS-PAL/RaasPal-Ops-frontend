@@ -1155,6 +1155,12 @@
         "category": "Each board may name a category column and the values that count as a KPI case. Rows outside that list are synced and archived but not counted. A follow-up CM is still a follow-up whatever its category."
       }
     },
+    "export": {
+      "label": "Export Excel",
+      "busy": "Preparing…",
+      "failed": "Could not build the file",
+      "hint": "One sheet per chart, months down and series across — ready for Insert Chart in Excel, and editable once pasted into a slide."
+    },
     "units": {
       "cases": "cases"
     },

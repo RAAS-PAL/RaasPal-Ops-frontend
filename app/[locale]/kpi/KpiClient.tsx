@@ -22,6 +22,7 @@ import { ReKpiReportTab } from '@/components/kpi/ReKpiReportTab';
 import { UtilizationTab } from '@/components/kpi/UtilizationTab';
 import { RepeatCostTab } from '@/components/kpi/RepeatCostTab';
 import { CsatTab } from '@/components/kpi/CsatTab';
+import { ExportXlsxButton } from '@/components/kpi/ExportXlsxButton';
 import { PeriodSelector } from '@/components/kpi/PeriodSelector';
 import { NoPeriodData } from '@/components/kpi/NoPeriodData';
 import {
@@ -133,6 +134,11 @@ export function KpiClient({
           <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4 sm:p-6">
             <div className="flex flex-wrap items-end justify-end gap-3 border-b border-[var(--app-border)] pb-2 print:hidden">
               <PeriodSelector preset={preset} year={year} period={period} onChange={changePeriod} />
+              {/* Only the two areas with real figures; Utilization and Repeat Cost
+                  are deck constants and have nothing of their own to export. */}
+              {!gated && (section === 'report' || section === 'csat') && (
+                <ExportXlsxButton kind={section} period={period} />
+              )}
             </div>
 
             {/* Resolved period, so the figures below are never unattributed. */}

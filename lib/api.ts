@@ -585,6 +585,23 @@ export const kpiApi = {
   csat: (from: string, to: string) =>
     api.get<ApiResponse<KpiCsat>>('/api/v1/kpi/csat', { params: { from, to } }),
 
+  /**
+   * The same figures as an .xlsx, one sheet per chart the deck draws.
+   *
+   * The console's charts are HTML, so they reach a slide only as a picture —
+   * useless to anyone who then has to fix a number or recolour a series. These
+   * hand over the numbers instead, shaped months-down/series-across so Excel's
+   * Insert Chart reproduces the panel and the result stays editable.
+   *
+   * A blob response, so an error body arrives as a Blob rather than parsed
+   * JSON; the caller reads the message out of it.
+   */
+  exportReport: (from: string, to: string) =>
+    api.get<Blob>('/api/v1/kpi/cm-cases/export', { params: { from, to }, responseType: 'blob' }),
+
+  exportCsat: (from: string, to: string) =>
+    api.get<Blob>('/api/v1/kpi/csat/export', { params: { from, to }, responseType: 'blob' }),
+
   /** The workbooks the backend can see right now, and how far they run. */
   csatSource: () => api.get<ApiResponse<CsatSourceStatus>>('/api/v1/kpi/csat/source'),
 
