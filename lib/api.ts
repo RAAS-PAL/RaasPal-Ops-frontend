@@ -67,7 +67,7 @@ api.interceptors.response.use(
 
 /* ─── Typed helpers ───────────────────────────────────────────────────────── */
 
-import type { KpiCaseMetrics, MondaySyncConfig } from './kpi/api-types';
+import type { KpiCaseMetrics, MondaySyncConfig, KpiCsat, CsatSourceStatus } from './kpi/api-types';
 import type {
   ApiResponse,
   AutoxingDeliveryReport,
@@ -574,6 +574,22 @@ export const kpiApi = {
    */
   cmCases: (from: string, to: string) =>
     api.get<ApiResponse<KpiCaseMetrics>>('/api/v1/kpi/cm-cases', { params: { from, to } }),
+
+  /**
+   * CSAT for an inclusive month range, from the RE team's survey workbooks.
+   * Not live: the backend re-reads the workbooks when they change, roughly
+   * monthly, and `asOf` says how far the figures run. A 400 means the
+   * workbook folder is not configured or holds nothing readable; its message
+   * says which.
+   */
+  csat: (from: string, to: string) =>
+    api.get<ApiResponse<KpiCsat>>('/api/v1/kpi/csat', { params: { from, to } }),
+
+  /** The workbooks the backend can see right now, and how far they run. */
+  csatSource: () => api.get<ApiResponse<CsatSourceStatus>>('/api/v1/kpi/csat/source'),
+
+  /** Re-reads the workbooks now, for "I just replaced them, why hasn't it changed?". */
+  reloadCsat: () => api.post<ApiResponse<CsatSourceStatus>>('/api/v1/kpi/csat/reload'),
 
   /** Board and column mapping, and whether a monday token is configured. Never returns the token. */
   config: () => api.get<ApiResponse<MondaySyncConfig>>('/api/v1/kpi/monday/config'),

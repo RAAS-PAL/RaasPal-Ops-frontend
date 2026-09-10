@@ -78,7 +78,7 @@ const pct = (v: number | null) => (v === null ? '—' : `${v.toFixed(1)}%`);
 
 type Extract = (s: KpiSegment) => DetailCell;
 
-const extractors: Record<Exclude<KpiId, 'pmComplete' | 'csat'>, Extract> = {
+const extractors: Record<Exclude<KpiId, 'pmComplete'>, Extract> = {
   firstTimeInstall: (s) => ({
     numerator: s.installation.firstTime,
     denominator: s.installation.total,
@@ -142,7 +142,7 @@ export function kpiDetail(
       chart: p.panel.chart,
       sideStats: p.panel.sideStats,
       computed: false,
-      formula: { key: id === 'pmComplete' ? 'detail.pmFormula' : 'detail.csatFormula' },
+      formula: { key: 'detail.pmFormula' },
       windows: [],
       breakdowns: [],
       leftOut: 0,

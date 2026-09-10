@@ -142,7 +142,11 @@
     "login": "Login",
     "logout": "Logout",
     "settings": "Settings",
-    "kpi": "KPI"
+    "kpi": "KPI",
+    "kpiReport": "KPI Report",
+    "kpiUtilization": "Utilization",
+    "kpiRepeatCost": "Repeat Cost",
+    "kpiCsat": "CSAT"
   },
   "sidebar": {
     "teamOperations": "Team operations",
@@ -783,10 +787,51 @@
     "searchPlaceholder": "Installation • PM • CM • FTFR • SLA • CSAT",
     "placeholderNotice": "Placeholder data from the Jan–Jun 2026 deck. No backend source is wired yet and the formulas are not defined — these figures are not computed.",
     "boardTakeaways": "Board Takeaways",
-    "tabs": {
-      "report": "KPI Report",
-      "utilization": "Utilization",
-      "repeatCost": "Repeat Cost"
+    "sectionTitles": {
+      "report": "RE Team KPI Report",
+      "utilization": "Utilization & Productivity",
+      "repeatCost": "Repeat Work Cost",
+      "csat": "Customer Satisfaction"
+    },
+    "csat": {
+      "loading": "Loading CSAT from the survey workbooks…",
+      "notice": "Read from the RE team's four survey workbooks — installation, PM, CM cleaning, CM delivery — not from monday. Each month's Top Box is the month sheet's own Top Box cell, exactly as the team computed it. Totals over months or surveys, which no sheet holds, are combined the way the deck combines them. Not live: the figures change when the workbooks are replaced, about once a month.",
+      "asOf": "Figures run to {month}.",
+      "headlineDetail": "Response {response}",
+      "footnote": "{responses} of {customers} customers contacted responded ({rate})",
+      "sourceLabel": "Source workbooks",
+      "covers": "{first} – {last}",
+      "updated": "Updated {date}",
+      "unknownSurvey": "Survey not recognised",
+      "stream": {
+        "installation": "Installation",
+        "pm": "PM",
+        "cleaning": "CM Cleaning",
+        "delivery": "CM Delivery"
+      },
+      "reload": "Re-read files",
+      "reloading": "Re-reading…",
+      "reloaded": "Workbooks re-read.",
+      "reloadFailed": "Could not re-read the workbooks",
+      "notSurveyed": "not surveyed",
+      "warningsTitle": "Read with warnings",
+      "warningsBody": "Some sheets or files could not be read as expected. The figures shown come from what could be read.",
+      "noDataTitle": "No survey data for this period",
+      "noDataBody": "The workbooks cover {first} – {last}. Pick a period inside that range, or replace the workbooks.",
+      "noDataBodyNoFiles": "No workbook could be read. See the warnings above.",
+      "table": {
+        "title": "Top Box by month and survey",
+        "month": "Month",
+        "hint": "Each figure is followed by the number of responses behind it.",
+        "total": "Period total"
+      },
+      "bySurvey": {
+        "title": "Top Box by survey",
+        "hint": "Each survey on its own, month by month. Bars are the month sheets' Top Box cells; the figure beside each name is the survey's period total.",
+        "detail": "{responses} responses · Response {rate}",
+        "empty": "No responses in this period."
+      },
+      "nResponses": "{n} responses"
     },
     "kpis": {
       "firstTimeInstall": "1st Time Install",
@@ -974,7 +1019,7 @@
       "placeholderBadge": "Placeholder",
       "placeholderNotice": "{kpis} are placeholders copied from the Jan–Jun 2026 deck — no backend source yet, not computed.",
       "awaitingSourceNotice": "{kpis} have no backend source yet and show no figures for this period.",
-      "awaitingSourceBody": "No source for this period. PM Complete needs the PM boards and the visits-due rule; CSAT needs the survey export.",
+      "awaitingSourceBody": "No source for this period. PM Complete needs the PM boards and the visits-due rule.",
       "syncedShort": "Synced {synced}",
       "headlineInstalls": "{done}/{total} installs",
       "headlineCases": "{done}/{total} cases",
@@ -984,7 +1029,7 @@
       "footnoteSlaUnknown": "{count} case(s) have no RE Action date and are not counted"
     },
     "header": {
-      "kpiList": "Installation • PM • CM • FTFR • SLA • CSAT"
+      "kpiList": "Installation • PM • CM • FTFR • SLA"
     },
     "takeawaysPlaceholder": {
       "badge": "From deck",
@@ -1005,7 +1050,6 @@
       "notComputed": "Not computed. These figures are copied from the Jan–Jun 2026 deck; no backend source exists yet.",
       "deckBasis": "Deck basis",
       "pmFormula": "PM tasks completed ÷ PM tasks due in the period (the deck's denominator is an estimate). Split by service line and by supplier team (Raaspal vs YIP). A source needs the PM visit board plus the visits-due-per-robot rule.",
-      "csatFormula": "Share of survey responses in the top rating box, with the overall CSAT share and the response rate (responses ÷ surveys). Split by job type: Install, PM, CM Delivery, CM Cleaning. A source needs the survey export.",
       "num": {
         "installFirstTime": "installs with no CM in the window",
         "fixedFirstTime": "CMs with no repeat in the window",
@@ -1068,8 +1112,7 @@
       "cases": "cases"
     },
     "placeholderDetail": {
-      "pm": "247.9/274.5 tasks (est.)",
-      "csat": "CSAT 96.3% | Response 53.5%"
+      "pm": "247.9/274.5 tasks (est.)"
     },
     "placeholderFootnote": {
       "pm": "Cleaning 95.6%  |  Delivery 81.2%"

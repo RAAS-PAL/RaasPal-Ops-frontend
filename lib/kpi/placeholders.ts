@@ -1,22 +1,23 @@
 /**
- * The two KPIs the backend cannot source — PM Complete and CSAT Top Box —
- * scaffolded into the live report in the deck's positions (tile 2 and 6,
- * panel 2 and 6).
+ * The one KPI the backend cannot source — PM Complete — scaffolded into the
+ * live report in the deck's position (tile 2, panel 2).
  *
- * They are never computed. For the deck's own period the deck figures are
- * shown, badged as placeholders so a board reader cannot mistake them for the
- * four live tiles beside them. For any other period there is nothing honest to
- * show, so the tile reads "—" and the panel says what it is waiting for.
+ * It is never computed. For the deck's own period the deck figure is shown,
+ * badged as a placeholder so a board reader cannot mistake it for the four
+ * live tiles beside it. For any other period there is nothing honest to show,
+ * so the tile reads "—" and the panel says what it is waiting for.
  *
- * When a source lands (PM from the PM boards once the visits-due rule is known;
- * CSAT from the survey export) the entry here is deleted and the live mapper
- * takes over — nothing in the tab needs to change.
+ * When a source lands (the PM boards, once the visits-due rule is known) the
+ * entry here is deleted and the live mapper takes over — nothing in the tab
+ * needs to change. CSAT went this way on 2026-09-09: it now has its own page,
+ * read from the survey workbooks, and left the report altogether because it is
+ * a monthly hand tally, not a live figure.
  */
 import { RE_KPI_REPORT_JAN_JUN_2026 } from './fixtures';
 import { DECK_PERIOD, monthLabels, samePeriod, type Period } from './period';
 import type { KpiHeadline, KpiId, KpiPanelData, Translate } from './types';
 
-export const PLACEHOLDER_KPIS: readonly KpiId[] = ['pmComplete', 'csat'];
+export const PLACEHOLDER_KPIS: readonly KpiId[] = ['pmComplete'];
 
 export type PlaceholderKpi = {
   headline: KpiHeadline;
@@ -26,13 +27,10 @@ export type PlaceholderKpi = {
 };
 
 /**
- * The deck's own supporting text for these two tiles is English in the fixture,
- * so it is replaced here with a localised string rather than shown raw.
+ * The deck's own supporting text for the tile is English in the fixture, so it
+ * is replaced here with a localised string rather than shown raw.
  */
-const DETAIL_KEY: Record<string, string> = {
-  pmComplete: 'placeholderDetail.pm',
-  csat: 'placeholderDetail.csat',
-};
+const DETAIL_KEY: Record<string, string> = { pmComplete: 'placeholderDetail.pm' };
 const FOOTNOTE_KEY: Record<string, string> = { pmComplete: 'placeholderFootnote.pm' };
 
 export function placeholderKpis(period: Period, t: Translate, locale: string): PlaceholderKpi[] {

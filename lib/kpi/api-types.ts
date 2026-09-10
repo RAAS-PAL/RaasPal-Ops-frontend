@@ -81,3 +81,78 @@ export type MondaySyncConfig = {
     slaDays: number;
   }[];
 };
+
+/* ── CSAT — GET /api/v1/kpi/csat ─────────────────────────────────────────── */
+
+/**
+ * One survey (or the pool of all four) over one month (or the range).
+ *
+ * `surveyed` is false when no workbook has a sheet for it; the zeros then mean
+ * "not surveyed", not "nobody was happy", and the rates are `null`.
+ */
+export type CsatBucket = {
+  surveyed: boolean;
+  /** Customers the team tried to reach. */
+  customers: number;
+  /** Of those, ones who answered. */
+  responses: number;
+  notEvaluated: number;
+  /**
+   * The sheet's own Top Box, as a percentage — the CSAT the deck reports. For a
+   * range or the pool, each month's Top Box weighted by its responses.
+   */
+  topBoxRate: number | null;
+  /** `responses / customers`. */
+  responseRate: number | null;
+};
+
+export type CsatStreamKey = 'installation' | 'pm' | 'cleaning' | 'delivery';
+
+export type CsatMonth = {
+  /** 'YYYY-MM'. */
+  month: string;
+  overall: CsatBucket;
+  installation: CsatBucket;
+  pm: CsatBucket;
+  cleaning: CsatBucket;
+  delivery: CsatBucket;
+};
+
+export type CsatSourceFile = {
+  name: string;
+  /** Which survey the file turned out to be; null when that could not be told. */
+  stream: CsatStreamKey | null;
+  lastModified: string;
+  firstMonth: string | null;
+  lastMonth: string | null;
+};
+
+export type KpiCsat = {
+  from: string;
+  to: string;
+  months: CsatMonth[];
+  totals: {
+    overall: CsatBucket;
+    installation: CsatBucket;
+    pm: CsatBucket;
+    cleaning: CsatBucket;
+    delivery: CsatBucket;
+  };
+  sourceFiles: CsatSourceFile[];
+  /** The latest month any workbook has responses for; null when none does. */
+  asOf: string | null;
+  provisional: boolean;
+  /** Anything found while reading the workbooks the reader should know. */
+  warnings: string[];
+  definitions: Record<string, string>;
+};
+
+/** What the workbook source holds right now — the reload endpoint returns it. */
+export type CsatSourceStatus = {
+  source: string;
+  files: CsatSourceFile[];
+  surveys: CsatStreamKey[];
+  asOf: string | null;
+  warnings: string[];
+  loadedAt: string;
+};

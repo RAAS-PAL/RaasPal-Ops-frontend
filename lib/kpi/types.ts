@@ -75,8 +75,7 @@ export type KpiId =
   | 'pmComplete'
   | 'totalCmCases'
   | 'firstTimeFix'
-  | 'sla'
-  | 'csat';
+  | 'sla';
 
 /** The coloured summary tiles across the top. */
 export type KpiHeadline = {

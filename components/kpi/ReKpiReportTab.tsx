@@ -7,12 +7,16 @@
  * Total CM Cases, First Time Fix and SLA — are fetched from
  * `GET /api/v1/kpi/cm-cases` for the selected period.
  *
- * PM Complete and CSAT are not computed — nothing in the backend sources them.
- * They are scaffolded into the deck's positions as badged placeholders
- * (lib/kpi/placeholders.ts): the deck's figures for its own period, an
+ * PM Complete is not computed — nothing in the backend sources it. It is
+ * scaffolded into the deck's position as a badged placeholder
+ * (lib/kpi/placeholders.ts): the deck's figure for its own period, an
  * "awaiting source" frame for any other. A tile that looked like the other four
  * but was secretly a constant would be worse than an absent one on a board
  * slide, so the badge is not optional.
+ *
+ * CSAT, the deck's sixth KPI, is not on this page. It is a monthly hand tally
+ * from the survey workbooks, not a figure computed from tickets, and this page
+ * is reserved for the latter; it has its own page under the KPI group.
  *
  * Clicking a panel opens that KPI alone with its formula and arithmetic
  * (KpiDetailView). The selection lives in the URL (`?kpi=`) so a specific
@@ -96,10 +100,10 @@ export function ReKpiReportTab({ period, selectedKpi, onSelectKpi }: Props) {
     }
   }
 
-  // Slot the two unsourced KPIs into the deck's order. Live panels carry the
-  // deck's own indices (1, 3, 4, 5), so sorting by index restores the slide.
+  // Slot the unsourced KPI into the deck's order. Live panels carry the deck's
+  // own indices (1, 3, 4, 5), so sorting by index restores the slide.
   const placeholders = placeholderKpis(period, tr, locale);
-  const tileOrder: KpiHeadline['id'][] = ['firstTimeInstall', 'pmComplete', 'totalCmCases', 'firstTimeFix', 'sla', 'csat'];
+  const tileOrder: KpiHeadline['id'][] = ['firstTimeInstall', 'pmComplete', 'totalCmCases', 'firstTimeFix', 'sla'];
   const headlines: KpiHeadline[] = tileOrder
     .map((id) => report.headlines.find((h) => h.id === id) ?? placeholders.find((p) => p.headline.id === id)?.headline)
     .filter((h): h is KpiHeadline => Boolean(h));
@@ -163,8 +167,8 @@ export function ReKpiReportTab({ period, selectedKpi, onSelectKpi }: Props) {
         </div>
       )}
 
-      {/* Headline tiles — the deck's six, in its order */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
+      {/* Headline tiles — the deck's first five, in its order; CSAT has its own page */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-5">
         {headlines.map((h) => (
           <KpiHeadlineTile
             key={h.id}
@@ -177,7 +181,7 @@ export function ReKpiReportTab({ period, selectedKpi, onSelectKpi }: Props) {
         ))}
       </div>
 
-      {/* Panels — the deck's six, numbered as on the slide; click for detail */}
+      {/* Panels — the deck's first five, numbered as on the slide; click for detail */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
         {panels.map((panel) => {
           const isPlaceholder = placeholderIds.has(panel.id);

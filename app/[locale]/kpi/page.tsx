@@ -1,46 +1,38 @@
-import { KpiClient, type KpiTab } from './KpiClient';
-import { DECK_PERIOD, isValidPeriod, type Period, type PeriodPresetId } from '@/lib/kpi/period';
-import type { KpiId } from '@/lib/kpi/types';
+import { redirect } from 'next/navigation';
+import { routing } from '@/i18n/routing';
 
 /**
- * Server shell. Tab and period both live in the URL so a KPI view is shareable —
- * the same pattern as /reports.
+ * /kpi has no view of its own — each area of the deck is its own route, reached
+ * from the KPI group in the sidebar.
  *
- * Query values are user input, so each is validated before use and falls back to
- * the deck's own period rather than rendering an unattributed range.
+ * The old single page carried the area in `?tab=`. That is honoured here so a
+ * link shared before the split still lands on the area it named, with its period
+ * intact, rather than silently dropping the reader on the report.
  */
-const VALID_TABS: readonly string[] = ['report', 'utilization', 'repeat-cost'];
-const VALID_PRESETS: readonly string[] = ['last6', 'h1', 'h2', 'custom'];
-const VALID_KPIS: readonly string[] = ['firstTimeInstall', 'pmComplete', 'totalCmCases', 'firstTimeFix', 'sla', 'csat'];
-const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+const TAB_TO_SECTION: Record<string, string> = {
+  report: 'report',
+  utilization: 'utilization',
+  'repeat-cost': 'repeat-cost',
+};
 
-export default async function KpiPage({
+export default async function KpiIndexPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ tab?: string; from?: string; to?: string; preset?: string; kpi?: string }>;
 }) {
-  const { tab, from, to, preset, kpi } = await searchParams;
+  const { locale } = await params;
+  const { tab, ...carried } = await searchParams;
 
-  const initialTab: KpiTab = VALID_TABS.includes(tab ?? '') ? (tab as KpiTab) : 'report';
+  const safeLocale = (routing.locales as readonly string[]).includes(locale)
+    ? locale
+    : routing.defaultLocale;
+  const section = TAB_TO_SECTION[tab ?? ''] ?? 'report';
 
-  const requested: Period = { from: from ?? '', to: to ?? '' };
-  const periodValid = MONTH.test(requested.from) && MONTH.test(requested.to) && isValidPeriod(requested);
-  const initialPeriod = periodValid ? requested : DECK_PERIOD;
+  const query = new URLSearchParams(
+    Object.entries(carried).filter((entry): entry is [string, string] => Boolean(entry[1])),
+  ).toString();
 
-  const initialPreset: PeriodPresetId = VALID_PRESETS.includes(preset ?? '')
-    ? (preset as PeriodPresetId)
-    : 'h1';
-
-  // A detail view only makes sense on the report tab.
-  const initialKpi: KpiId | null =
-    initialTab === 'report' && VALID_KPIS.includes(kpi ?? '') ? (kpi as KpiId) : null;
-
-  return (
-    <KpiClient
-      initialTab={initialTab}
-      initialPeriod={initialPeriod}
-      initialPreset={initialPreset}
-      initialKpi={initialKpi}
-    />
-  );
+  redirect(`/${safeLocale}/kpi/${section}${query ? `?${query}` : ''}`);
 }

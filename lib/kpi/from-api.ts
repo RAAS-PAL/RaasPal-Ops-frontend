@@ -3,13 +3,14 @@
  * renders, so the components below it did not have to change when the data
  * stopped being a constant.
  *
- * Four of the deck's six KPIs are computed from the monday ticket mirror:
- * 1st Time Install, Total CM Cases, First Time Fix and SLA. The other two —
- * PM Complete and CSAT — have no source anywhere in the backend, so they are
- * deliberately absent here rather than filled with a plausible-looking number.
- * The tab slots badged placeholders into their positions (see
- * lib/kpi/placeholders.ts), which is why the panel indices here are the deck's
- * 1, 3, 4 and 5 rather than 1–4.
+ * Four of the deck's KPIs are computed from the monday ticket mirror:
+ * 1st Time Install, Total CM Cases, First Time Fix and SLA. PM Complete has no
+ * source anywhere in the backend, so it is deliberately absent here rather than
+ * filled with a plausible-looking number; the tab slots a badged placeholder
+ * into its position (see lib/kpi/placeholders.ts), which is why the panel
+ * indices here are the deck's 1, 3, 4 and 5 rather than 1–4. CSAT is not a
+ * report KPI at all any more — it is a monthly hand tally from the survey
+ * workbooks, on its own page (components/kpi/CsatTab.tsx).
  *
  * A `null` rate means the denominator was zero. It is rendered as an em dash,
  * never as 0%: "no cases to measure" and "nothing was fixed first time" are

@@ -50,7 +50,6 @@ export const RE_KPI_REPORT_JAN_JUN_2026: KpiReport = {
     { id: 'totalCmCases', labelKey: 'kpis.totalCmCases', value: '1,458', detail: 'Jan–Jun 2026', color: KPI_COLORS.cmTotal },
     { id: 'firstTimeFix', labelKey: 'kpis.firstTimeFix', value: '72.3%', detail: '919/1270 KPI cases', color: KPI_COLORS.ftf },
     { id: 'sla', labelKey: 'kpis.sla', value: '77.2% / 22.8%', detail: '980 W | 290 O', color: KPI_COLORS.sla },
-    { id: 'csat', labelKey: 'kpis.csat', value: '86.2%', detail: 'CSAT 96.3% | Response 53.5%', color: KPI_COLORS.csat },
   ],
 
   panels: [
@@ -163,26 +162,6 @@ export const RE_KPI_REPORT_JAN_JUN_2026: KpiReport = {
       sideStats: [
         { labelKey: 'legend.within', value: '77.2%', detail: '980', emphasis: true },
         { labelKey: 'legend.over', value: '22.8%', detail: '290' },
-      ],
-    },
-    {
-      id: 'csat',
-      index: 6,
-      titleKey: 'panels.csat',
-      accent: KPI_COLORS.csat,
-      chart: {
-        mode: 'single',
-        unit: 'percent',
-        showValueLabels: true,
-        series: [{ key: 'csat', labelKey: 'legend.csat', color: OVER, points: points([87, 87, 83, 86, 88, 87]) }],
-        average: { value: 86.2, labelKey: 'chart.avg', display: 'Avg 86.2%' },
-      },
-      sideStats: [
-        { labelKey: 'stats.overall', value: '86.2%', emphasis: true },
-        { labelKey: 'stats.install', value: '79.2%' },
-        { labelKey: 'stats.pm', value: '91.9%' },
-        { labelKey: 'stats.cmDelivery', value: '89.7%' },
-        { labelKey: 'stats.cmCleaning', value: '70.3%' },
       ],
     },
   ],
