@@ -99,6 +99,13 @@ export default async function LocaleLayout({
   return (
     <html
       lang={locale}
+      // Chrome offers to translate lang="th" for an English-UI browser, and
+      // accepting it swaps our text nodes for <font> wrappers. React still holds
+      // the originals, so the next route transition throws NotFoundError on
+      // removeChild and the whole tree falls into the error boundary. The console
+      // already ships its own th/en copy through next-intl, so machine
+      // translation on top is pure loss — turn it off rather than fight it.
+      translate="no"
       className={`${inter.variable} ${notoThai.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
