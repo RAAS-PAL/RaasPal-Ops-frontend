@@ -147,8 +147,14 @@ export function PmPlanningClient({
     try {
       const response = await pmApi.sync();
       const result = response.data.data;
+      // The endpoint answers 200 even when it did nothing, so the body is the
+      // only signal. Two of those cases carry failures: 0 and would otherwise
+      // render as "Synced 0 sites and 0 visits" — indistinguishable from a real
+      // but empty sync. The clearest is "A PM sync is already running", which
+      // is exactly what someone sees when they press the button twice.
+      const wroteNothing = result.contractsWritten === 0 && result.visitsWritten === 0;
       setSyncMessage(
-        result.failures > 0
+        result.failures > 0 || (wroteNothing && result.messages?.length)
           ? result.messages.join(' · ')
           : t('sync.done', { contracts: result.contractsWritten, visits: result.visitsWritten }),
       );
