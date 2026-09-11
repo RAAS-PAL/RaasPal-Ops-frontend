@@ -135,6 +135,7 @@
     "solutions": "โซลูชันทั้งหมด",
     "proposals": "โซลูชันทั้งหมด",
     "reports": "รายงาน",
+    "pmPlanning": "แผน PM",
     "robots": "หุ่นยนต์",
     "cvteStatus": "สถานะ CVTE C3",
     "tools": "เครื่องมือ",
@@ -777,5 +778,90 @@
     "feature3Desc": "รับข้อเสนอโดยละเอียดพร้อมอันดับหุ่นยนต์ คะแนน และคำอธิบายจาก AI",
     "currentLocale": "ภาษาปัจจุบัน",
     "i18nStatus": "i18n ทำงานอยู่"
+  },
+  "pmPlanning": {
+    "eyebrow": "การบำรุงรักษาเชิงป้องกัน",
+    "title": "แผน PM 52 สัปดาห์",
+    "searchPlaceholder": "ค้นหาไซต์ ลูกค้า หรือโปรเจกต์…",
+    "yearLabel": "ปี",
+    "monthLabel": "เดือน",
+    "empty": "ไม่พบงาน PM ตามเงื่อนไขที่เลือก",
+    "loadFailed": "โหลดแผน PM ไม่สำเร็จ กรุณาลองใหม่ หรือกดซิงค์หากเพิ่งเริ่มใช้งาน",
+    "view": {
+      "year": "52 สัปดาห์",
+      "month": "รายเดือน"
+    },
+    "lookAhead": {
+      "label": "มองล่วงหน้า",
+      "thisMonth": "เดือนนี้",
+      "next30": "30 วันข้างหน้า",
+      "next60": "60 วันข้างหน้า",
+      "next90": "90 วันข้างหน้า"
+    },
+    "grid": {
+      "site": "ไซต์",
+      "week": "สัปดาห์",
+      "load": "ปริมาณงาน",
+      "thisWeek": "สัปดาห์นี้"
+    },
+    "tiles": {
+      "visits": "งาน PM",
+      "customers": "ไซต์",
+      "robots": "หุ่นยนต์",
+      "planned": "วางแผนแล้ว",
+      "completed": "เสร็จสิ้น",
+      "overdue": "เกินกำหนด",
+      "undatedTitle": "มีงาน PM {count} รายการที่ยังไม่มีวันที่วางแผน",
+      "undatedHelp": "งานเหล่านี้จะไม่ปรากฏในสัปดาห์หรือเดือนใดเลย กรุณาระบุวันที่ในช่อง Plan ของ subitem ใน monday"
+    },
+    "table": {
+      "date": "วันที่วางแผน",
+      "visit": "งาน",
+      "site": "ไซต์",
+      "geography": "จังหวัด / ภาค",
+      "robot": "หุ่นยนต์",
+      "engineer": "ช่าง",
+      "status": "สถานะ",
+      "noPlanDate": "ไม่มีวันที่วางแผน",
+      "daysLate": "เกินกำหนด {days} วัน",
+      "dueSoon": "ครบกำหนดใน 7 วัน"
+    },
+    "status": {
+      "completed": "เสร็จสิ้น",
+      "inProgress": "กำลังดำเนินการ",
+      "planned": "วางแผนแล้ว",
+      "unplanned": "ยังไม่วางแผน",
+      "overdue": "เกินกำหนด"
+    },
+    "filters": {
+      "all": "ทั้งหมด",
+      "serviceLine": "สายงาน",
+      "region": "ภาค",
+      "zone": "โซน",
+      "province": "จังหวัด",
+      "status": "สถานะ",
+      "engineer": "ช่าง",
+      "clear": "ล้างตัวกรอง"
+    },
+    "sync": {
+      "action": "ซิงค์จาก monday",
+      "running": "กำลังซิงค์…",
+      "help": "อ่านข้อมูลจากบอร์ด PM ทั้งสองใหม่ ใช้เวลาไม่กี่วินาที",
+      "done": "ซิงค์แล้ว {contracts} ไซต์ และ {visits} งาน จาก monday",
+      "failed": "ซิงค์ไม่สำเร็จ"
+    },
+    "backToMonth": "กลับไปเลือกเป็นเดือน",
+    "company": {
+      "label": "บริษัท",
+      "all": "ทุกบริษัท",
+      "excludedCount": "ซ่อนอยู่ {count}",
+      "searchPlaceholder": "ค้นหาบริษัท…",
+      "selectAll": "เลือกทั้งหมด",
+      "clearAll": "ไม่เลือกเลย",
+      "selectMatching": "เลือกที่ค้นหา",
+      "clearMatching": "ซ่อนที่ค้นหา",
+      "showing": "{count} จาก {total}",
+      "noMatches": "ไม่พบบริษัทที่ค้นหา"
+    }
   }
 }
