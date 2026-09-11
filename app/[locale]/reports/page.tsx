@@ -8,6 +8,7 @@ const VALID_TABS: readonly string[] = [
   'autoxing',
   'cm-new',
   'cm-history',
+  'case-mk',
 ];
 
 export default async function ReportsPage({

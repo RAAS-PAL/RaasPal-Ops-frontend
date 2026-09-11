@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Building2, CalendarClock, FileSearch, Gauge, History, Mail, Wrench } from 'lucide-react';
+import { Building2, CalendarClock, ClipboardList, FileSearch, Gauge, History, Mail, Wrench } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { ReportAutomationPanel } from '@/components/ReportAutomationPanel';
@@ -12,6 +12,7 @@ import { ReportPreviewPanel } from '@/components/ReportPreviewPanel';
 import { AutoxingReportPanel } from '@/components/AutoxingReportPanel';
 import { CmReportPanel } from '@/components/CmReportPanel';
 import { CmReportHistoryPanel } from '@/components/CmReportHistoryPanel';
+import { CasePendingPanel } from '@/components/CasePendingPanel';
 
 const REPORT_TABS = [
   'automation',
@@ -21,19 +22,20 @@ const REPORT_TABS = [
   'autoxing',
   'cm-new',
   'cm-history',
+  'case-mk',
 ] as const;
 
 export type ReportTab = (typeof REPORT_TABS)[number];
 
 /**
- * Reports covers two unrelated jobs — scheduled robot-performance reporting, and
- * one-off corrective maintenance write-ups — so the tabs are grouped rather than
- * sitting in one long row.
+ * Reports covers three unrelated jobs — scheduled robot-performance reporting,
+ * one-off corrective maintenance write-ups, and the daily pending-case report — so the
+ * tabs are grouped rather than sitting in one long row.
  *
  * The group is derived from the tab rather than tracked in its own query param,
  * which keeps existing `?tab=automation` and `?tab=autoxing` links working.
  */
-const TAB_GROUP: Record<ReportTab, 'performance' | 'cm'> = {
+const TAB_GROUP: Record<ReportTab, 'performance' | 'cm' | 'case'> = {
   automation: 'performance',
   company: 'performance',
   email: 'performance',
@@ -41,13 +43,15 @@ const TAB_GROUP: Record<ReportTab, 'performance' | 'cm'> = {
   autoxing: 'performance',
   'cm-new': 'cm',
   'cm-history': 'cm',
+  'case-mk': 'case',
 };
 
-type ReportGroup = 'performance' | 'cm';
+type ReportGroup = 'performance' | 'cm' | 'case';
 
 const GROUP_DEFAULT_TAB: Record<ReportGroup, ReportTab> = {
   performance: 'automation',
   cm: 'cm-new',
+  case: 'case-mk',
 };
 
 export function ReportsClient({ initialTab = 'automation' }: { initialTab?: ReportTab }) {
@@ -64,21 +68,29 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
   const groups: { id: ReportGroup; label: string; icon: React.ReactNode }[] = [
     { id: 'performance', label: t('groups.performance'), icon: <Gauge className="h-4 w-4" /> },
     { id: 'cm', label: t('groups.correctiveMaintenance'), icon: <Wrench className="h-4 w-4" /> },
+    { id: 'case', label: t('groups.pendingCases'), icon: <ClipboardList className="h-4 w-4" /> },
   ];
 
-  const tabs: { id: ReportTab; label: string; icon: React.ReactNode }[] =
-    group === 'performance'
-      ? [
-          { id: 'automation', label: t('tabs.automation'), icon: <CalendarClock className="h-4 w-4" /> },
-          { id: 'company', label: t('tabs.company'), icon: <Building2 className="h-4 w-4" /> },
-          { id: 'email', label: t('tabs.email'), icon: <Mail className="h-4 w-4" /> },
-          { id: 'preview', label: t('tabs.preview'), icon: <FileSearch className="h-4 w-4" /> },
-          { id: 'autoxing', label: t('tabs.autoxing'), icon: <Gauge className="h-4 w-4" /> },
-        ]
-      : [
-          { id: 'cm-new', label: t('tabs.cmNew'), icon: <Wrench className="h-4 w-4" /> },
-          { id: 'cm-history', label: t('tabs.cmHistory'), icon: <History className="h-4 w-4" /> },
-        ];
+  // A lookup rather than a ternary: with three groups a nested conditional stops
+  // being readable, and a fourth report would have to nest again.
+  const TABS_BY_GROUP: Record<ReportGroup, { id: ReportTab; label: string; icon: React.ReactNode }[]> = {
+    performance: [
+      { id: 'automation', label: t('tabs.automation'), icon: <CalendarClock className="h-4 w-4" /> },
+      { id: 'company', label: t('tabs.company'), icon: <Building2 className="h-4 w-4" /> },
+      { id: 'email', label: t('tabs.email'), icon: <Mail className="h-4 w-4" /> },
+      { id: 'preview', label: t('tabs.preview'), icon: <FileSearch className="h-4 w-4" /> },
+      { id: 'autoxing', label: t('tabs.autoxing'), icon: <Gauge className="h-4 w-4" /> },
+    ],
+    cm: [
+      { id: 'cm-new', label: t('tabs.cmNew'), icon: <Wrench className="h-4 w-4" /> },
+      { id: 'cm-history', label: t('tabs.cmHistory'), icon: <History className="h-4 w-4" /> },
+    ],
+    case: [
+      { id: 'case-mk', label: t('tabs.caseMk'), icon: <ClipboardList className="h-4 w-4" /> },
+    ],
+  };
+
+  const tabs = TABS_BY_GROUP[group];
 
   return (
     <main className="min-h-dvh bg-[var(--app-bg)] text-[var(--app-text)] transition-colors">
@@ -139,6 +151,7 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
             {tab === 'autoxing' && <AutoxingReportPanel />}
             {tab === 'cm-new' && <CmReportPanel />}
             {tab === 'cm-history' && <CmReportHistoryPanel />}
+            {tab === 'case-mk' && <CasePendingPanel />}
           </div>
         </section>
       </div>

@@ -738,7 +738,8 @@
     "searchPlaceholder": "Manage monthly report delivery",
     "groups": {
       "performance": "Robot performance reports",
-      "correctiveMaintenance": "Corrective maintenance"
+      "correctiveMaintenance": "Corrective maintenance",
+      "pendingCases": "Pending cases"
     },
     "tabs": {
       "automation": "Manage automation",
@@ -747,7 +748,8 @@
       "preview": "Report preview",
       "autoxing": "AutoXing report",
       "cmNew": "New report",
-      "cmHistory": "History"
+      "cmHistory": "History",
+      "caseMk": "MK pending"
     }
   },
   "userMenu": {
