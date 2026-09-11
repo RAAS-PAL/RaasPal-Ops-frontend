@@ -3,6 +3,7 @@
 import {
   Bot,
   CalendarClock,
+  CalendarRange,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
@@ -23,6 +24,7 @@ export const navigationItems = [
   { title: 'Generate Solution', labelKey: 'generateSolution', href: '/generate-solution', icon: ClipboardList },
   { title: 'Solutions', labelKey: 'solutions', href: '/solutions', icon: Sparkles },
   { title: 'Proposals', labelKey: 'proposals', href: '/proposals', icon: FileText },
+  { title: 'PM Planning', labelKey: 'pmPlanning', href: '/pm-planning', icon: CalendarRange },
   { title: 'Robots', labelKey: 'robots', href: '/robots', icon: Bot },
   { title: 'Tools', labelKey: 'tools', href: '/tools', icon: Wrench },
 ];

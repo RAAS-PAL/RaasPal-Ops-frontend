@@ -112,6 +112,11 @@ import type {
   TranslationResponse,
   UserResponse,
 } from '@/types/api';
+import type {
+  PmFilterOptions,
+  PmMonthResponse,
+  PmYearResponse,
+} from '@/lib/pm/types';
 import type { MonthlyPerformanceReport } from '@/lib/reports/types';
 
 // Users
@@ -568,3 +573,71 @@ export const caseReportApi = {
       skipRetry: true,
     }),
 };
+
+/* ─── PM 52-week planning ─────────────────────────────────────────────────── */
+
+/**
+ * The PM planner. Read-only: monday stays the one place PM is scheduled, and
+ * these endpoints are the view of it monday cannot give.
+ */
+export const pmApi = {
+  /** The 52-week (or 53-week) grid for one ISO year. */
+  year: (year: number, filters: Record<string, string> = {}) =>
+    api.get<ApiResponse<PmYearResponse>>('/api/v1/pm/year', { params: { year, ...filters } }),
+
+  /** Visits in a calendar month. */
+  month: (month: string, filters: Record<string, string> = {}, includeUndated = false) =>
+    api.get<ApiResponse<PmMonthResponse>>('/api/v1/pm/month', {
+      params: { month, includeUndated: includeUndated || undefined, ...filters },
+    }),
+
+  /**
+   * Visits between two dates — what the look-ahead chips and a week drill-down
+   * use, neither of which is a calendar month.
+   */
+  range: (from: string, to: string, filters: Record<string, string> = {}, includeUndated = false) =>
+    api.get<ApiResponse<PmMonthResponse>>('/api/v1/pm/month', {
+      params: { from, to, includeUndated: includeUndated || undefined, ...filters },
+    }),
+
+  filters: () => api.get<ApiResponse<PmFilterOptions>>('/api/v1/pm/filters'),
+
+  /**
+   * Pulls both monday PM boards now. Reads a few thousand rows over the monday
+   * API, so it gets a longer timeout and skips the automatic retry — a retry
+   * would start a second full sync while the first is still running.
+   */
+  sync: () =>
+    api.post<ApiResponse<PmSyncSummary>>('/api/v1/pm/monday/sync', null, {
+      timeout: 180_000,
+      skipRetry: true,
+    }),
+
+  syncStatus: () => api.get<ApiResponse<PmSyncStatus>>('/api/v1/pm/monday/sync/status'),
+};
+
+export interface PmSyncSummary {
+  boards: number;
+  contractsWritten: number;
+  visitsWritten: number;
+  failures: number;
+  messages: string[];
+}
+
+export interface PmSyncStatus {
+  running: boolean;
+  runs: {
+    id: string;
+    sourceBoardId: string | null;
+    serviceLine: string | null;
+    status: string;
+    triggeredBy: string | null;
+    startedAt: string;
+    finishedAt: string | null;
+    contractsRead: number | null;
+    visitsRead: number | null;
+    contractsWritten: number | null;
+    visitsWritten: number | null;
+    errorMessage: string | null;
+  }[];
+}

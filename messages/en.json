@@ -135,6 +135,7 @@
     "solutions": "Solutions",
     "proposals": "Proposals",
     "reports": "Reports",
+    "pmPlanning": "PM Planning",
     "robots": "Robots",
     "cvteStatus": "CVTE C3 Status",
     "tools": "Tools",
@@ -777,5 +778,90 @@
     "feature3Desc": "Get a detailed proposal with ranked robots, scores, and AI explanations.",
     "currentLocale": "Current language",
     "i18nStatus": "i18n is working"
+  },
+  "pmPlanning": {
+    "eyebrow": "Preventive maintenance",
+    "title": "PM 52-Week Planning",
+    "searchPlaceholder": "Search site, customer or project…",
+    "yearLabel": "Year",
+    "monthLabel": "Month",
+    "empty": "No PM visits match these filters.",
+    "loadFailed": "Could not load the PM plan. Try again, or run a sync if this is a new environment.",
+    "view": {
+      "year": "52-Week",
+      "month": "Month"
+    },
+    "lookAhead": {
+      "label": "Look ahead",
+      "thisMonth": "This month",
+      "next30": "Next 30 days",
+      "next60": "Next 60 days",
+      "next90": "Next 90 days"
+    },
+    "grid": {
+      "site": "Site",
+      "week": "Week",
+      "load": "Load",
+      "thisWeek": "This week"
+    },
+    "tiles": {
+      "visits": "PM visits",
+      "customers": "Sites",
+      "robots": "Robots",
+      "planned": "Planned",
+      "completed": "Completed",
+      "overdue": "Overdue",
+      "undatedTitle": "{count} PM visits have no planned date",
+      "undatedHelp": "They appear in no week and no month. Set a Plan date on the monday subitem to bring them into the plan."
+    },
+    "table": {
+      "date": "Plan date",
+      "visit": "Visit",
+      "site": "Site",
+      "geography": "Province / Region",
+      "robot": "Robot",
+      "engineer": "Engineer",
+      "status": "Status",
+      "noPlanDate": "No plan date",
+      "daysLate": "{days} days late",
+      "dueSoon": "Due within 7 days"
+    },
+    "status": {
+      "completed": "Completed",
+      "inProgress": "In progress",
+      "planned": "Planned",
+      "unplanned": "Unplanned",
+      "overdue": "Overdue"
+    },
+    "filters": {
+      "all": "All",
+      "serviceLine": "Service line",
+      "region": "Region",
+      "zone": "Zone",
+      "province": "Province",
+      "status": "Status",
+      "engineer": "Engineer",
+      "clear": "Clear filters"
+    },
+    "sync": {
+      "action": "Sync from monday",
+      "running": "Syncing…",
+      "help": "Re-reads both PM boards. Takes a few seconds.",
+      "done": "Synced {contracts} sites and {visits} visits from monday.",
+      "failed": "Sync failed."
+    },
+    "backToMonth": "Back to picking a month",
+    "company": {
+      "label": "Company",
+      "all": "All companies",
+      "excludedCount": "{count} hidden",
+      "searchPlaceholder": "Search company…",
+      "selectAll": "Select all",
+      "clearAll": "None",
+      "selectMatching": "Select matching",
+      "clearMatching": "Hide matching",
+      "showing": "{count} of {total}",
+      "noMatches": "No company matches that."
+    }
   }
 }
