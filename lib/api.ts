@@ -69,6 +69,7 @@ api.interceptors.response.use(
 
 import type {
   CaseReportRow,
+  CaseRowEdit,
   ApiResponse,
   AutoxingDeliveryReport,
   AuthResponse,
@@ -562,16 +563,24 @@ export const caseReportApi = {
   /**
    * The MK sheet: MK, Yayoi and Bonus Suki delivery cases.
    *
-   * Reads monday live, so it is slower than a database query and worth a raised
-   * timeout. Nothing is persisted and nothing is sent, so re-running it while
-   * checking a report is free -- which is why there is no mutation here.
+   * The first call for a date reads monday live (slow, hence the timeout) and
+   * freezes the result; later calls return the stored rows. `refresh` re-reads
+   * the board into the stored draft, keeping any rows a person has edited.
    */
-  mk: (asOf?: string) =>
+  mk: (asOf?: string, refresh = false) =>
     api.get<ApiResponse<CaseReportRow[]>>('/api/v1/case-reports/mk', {
-      params: asOf ? { asOf } : undefined,
+      params: { ...(asOf ? { asOf } : {}), ...(refresh ? { refresh: true } : {}) },
       timeout: 120_000,
       skipRetry: true,
     }),
+
+  /** Overwrite one row of the stored draft for a date. Refused once it has been sent. */
+  editMkRow: (asOf: string, sourceItemId: string, body: CaseRowEdit) =>
+    api.put<ApiResponse<CaseReportRow>>(
+      `/api/v1/case-reports/mk/rows/${encodeURIComponent(sourceItemId)}`,
+      body,
+      { params: { asOf } },
+    ),
 };
 
 /* ─── PM 52-week planning ─────────────────────────────────────────────────── */

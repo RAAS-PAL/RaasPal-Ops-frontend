@@ -777,11 +777,30 @@ export interface CaseReportRow {
   solution: string | null;
   openDate: string | null;
   reOnSite: string | null;
-  /** Inclusive of the open day, so a case opened today reads as 1. */
+  /** Days since the open date, not counting it: a case opened today reads 0. */
   days: number | null;
   sla: SlaStatus;
   /** The sheet's own wording: 'over SLA', 'Within SLA', 'On Hold', or empty. */
   slaLabel: string;
   province: string | null;
   sourceItemId: string | null;
+  /** True once somebody has saved a correction; such a row survives a regeneration. */
+  edited: boolean;
+}
+
+/**
+ * A correction to one row, as the edit form sends it. The whole row goes every time;
+ * a null `days` or `sla` asks the backend to recompute them from `openDate`.
+ */
+export interface CaseRowEdit {
+  project: string | null;
+  branch: string | null;
+  robot: string | null;
+  serialNumber: string | null;
+  problem: string | null;
+  solution: string | null;
+  openDate: string | null;
+  reOnSite: string | null;
+  days: number | null;
+  sla: SlaStatus | null;
 }

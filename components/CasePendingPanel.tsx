@@ -1,23 +1,30 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, CalendarDays, ExternalLink, Loader2, RefreshCw } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  AlertTriangle,
+  CalendarDays,
+  ExternalLink,
+  Loader2,
+  Pencil,
+  RefreshCw,
+  Sparkles,
+} from 'lucide-react';
 import { caseReportApi } from '@/lib/api';
-import type { CaseReportRow, SlaStatus } from '@/types/api';
+import type { CaseReportRow, CaseRowEdit, SlaStatus } from '@/types/api';
+import { CaseRowEditDialog } from './CaseRowEditDialog';
 
 /**
- * The Daily Pending Case Report, for checking before it is sent.
+ * The Daily Pending Case Report, for checking and correcting before it is sent.
  *
- * <p>Read-only on purpose at this stage. The team sends the file by hand today, and will
- * keep doing so until the generated version is trusted — so what this screen owes them is
- * a clear look at what the system produced, not an approval workflow around a report
- * nobody has verified yet. Editing, overrides and delivery come once the numbers are
- * believed.
+ * <p>The first Generate for a date reads monday and freezes the rows; every later
+ * open of that date shows the stored copy. That is what lets the team correct it: a
+ * row's pencil opens every printed cell, and what they save is written into the
+ * stored report and kept even if the board is re-read. Regenerate re-reads monday
+ * for the rows nobody has touched.
  *
- * <p>Generating is free: it reads monday live, persists nothing and sends nothing, so the
- * refresh button can be pressed as often as anyone likes while they compare it against
- * the spreadsheet.
+ * <p>Delivery is still by hand — nothing here sends anything.
  */
 
 function errorMessage(e: unknown, fallback: string): string {
@@ -76,19 +83,43 @@ function SlaCell({ row }: { row: CaseReportRow }) {
 
 export function CasePendingPanel() {
   const [asOf, setAsOf] = useState<string>(todayInBangkok());
+  const [editing, setEditing] = useState<CaseReportRow | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const queryKey = ['case-report', 'mk', asOf];
 
   const { data: rows = [], isFetching, isError, error, refetch } = useQuery({
-    queryKey: ['case-report', 'mk', asOf],
+    queryKey,
     queryFn: async () => (await caseReportApi.mk(asOf)).data.data ?? [],
-    // Nothing is cached across dates for long: the board changes through the day and a
-    // stale report is worse than a slow one.
     staleTime: 0,
     refetchOnWindowFocus: false,
   });
 
+  // Re-read the board into the stored draft. Edited rows come through untouched, which
+  // is why this needs no confirmation: it cannot undo anyone's work.
+  const regenerate = useMutation({
+    mutationFn: async () => (await caseReportApi.mk(asOf, true)).data.data ?? [],
+    onSuccess: (fresh) => queryClient.setQueryData(queryKey, fresh),
+  });
+
+  const save = useMutation({
+    mutationFn: (edit: CaseRowEdit) =>
+      caseReportApi.editMkRow(asOf, editing!.sourceItemId!, edit).then((r) => r.data.data),
+    onSuccess: (saved) => {
+      queryClient.setQueryData<CaseReportRow[]>(queryKey, (current) =>
+        (current ?? []).map((r) => (r.sourceItemId === saved.sourceItemId ? saved : r)),
+      );
+      setEditing(null);
+      setEditError(null);
+    },
+    onError: (e) => setEditError(errorMessage(e, 'Could not save the row.')),
+  });
+
+  const busy = isFetching || regenerate.isPending;
   const breached = rows.filter((r) => r.sla === 'BREACHED').length;
   const onHold = rows.filter((r) => r.sla === 'ON_HOLD').length;
   const unknown = rows.filter((r) => r.sla === 'UNKNOWN').length;
+  const edited = rows.filter((r) => r.edited).length;
 
   return (
     <div className="space-y-4">
@@ -112,25 +143,37 @@ export function CasePendingPanel() {
         <button
           type="button"
           onClick={() => void refetch()}
-          disabled={isFetching}
+          disabled={busy}
           className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:opacity-60"
         >
-          {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          {isFetching ? 'Generating…' : 'Generate'}
+          {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {isFetching ? 'Loading…' : 'Generate'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => regenerate.mutate()}
+          disabled={busy || rows.length === 0}
+          title="Re-read the monday board for this date. Rows you have edited are kept as they are."
+          className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-2 text-sm font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-faint)] disabled:opacity-60"
+        >
+          {regenerate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          {regenerate.isPending ? 'Regenerating…' : 'Regenerate from monday'}
         </button>
 
         <p className="ml-auto max-w-md text-xs text-[var(--app-muted)]">
-          MK, Yayoi and Bonus Suki delivery cases. Days counts the day the case opened, and
-          the SLA is 3 days inside greater Bangkok, 5 elsewhere.
+          MK, Yayoi and Bonus Suki delivery cases. Days counts from the day after the case
+          opened (opened today = 0); the SLA is 3 days inside greater Bangkok, 5 elsewhere.
+          Click a row&apos;s pencil to correct it.
         </p>
       </div>
 
-      {isError && (
+      {(isError || regenerate.isError) && (
         <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
             {errorMessage(
-              error,
+              isError ? error : regenerate.error,
               'Could not generate the report. Check that the backend is running and that MONDAY_API_TOKEN is set.',
             )}
           </span>
@@ -160,6 +203,11 @@ export function CasePendingPanel() {
               {unknown} without a verdict
             </span>
           )}
+          {edited > 0 && (
+            <span className="rounded-lg border border-[var(--app-border)] px-3 py-1.5 text-[var(--app-muted)]">
+              {edited} edited by hand
+            </span>
+          )}
         </div>
       )}
 
@@ -180,12 +228,27 @@ export function CasePendingPanel() {
               <th className="px-3 py-2.5 font-semibold">RE On Site</th>
               <th className="px-3 py-2.5 text-right font-semibold">Days</th>
               <th className="px-3 py-2.5 font-semibold">SLA</th>
+              <th className="px-3 py-2.5">
+                <span className="sr-only">Edit</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--app-border)]">
             {rows.map((row) => (
               <tr key={row.sourceItemId ?? row.no} className="align-top">
-                <td className="px-3 py-2.5 tabular-nums text-[var(--app-muted)]">{row.no}</td>
+                <td className="px-3 py-2.5 tabular-nums text-[var(--app-muted)]">
+                  {row.no}
+                  {row.edited && (
+                    // A corrected row looks like any other, so say so: the reader comparing
+                    // against the board needs to know this cell is a person's word, not monday's.
+                    <span
+                      title="Edited by hand. Kept as is when the report is regenerated."
+                      className="ml-1 inline-block rounded bg-[var(--app-brand-soft)] px-1 text-[10px] font-semibold uppercase text-[var(--app-brand-dark)]"
+                    >
+                      edited
+                    </span>
+                  )}
+                </td>
                 <td className="px-3 py-2.5 whitespace-nowrap font-medium">{row.project ?? '—'}</td>
                 <td className="px-3 py-2.5">{row.branch ?? '—'}</td>
                 <td className="px-3 py-2.5 whitespace-nowrap">{row.robot ?? '—'}</td>
@@ -231,12 +294,28 @@ export function CasePendingPanel() {
                     )}
                   </div>
                 </td>
+                <td className="px-2 py-2.5">
+                  {row.sourceItemId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditError(null);
+                        setEditing(row);
+                      }}
+                      title="Correct this row"
+                      aria-label={`Edit row ${row.no}`}
+                      className="rounded-lg p-1.5 text-[var(--app-muted)] transition hover:bg-[var(--app-faint)] hover:text-[var(--app-brand-dark)]"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
 
             {rows.length === 0 && !isFetching && !isError && (
               <tr>
-                <td colSpan={11} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
+                <td colSpan={12} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
                   No cases generated yet. Pick a date and press Generate.
                 </td>
               </tr>
@@ -246,10 +325,23 @@ export function CasePendingPanel() {
       </div>
 
       <p className="text-xs text-[var(--app-muted)]">
-        Solution is filled on only about one ticket in eight today — it is meant to be built
-        from the daily sync&apos;s status history rather than typed, so it stays mostly blank
-        until that has been running for a while.
+        Solution is written from each ticket&apos;s comment thread, in the team&apos;s wording. The
+        board&apos;s own Solution cell wins where somebody typed one. Corrections made here are
+        saved to this date&apos;s report only; the monday ticket is never changed.
       </p>
+
+      {editing && (
+        <CaseRowEditDialog
+          key={editing.sourceItemId ?? editing.no}
+          row={editing}
+          saving={save.isPending}
+          error={editError}
+          onSave={(edit) => save.mutate(edit)}
+          onClose={() => {
+            if (!save.isPending) setEditing(null);
+          }}
+        />
+      )}
     </div>
   );
 }
