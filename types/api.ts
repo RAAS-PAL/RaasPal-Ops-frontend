@@ -754,3 +754,34 @@ export interface CustomerBundlePreview {
   includedCount: number;
   robots: CustomerBundleRobot[];
 }
+
+// Daily Pending Case Report
+
+/** Mirrors the backend SlaStatus enum. UNKNOWN prints as a blank cell, not a word. */
+export type SlaStatus = 'WITHIN' | 'BREACHED' | 'ON_HOLD' | 'UNKNOWN';
+
+/**
+ * One printed line of a pending-case report.
+ *
+ * Field order matches the Raw_Delivery sheet, so the table and the Excel agree.
+ * `province` and `sourceItemId` are not printed on the sheet: the first explains why an
+ * SLA cell is blank, the second links a row back to the ticket a fix belongs on.
+ */
+export interface CaseReportRow {
+  no: number;
+  project: string | null;
+  branch: string | null;
+  robot: string | null;
+  serialNumber: string | null;
+  problem: string | null;
+  solution: string | null;
+  openDate: string | null;
+  reOnSite: string | null;
+  /** Inclusive of the open day, so a case opened today reads as 1. */
+  days: number | null;
+  sla: SlaStatus;
+  /** The sheet's own wording: 'over SLA', 'Within SLA', 'On Hold', or empty. */
+  slaLabel: string;
+  province: string | null;
+  sourceItemId: string | null;
+}

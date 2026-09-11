@@ -68,6 +68,7 @@ api.interceptors.response.use(
 /* ─── Typed helpers ───────────────────────────────────────────────────────── */
 
 import type {
+  CaseReportRow,
   ApiResponse,
   AutoxingDeliveryReport,
   AuthResponse,
@@ -549,4 +550,21 @@ export const customerBundleApi = {
       { excludedRobotUnitIds },
       { params: { customerProfileId, month } },
     ),
+};
+
+// Daily Pending Case Report
+export const caseReportApi = {
+  /**
+   * The MK sheet: MK, Yayoi and Bonus Suki delivery cases.
+   *
+   * Reads monday live, so it is slower than a database query and worth a raised
+   * timeout. Nothing is persisted and nothing is sent, so re-running it while
+   * checking a report is free -- which is why there is no mutation here.
+   */
+  mk: (asOf?: string) =>
+    api.get<ApiResponse<CaseReportRow[]>>('/api/v1/case-reports/mk', {
+      params: asOf ? { asOf } : undefined,
+      timeout: 120_000,
+      skipRetry: true,
+    }),
 };

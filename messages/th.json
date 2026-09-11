@@ -738,7 +738,8 @@
     "searchPlaceholder": "จัดการการส่งรายงานประจำเดือน",
     "groups": {
       "performance": "รายงานประสิทธิภาพหุ่นยนต์",
-      "correctiveMaintenance": "การซ่อมบำรุงแก้ไข"
+      "correctiveMaintenance": "การซ่อมบำรุงแก้ไข",
+      "pendingCases": "เคสค้าง"
     },
     "tabs": {
       "automation": "จัดการอัตโนมัติ",
@@ -747,7 +748,8 @@
       "preview": "ตัวอย่างรายงาน",
       "autoxing": "รายงาน AutoXing",
       "cmNew": "สร้างรายงานใหม่",
-      "cmHistory": "ประวัติรายงาน"
+      "cmHistory": "ประวัติรายงาน",
+      "caseMk": "MK เคสค้าง"
     }
   },
   "userMenu": {
