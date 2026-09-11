@@ -81,27 +81,58 @@ export function TopNavigationMenu() {
 
             <nav className="p-2" aria-label="Workspace navigation">
               {navigationItems.map((item) => {
-                const active = item.href === '/' ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const children = item.children ?? [];
+                const isActive = (href: string) =>
+                  href === '/' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+                const active = isActive(item.sectionRoot ?? item.href) || children.some((c) => isActive(c.href));
 
                 return (
-                <Link
-                  key={item.labelKey}
-                  className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${
-                    active
-                      ? 'bg-gradient-to-r from-[var(--app-brand-soft)] to-transparent text-[var(--app-brand-dark)]'
-                      : 'text-[var(--app-muted)] hover:bg-[var(--app-faint)] hover:text-[var(--app-brand-dark)]'
-                  }`}
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  role="menuitem"
-                >
-                  {active && (
-                    <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[var(--app-brand)] to-[var(--app-brand-dark)]" />
-                  )}
-                  <item.icon className={`h-4 w-4 shrink-0 ${active ? 'text-[var(--app-brand)]' : ''}`} />
-                  {t(item.labelKey)}
-                </Link>
-              )})}
+                  <div key={item.labelKey}>
+                    <Link
+                      className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${
+                        active
+                          ? 'bg-gradient-to-r from-[var(--app-brand-soft)] to-transparent text-[var(--app-brand-dark)]'
+                          : 'text-[var(--app-muted)] hover:bg-[var(--app-faint)] hover:text-[var(--app-brand-dark)]'
+                      }`}
+                      href={item.href}
+                      onClick={() => setOpen(false)}
+                      role="menuitem"
+                    >
+                      {active && (
+                        <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[var(--app-brand)] to-[var(--app-brand-dark)]" />
+                      )}
+                      <item.icon className={`h-4 w-4 shrink-0 ${active ? 'text-[var(--app-brand)]' : ''}`} />
+                      {t(item.labelKey)}
+                    </Link>
+
+                    {/* The sheet is a temporary overlay, so a group shows its pages
+                        outright rather than hiding them behind another tap. */}
+                    {children.length > 0 && (
+                      <div className="ml-6 border-l border-[var(--app-border)] pl-2">
+                        {children.map((child) => {
+                          const childActive = isActive(child.href);
+                          return (
+                            <Link
+                              key={child.labelKey}
+                              className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition ${
+                                childActive
+                                  ? 'bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]'
+                                  : 'text-[var(--app-muted)] hover:bg-[var(--app-faint)] hover:text-[var(--app-brand-dark)]'
+                              }`}
+                              href={child.href}
+                              onClick={() => setOpen(false)}
+                              role="menuitem"
+                            >
+                              <child.icon className={`h-3.5 w-3.5 shrink-0 ${childActive ? 'text-[var(--app-brand)]' : ''}`} />
+                              {t(child.labelKey)}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </nav>
 
             <div className="border-t border-[var(--app-border)] p-4">

@@ -67,6 +67,7 @@ api.interceptors.response.use(
 
 /* ─── Typed helpers ───────────────────────────────────────────────────────── */
 
+import type { KpiCaseMetrics, MondaySyncConfig, KpiCsat, CsatSourceStatus } from './kpi/api-types';
 import type {
   ApiResponse,
   AutoxingDeliveryReport,
@@ -549,4 +550,64 @@ export const customerBundleApi = {
       { excludedRobotUnitIds },
       { params: { customerProfileId, month } },
     ),
+};
+
+/**
+ * RE Team KPI dashboard.
+ *
+ * Backed by the monday.com ticket mirror: `cmCases` returns Total CM Cases,
+ * First Time Fix, SLA and 1st Time Install per month and per robot type. The
+ * remaining deck KPIs (PM Complete, CSAT) have no source yet and are not part
+ * of this response.
+ *
+ * Internal only — the backend restricts every /api/v1/kpi route to ADMIN and
+ * RAASPAL_TEAM, so a signed-in inventory account gets a 403 here.
+ */
+export const kpiApi = {
+  /**
+   * Metrics for an inclusive month range, both 'YYYY-MM'.
+   *
+   * The backend reads past the end of the range by its longest follow-up window
+   * so a ticket in the final month can still see the repeat that disqualifies
+   * it; that is why a range can legitimately return numbers that change once
+   * later months are synced.
+   */
+  cmCases: (from: string, to: string) =>
+    api.get<ApiResponse<KpiCaseMetrics>>('/api/v1/kpi/cm-cases', { params: { from, to } }),
+
+  /**
+   * CSAT for an inclusive month range, from the RE team's survey workbooks.
+   * Not live: the backend re-reads the workbooks when they change, roughly
+   * monthly, and `asOf` says how far the figures run. A 400 means the
+   * workbook folder is not configured or holds nothing readable; its message
+   * says which.
+   */
+  csat: (from: string, to: string) =>
+    api.get<ApiResponse<KpiCsat>>('/api/v1/kpi/csat', { params: { from, to } }),
+
+  /**
+   * The same figures as an .xlsx, one sheet per chart the deck draws.
+   *
+   * The console's charts are HTML, so they reach a slide only as a picture —
+   * useless to anyone who then has to fix a number or recolour a series. These
+   * hand over the numbers instead, shaped months-down/series-across so Excel's
+   * Insert Chart reproduces the panel and the result stays editable.
+   *
+   * A blob response, so an error body arrives as a Blob rather than parsed
+   * JSON; the caller reads the message out of it.
+   */
+  exportReport: (from: string, to: string) =>
+    api.get<Blob>('/api/v1/kpi/cm-cases/export', { params: { from, to }, responseType: 'blob' }),
+
+  exportCsat: (from: string, to: string) =>
+    api.get<Blob>('/api/v1/kpi/csat/export', { params: { from, to }, responseType: 'blob' }),
+
+  /** The workbooks the backend can see right now, and how far they run. */
+  csatSource: () => api.get<ApiResponse<CsatSourceStatus>>('/api/v1/kpi/csat/source'),
+
+  /** Re-reads the workbooks now, for "I just replaced them, why hasn't it changed?". */
+  reloadCsat: () => api.post<ApiResponse<CsatSourceStatus>>('/api/v1/kpi/csat/reload'),
+
+  /** Board and column mapping, and whether a monday token is configured. Never returns the token. */
+  config: () => api.get<ApiResponse<MondaySyncConfig>>('/api/v1/kpi/monday/config'),
 };

@@ -141,7 +141,12 @@
     "users": "Users",
     "login": "Login",
     "logout": "Logout",
-    "settings": "Settings"
+    "settings": "Settings",
+    "kpi": "KPI",
+    "kpiReport": "KPI Report",
+    "kpiUtilization": "Utilization",
+    "kpiRepeatCost": "Repeat Cost",
+    "kpiCsat": "CSAT"
   },
   "sidebar": {
     "teamOperations": "Team operations",
@@ -775,5 +780,395 @@
     "feature3Desc": "Get a detailed proposal with ranked robots, scores, and AI explanations.",
     "currentLocale": "Current language",
     "i18nStatus": "i18n is working"
+  },
+  "kpi": {
+    "eyebrow": "Team performance",
+    "title": "RE Team KPI Report",
+    "searchPlaceholder": "Installation • PM • CM • FTFR • SLA • CSAT",
+    "placeholderNotice": "Placeholder data from the Jan–Jun 2026 deck. No backend source is wired yet and the formulas are not defined — these figures are not computed.",
+    "boardTakeaways": "Board Takeaways",
+    "sectionTitles": {
+      "report": "RE Team KPI Report",
+      "utilization": "Utilization & Productivity",
+      "repeatCost": "Repeat Work Cost",
+      "csat": "Customer Satisfaction"
+    },
+    "csat": {
+      "loading": "Loading CSAT from the survey workbooks…",
+      "notice": "Read from the RE team's four survey workbooks — installation, PM, CM cleaning, CM delivery — not from monday. Each month's Top Box is the month sheet's own Top Box cell, exactly as the team computed it. Totals over months or surveys, which no sheet holds, are combined the way the deck combines them. Not live: the figures change when the workbooks are replaced, about once a month.",
+      "asOf": "Figures run to {month}.",
+      "headlineDetail": "Response {response}",
+      "footnote": "{responses} of {customers} customers contacted responded ({rate})",
+      "sourceLabel": "Source workbooks",
+      "covers": "{first} – {last}",
+      "updated": "Updated {date}",
+      "unknownSurvey": "Survey not recognised",
+      "stream": {
+        "installation": "Installation",
+        "pm": "PM",
+        "cleaning": "CM Cleaning",
+        "delivery": "CM Delivery"
+      },
+      "reload": "Re-read files",
+      "reloading": "Re-reading…",
+      "reloaded": "Workbooks re-read.",
+      "reloadFailed": "Could not re-read the workbooks",
+      "notSurveyed": "not surveyed",
+      "warningsTitle": "Read with warnings",
+      "warningsBody": "Some sheets or files could not be read as expected. The figures shown come from what could be read.",
+      "noDataTitle": "No survey data for this period",
+      "noDataBody": "The workbooks cover {first} – {last}. Pick a period inside that range, or replace the workbooks.",
+      "noDataBodyNoFiles": "No workbook could be read. See the warnings above.",
+      "table": {
+        "title": "Top Box by month and survey",
+        "month": "Month",
+        "hint": "Each figure is followed by the number of responses behind it.",
+        "total": "Period total"
+      },
+      "bySurvey": {
+        "title": "Top Box by survey",
+        "hint": "Each survey on its own, month by month. Bars are the month sheets' Top Box cells; the rule and the figure beside each name are the survey's period total.",
+        "detail": "{responses} responses · Response {rate}",
+        "empty": "No responses in this period."
+      },
+      "detail": {
+        "hint": "Click the chart or any survey to see it on its own, with where its Top Box came from.",
+        "back": "Back to CSAT",
+        "title": "{survey} Top Box",
+        "notSurveyedBody": "No survey sheet covers this period.",
+        "topBox": "Top Box",
+        "fromSheetTitle": "Read from the month sheet",
+        "fromSheetBody": "One survey in one month has its own Top Box cell on the sheet. This is that cell, as the RE team computed it — nothing was recomputed here.",
+        "formulaSheet": "The month sheet's Top Box cell: for each of the five questions, the share of its ratings that were 5, averaged over the five.",
+        "formulaPooled": "Every rating of 5 over every rating given, across the months and surveys in view. No sheet holds a figure this wide, and this is how the deck combines them — so each person counts once, whichever month they answered in.",
+        "barsNote": "Each bar above is that month sheet's own Top Box cell, shown as written.",
+        "barsNoteOverall": "Each bar above pools that month's four surveys the same way. The four survey charts show the month sheets' own cells.",
+        "avgNote": "Averaging the {months} monthly cells instead would give {value}, which lets a month with one respondent count as much as one with ninety. The deck counts people, so this page does not.",
+        "avgNoteOverall": "Averaging the {months} monthly figures instead would give {value}, which lets a quiet month count as much as a busy one. The deck counts people, so this page does not.",
+        "ratingsNote": "Five questions per respondent, so one person leaves up to five ratings.",
+        "num": {
+          "fives": "ratings of 5"
+        },
+        "den": {
+          "ratings": "ratings given"
+        },
+        "stat": {
+          "responses": "Responses",
+          "contacted": "Contacted",
+          "responseRate": "Response"
+        },
+        "bd": {
+          "contacted": "Who was contacted",
+          "ratings": "Ratings given"
+        },
+        "row": {
+          "responded": "Responded",
+          "noAnswer": "Did not respond",
+          "fives": "Rated 5 — Top Box",
+          "lower": "Rated 4 or lower"
+        },
+        "unit": {
+          "customers": "customers",
+          "ratings": "ratings"
+        },
+        "table": {
+          "readFrom": "Read from",
+          "fives": "5s / ratings",
+          "sheet": "sheet cell",
+          "pooled": "pooled"
+        }
+      },
+      "nResponses": "{n} responses"
+    },
+    "kpis": {
+      "firstTimeInstall": "1st Time Install",
+      "pmComplete": "PM Complete",
+      "totalCmCases": "Total CM Cases",
+      "firstTimeFix": "First Time Fix",
+      "sla": "SLA / Over SLA",
+      "csat": "CSAT Top Box"
+    },
+    "panels": {
+      "firstTimeInstall": "First Time Installation",
+      "pmComplete": "PM Complete",
+      "totalCmCases": "Total CM Case",
+      "firstTimeFix": "First Time Fix",
+      "sla": "SLA / Over SLA",
+      "csat": "CSAT Top Box"
+    },
+    "segments": {
+      "cleaning": "Cleaning",
+      "delivery": "Delivery"
+    },
+    "legend": {
+      "install": "Installation",
+      "pm": "PM",
+      "within": "Within",
+      "over": "Over",
+      "csat": "CSAT"
+    },
+    "chart": {
+      "avg": "Average",
+      "avgSla": "Average SLA",
+      "avgValue": "Avg {value}",
+      "avgSlaValue": "Avg SLA {value}"
+    },
+    "stats": {
+      "overall": "Overall",
+      "total": "Total",
+      "avgPerMonth": "Avg / Month",
+      "yip": "YIP",
+      "raaspal": "Raaspal",
+      "install": "Install",
+      "pm": "PM",
+      "cmDelivery": "CM Delivery",
+      "cmCleaning": "CM Cleaning"
+    },
+    "takeaways": {
+      "installFtfr": {
+        "title": "Installation & FTFR",
+        "body": "First Time Installation 60.9% and FTFR 72.3% are the primary recovery priorities."
+      },
+      "pm": {
+        "title": "PM Performance",
+        "body": "Overall 90.3%; Raaspal 95.1% vs YIP 80.0%. Delivery PM is 81.2%."
+      },
+      "sla": {
+        "title": "SLA Performance",
+        "body": "Within SLA 77.2%; Cleaning 66.7% trails Delivery 83.5%."
+      },
+      "customer": {
+        "title": "Customer Experience",
+        "body": "Top Box 86.2%; Cleaning Repair 70.3% and survey response 53.5% need focus."
+      }
+    },
+    "utilization": {
+      "awaitingSource": "Chart data is not in the source deck — needs the RE_Productivity sheet.",
+      "factorsTitle": "MD factor definitions",
+      "actionsTitle": "Executive actions",
+      "boardView": "Board view: use “type of work + travel manday” as the primary workload utilization KPI; use “type of work only” for core output, and treat “travel manday” as efficiency loss to optimise dispatch planning.",
+      "metrics": {
+        "work": "Work MD",
+        "workDetail": "Top 15 field work only",
+        "travel": "Travel MD",
+        "travelDetail": "46.2% of field workload",
+        "total": "Total workload MD",
+        "totalDetail": "Work + travel",
+        "utilization": "Utilization",
+        "utilizationDetail": "Capacity 1,980 MD",
+        "helpdesk": "Helpdesk MD",
+        "helpdeskDetail": "Not included in field utilization",
+        "topWorkType": "Top work type",
+        "topWorkTypeDetail": "303.0 MD • 23.7%"
+      },
+      "sections": {
+        "perPerson": "Utilization by person (top 15)",
+        "workMix": "Type of work / workload mix",
+        "monthlyTrend": "Monthly trend"
+      },
+      "factors": {
+        "standard": "Demo / Installation / Training / Modify = 1.0 MD",
+        "cm": "CM = 0.5 MD per job",
+        "pm": "PM: 3 jobs = 1.0 MD; 2 units = 0.5 MD",
+        "half": "Robot send/receive, unbox, QC, customer support, site survey, other = 0.5 MD",
+        "meeting": "Meeting = 0.375 MD",
+        "travel": "Travel MD = round-trip time from Software Park ÷ 8 hrs",
+        "estimate": "Jan–Apr travel is estimated from the May–Jun average by type."
+      },
+      "actions": {
+        "cm": "CM is the dominant load — review recurring root causes.",
+        "travel": "Travel is high — use zone dispatch and route planning.",
+        "capacity": "Capacity gap — add PM, training, documentation and RCA."
+      }
+    },
+    "repeat": {
+      "exampleNotice": "Example cost model from the Jan–Jun 2026 deck. Rates are illustrative and must be adjusted to real km, manday and parts — no backend source is wired yet.",
+      "costSummary": "Cost summary",
+      "vsIncentive": "Cost vs incentive",
+      "keyFactor": "Repeat cost must be calculated from verifiable ticket events, not by multiplying a KPI denominator.",
+      "headlines": {
+        "installRepeat": "Install repeat ≤30 days",
+        "installCost": "Cost after install",
+        "cmRepeat": "CM repeat ≤7 days",
+        "cmCost": "Cost after CM",
+        "installRepeatDetail": "39.1% of 23 installs",
+        "installCostDetail": "8 on-site • 4 online",
+        "cmRepeatDetail": "27.7% of all cases",
+        "cmCostDetail": "85 on-site • 55 online • 6 logistics"
+      },
+      "breakdowns": {
+        "installation": "Repeat cost after installation",
+        "cm": "Repeat cost after repair (CM)"
+      },
+      "channels": {
+        "onsite": "On-site",
+        "online": "Online",
+        "logistics": "Logistics"
+      },
+      "labels": {
+        "kpiVolumeInstall": "KPI volume (cases)",
+        "kpiVolumeCm": "KPI volume (cases)",
+        "costEvents": "Cost events (tickets)",
+        "local": "Local / BKK",
+        "province": "Province",
+        "avgKm": "Avg km (round trip)",
+        "unitCost": "Unit cost (local · province)",
+        "subtotal": "Subtotal",
+        "repeatCostTotal": "Total repeat cost",
+        "incentive": "Incentive at 500/case",
+        "gap": "Gap after incentive",
+        "incentiveBasis": "Install 14 × 500 + CM 919 × 500"
+      },
+      "table": {
+        "line": "Line",
+        "qty": "Qty",
+        "unit": "Unit",
+        "total": "Total",
+        "grandTotal": "Grand total"
+      },
+      "lines": {
+        "installLocal": "Install local on-site",
+        "installProvince": "Install province on-site",
+        "installOnline": "Install online",
+        "cmLocal": "CM local on-site",
+        "cmProvince": "CM province on-site",
+        "cmOnlineLogistics": "CM online + logistics"
+      }
+    },
+    "period": {
+      "label": "Reporting period",
+      "year": "Year",
+      "from": "From month",
+      "to": "To month",
+      "showing": "Showing",
+      "invalidRange": "End month is before start month.",
+      "invalidTitle": "That range runs backwards",
+      "invalidBody": "The end month falls before the start month. Pick an end month on or after the start.",
+      "noDataTitle": "No data for this period",
+      "noDataBody": "Placeholder data currently covers only Jan – Jun 2026, the period of the source deck. Other periods will fill in once a data source is wired.",
+      "backToDeck": "Show Jan – Jun 2026",
+      "presets": {
+        "last6": "Last 6 months",
+        "h1": "First half (Jan – Jun)",
+        "h2": "Second half (Jul – Dec)",
+        "custom": "Custom range"
+      }
+    },
+    "live": {
+      "loading": "Loading KPIs from the ticket mirror…",
+      "errorTitle": "Could not load the KPIs",
+      "errorBody": "The backend did not answer. Check that it is running and that you have an ADMIN or RAASPAL_TEAM account.",
+      "sourceNotice": "Computed from {tickets} synced monday.com ticket(s). Mirror last refreshed: {synced}.",
+      "neverSynced": "never",
+      "provisionalNotice": "Formulas are provisional and awaiting RE-team sign-off.",
+      "emptyRange": "No tickets in this period yet. Run a monday sync, or pick a period the boards cover.",
+      "scopeNotice": "{excluded} row(s) in this period are on the boards but are not KPI cases (surveys, demos, parts shipments) and are left out. {unclassified} install(s) count in the fleet total but in neither line — no matching serial.",
+      "placeholderBadge": "Placeholder",
+      "placeholderNotice": "{kpis} are placeholders copied from the Jan–Jun 2026 deck — no backend source yet, not computed.",
+      "awaitingSourceNotice": "{kpis} have no backend source yet and show no figures for this period.",
+      "awaitingSourceBody": "No source for this period. PM Complete needs the PM boards and the visits-due rule.",
+      "syncedShort": "Synced {synced}",
+      "headlineInstalls": "{done}/{total} installs",
+      "headlineCases": "{done}/{total} cases",
+      "headlineSla": "{within} within | {over} over",
+      "footnoteUnplaced": "{unplaced} of {total} installs have no matching serial and sit in neither line",
+      "footnoteRepeatWindow": "Repeat window {days} days",
+      "footnoteSlaUnknown": "{count} case(s) have no RE Action date and are not counted"
+    },
+    "header": {
+      "kpiList": "Installation • PM • CM • FTFR • SLA"
+    },
+    "takeawaysPlaceholder": {
+      "badge": "From deck",
+      "empty": "No board takeaways have been written for this period."
+    },
+    "detail": {
+      "hint": "Click a panel to see that KPI on its own, with its formula and the arithmetic behind the number.",
+      "viewDetails": "View details",
+      "back": "Back to report",
+      "howCalculated": "How it's calculated",
+      "formula": "Formula",
+      "arithmetic": "Arithmetic",
+      "windows": "Windows",
+      "notes": "Notes",
+      "monthly": "Monthly breakdown",
+      "colMonth": "Month",
+      "colAll": "Fleet",
+      "notComputed": "Not computed. These figures are copied from the Jan–Jun 2026 deck; no backend source exists yet.",
+      "deckBasis": "Deck basis",
+      "pmFormula": "PM tasks completed ÷ PM tasks due in the period (the deck's denominator is an estimate). Split by service line and by supplier team (Raaspal vs YIP). A source needs the PM visit board plus the visits-due-per-robot rule.",
+      "num": {
+        "installFirstTime": "installs with no CM in the window",
+        "fixedFirstTime": "CMs with no repeat in the window",
+        "slaWithin": "cases checked within SLA"
+      },
+      "den": {
+        "installs": "installs",
+        "cmCases": "CM cases",
+        "slaMeasured": "cases with an RE Action date"
+      },
+      "window": {
+        "install": "Installation follow-up window: {days} days after the TimeLine's later date.",
+        "repeat": "Repeat window: another CM on the same serial within {days} days.",
+        "sla": "SLA: checked within {days} days of the case being reported (RE Action date minus Open Date). CM cases only."
+      },
+      "result": "Result",
+      "notesShow": "show",
+      "breakdown": "Breakdown",
+      "leftOut": "Left out before counting — not a KPI case",
+      "bd": {
+        "scoring": "How they were scored",
+        "split": "Cleaning / delivery split",
+        "byLine": "By service line",
+        "slaJudged": "How they were judged"
+      },
+      "row": {
+        "installPass": "Scored 1 — no CM within the window",
+        "installFail": "Scored 0 — a CM followed",
+        "ftfPass": "Scored 1 — no repeat within the window",
+        "ftfFail": "Scored 0 — another CM followed",
+        "passVerified": "of which verified: serial checked, none found",
+        "passNoSerial": "of which no serial: passed by default, unverified",
+        "placed": "Placed in a line",
+        "placedCleaning": "of which cleaning",
+        "placedDelivery": "of which delivery",
+        "unplaced": "Could not be placed — in the total, in neither line",
+        "unplacedNoSerial": "of which no serial on the ticket",
+        "unplacedUnknownSerial": "of which serial never seen on a CM board",
+        "slaMeasurable": "Has an RE Action date — measurable",
+        "slaWithin": "of which checked within the SLA",
+        "slaOver": "of which checked later than the SLA",
+        "slaUnknown": "No RE Action date — not counted",
+        "cleaningCases": "Cleaning cases",
+        "deliveryCases": "Delivery cases"
+      },
+      "formulaText": {
+        "firstTimeInstall": "An installation scores 1 when no corrective-maintenance case names the same serial within {days} days after the installation's TimeLine end date; 0 when one does.",
+        "firstTimeFix": "A CM case scores 1 when no later CM names the same serial within {days} days of it being reported; 0 when one does.",
+        "sla": "The case was checked within the board's configured SLA days of being reported: RE Action date minus Open Date. Exactly the limit counts as within. No action date recorded means unknown, not a breach. Neither board has a close date, so this is time-to-first-action, not time-to-close.",
+        "totalCmCases": "Installations are counted in the month their TimeLine ends; CM cases in the month they were reported. Each board may name a category column (Job Type, Type of case) and the values that count as a KPI case; rows outside that list are synced and archived but not counted here."
+      },
+      "apiNotes": {
+        "bucketing": "Installations are counted in the month their TimeLine ends; CM cases in the month they were reported.",
+        "matching": "Both windows join on serial number alone, across boards. Tickets naming no serial cannot be matched and are counted as successes.",
+        "split": "The installation board does not say which kind of robot a case concerns, so the serial is looked up among CM cases: the cleaning and delivery boards each handle one kind, so a serial seen on one of them identifies the robot. A case that still cannot be placed counts in the fleet total but in neither line.",
+        "category": "Each board may name a category column and the values that count as a KPI case. Rows outside that list are synced and archived but not counted. A follow-up CM is still a follow-up whatever its category."
+      }
+    },
+    "export": {
+      "label": "Export Excel",
+      "busy": "Preparing…",
+      "failed": "Could not build the file",
+      "hint": "One sheet per chart, months down and series across — ready for Insert Chart in Excel, and editable once pasted into a slide."
+    },
+    "units": {
+      "cases": "cases"
+    },
+    "placeholderDetail": {
+      "pm": "247.9/274.5 tasks (est.)"
+    },
+    "placeholderFootnote": {
+      "pm": "Cleaning 95.6%  |  Delivery 81.2%"
+    }
   }
 }

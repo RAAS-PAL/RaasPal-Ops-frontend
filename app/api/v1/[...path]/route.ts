@@ -65,6 +65,10 @@ async function forward(request: Request): Promise<NextResponse> {
   const responseHeaders = new Headers();
   const contentType = upstream.headers.get("content-type");
   if (contentType) responseHeaders.set("content-type", contentType);
+  // A file download carries its filename here; without it a browser hitting the
+  // endpoint directly saves the response under the route's last path segment.
+  const disposition = upstream.headers.get("content-disposition");
+  if (disposition) responseHeaders.set("content-disposition", disposition);
 
   return new NextResponse(payload, {
     status: upstream.status,
