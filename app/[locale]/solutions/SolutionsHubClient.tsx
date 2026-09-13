@@ -8,6 +8,7 @@ import { AppTopBar } from '@/components/AppTopBar';
 import { GenerateSolutionHub } from '@/components/solutions/GenerateSolutionHub';
 import { SolutionsList } from './SolutionsClient';
 import { ProposalsList } from '@/app/[locale]/proposals/ProposalsClient';
+import type { SolutionTab } from './tabs';
 
 /**
  * One page for the whole solution workflow: start one, look at the saved ones, look
@@ -22,9 +23,6 @@ import { ProposalsList } from '@/app/[locale]/proposals/ProposalsClient';
  * <p>The top bar's search box belongs to whichever list is showing; the Generate tab
  * has nothing to search, so the box is not drawn there.
  */
-
-export const SOLUTION_TABS = ['generate', 'solutions', 'proposals'] as const;
-export type SolutionTab = (typeof SOLUTION_TABS)[number];
 
 export function SolutionsHubClient({ initialTab = 'generate' }: { initialTab?: SolutionTab }) {
   const t = useTranslations('solutionsHub');

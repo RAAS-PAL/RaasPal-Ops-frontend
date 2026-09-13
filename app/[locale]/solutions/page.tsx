@@ -1,4 +1,5 @@
-import { SolutionsHubClient, SOLUTION_TABS, type SolutionTab } from './SolutionsHubClient';
+import { SolutionsHubClient } from './SolutionsHubClient';
+import { SOLUTION_TABS, type SolutionTab } from './tabs';
 
 export default async function SolutionsPage({
   searchParams,
