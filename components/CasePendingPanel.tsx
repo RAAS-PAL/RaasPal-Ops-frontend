@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { caseReportApi } from '@/lib/api';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import type { CaseReportSlug } from '@/lib/api';
 import { isManualCaseRow } from '@/types/api';
 import type { CaseReportRow, CaseRowEdit, SlaStatus } from '@/types/api';
@@ -125,6 +126,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
 };
 
 export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
+  const { confirm, confirmDialog } = useConfirm();
   const [asOf, setAsOf] = useState<string>(todayInBangkok());
   // The row being corrected, 'new' for one being added, null when the dialog is closed.
   const [editing, setEditing] = useState<CaseReportRow | 'new' | null>(null);
@@ -434,7 +436,13 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
           onSave={(edit) => save.mutate(edit)}
           onRemove={
             editing !== 'new' && editing.sourceItemId
-              ? () => remove.mutate(editing.sourceItemId!)
+              ? () =>
+                  void confirm({
+                    title: 'Remove this row?',
+                    kind: 'delete',
+                    confirmLabel: 'Remove row',
+                    message: `Row ${editing.no} is taken off this date's report. It was added by hand, so nothing on monday changes.`,
+                  }).then((ok) => ok && remove.mutate(editing.sourceItemId!))
               : undefined
           }
           onClose={() => {
@@ -442,6 +450,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
           }}
         />
       )}
+      {confirmDialog}
     </div>
   );
 }

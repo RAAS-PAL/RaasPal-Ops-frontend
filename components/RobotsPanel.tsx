@@ -25,6 +25,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { customerApi, partnerApi, robotUnitApi, telemetryApi } from '@/lib/api';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import type {
   CustomerResponse,
@@ -102,6 +103,8 @@ function toForm(r: RobotUnitResponse): RegisterRobotRequest {
 
 export function RobotsPanel() {
   const t = useTranslations('robotsPanel');
+  const tCommon = useTranslations('common');
+  const { confirm, confirmDialog } = useConfirm();
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -581,9 +584,16 @@ export function RobotsPanel() {
             <Button
               type="button"
               onClick={() => {
-                if (confirm(t('setSelectedMonthlyConfirm', { count: selected.size }))) {
+                void confirm({
+                  title: t('setSelectedMonthlyConfirm', { count: selected.size }),
+                  kind: 'warn',
+                  tone: 'primary',
+                  confirmLabel: tCommon('confirm'),
+                  message: t('setSelectedMonthlyConfirm', { count: selected.size }),
+                }).then((ok) => {
+                  if (!ok) return;
                   setAllCadenceMutation.mutate({ cadence: 'MONTHLY', ids: [...selected] });
-                }
+                });
               }}
               disabled={setAllCadenceMutation.isPending}
               className="bg-[var(--app-brand)] text-white hover:opacity-90 disabled:opacity-50"
@@ -702,9 +712,15 @@ export function RobotsPanel() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (confirm(t('deactivateConfirm', { name: robotDisplayName(r), customer: r.deployment?.customerName ?? '' }))) {
+                    void confirm({
+                      title: t('deactivateAria', { name: robotDisplayName(r) }),
+                      kind: 'warn',
+                      confirmLabel: tCommon('confirm'),
+                      message: t('deactivateConfirm', { name: robotDisplayName(r), customer: r.deployment?.customerName ?? '' }),
+                    }).then((ok) => {
+                      if (!ok) return;
                       deactivateMutation.mutate(r.deployment!.deploymentId);
-                    }
+                    });
                   }}
                   disabled={deactivateMutation.isPending}
                   aria-label={t('deactivateAria', { name: robotDisplayName(r) })}
@@ -743,6 +759,7 @@ export function RobotsPanel() {
           </Button>
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }

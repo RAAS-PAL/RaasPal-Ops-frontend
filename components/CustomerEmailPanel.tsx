@@ -20,6 +20,7 @@ import {
   Send,
 } from 'lucide-react';
 import { customerApi } from '@/lib/api';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import type { CustomerResponse } from '@/types/api';
 
@@ -35,6 +36,7 @@ function errorMessage(e: unknown, fallback: string): string {
 }
 
 export function CustomerEmailPanel() {
+  const { confirm, confirmDialog } = useConfirm();
   const [query, setQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -96,8 +98,17 @@ export function CustomerEmailPanel() {
     if (!subject.trim()) return setFormError('Enter a subject.');
     if (!message.trim()) return setFormError('Enter a message.');
     const count = selected.size;
-    if (!confirm(`Send this email to ${count} customer${count === 1 ? '' : 's'}?`)) return;
-    sendMutation.mutate();
+    void confirm({
+      title: 'Send this email?',
+      kind: 'send',
+      confirmLabel: `Send to ${count} customer${count === 1 ? '' : 's'}`,
+      message: (
+        <>
+          <strong>{count} customer{count === 1 ? '' : 's'}</strong> receive &ldquo;{subject.trim()}&rdquo; at
+          their contact email. It cannot be recalled once sent.
+        </>
+      ),
+    }).then((ok) => ok && sendMutation.mutate());
   }
 
   const inputClass =
@@ -259,6 +270,7 @@ export function CustomerEmailPanel() {
           </p>
         )}
       </div>
+      {confirmDialog}
     </div>
   );
 }
