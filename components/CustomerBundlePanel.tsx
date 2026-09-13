@@ -34,6 +34,7 @@ import { previousMonth } from '@/lib/report-month';
 import { MonthlyReportView } from '@/components/report/MonthlyReportView';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListSkeleton } from '@/components/ui/skeleton';
+import { InfiniteScroll } from '@/components/ui/infinite-scroll';
 import type { CustomerBundleRobot, CustomerResponse } from '@/types/api';
 
 const PAGE_SIZE = 10;
@@ -239,15 +240,11 @@ export function CustomerBundlePanel() {
           </div>
         )}
 
-        {filteredCustomers.length > visibleCount && (
-          <button
-            type="button"
-            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-            className="mx-auto flex h-9 items-center rounded-lg border border-[var(--app-border)] px-4 text-sm font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
-          >
-            Load more ({filteredCustomers.length - visibleCount} more)
-          </button>
-        )}
+        <InfiniteScroll
+          hasMore={filteredCustomers.length > visibleCount}
+          onReach={() => setVisibleCount((c) => c + PAGE_SIZE)}
+          label={`Showing ${visibleCount} of ${filteredCustomers.length}`}
+        />
       </div>
     );
   }

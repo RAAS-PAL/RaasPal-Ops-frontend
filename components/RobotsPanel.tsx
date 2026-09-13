@@ -27,6 +27,7 @@ import {
 import { customerApi, partnerApi, robotUnitApi, telemetryApi } from '@/lib/api';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Button } from '@/components/ui/button';
+import { InfiniteScroll } from '@/components/ui/infinite-scroll';
 import type {
   CustomerResponse,
   RegisterRobotRequest,
@@ -748,17 +749,11 @@ export function RobotsPanel() {
         ))}
       </ul>
 
-      {hasMore && (
-        <div className="flex justify-center pt-2">
-          <Button
-            type="button"
-            onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
-            className="border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text)] hover:border-[var(--app-brand)]"
-          >
-            {t('loadMore', { count: filtered.length - visibleCount })}
-          </Button>
-        </div>
-      )}
+      <InfiniteScroll
+        hasMore={hasMore}
+        onReach={() => setVisibleCount((n) => n + PAGE_SIZE)}
+        label={t('loadMore', { count: filtered.length - visibleCount })}
+      />
       {confirmDialog}
     </div>
   );
