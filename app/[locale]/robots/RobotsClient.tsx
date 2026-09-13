@@ -139,9 +139,16 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
     );
   }
 
+  // The catalogue is edited by hand a few times a week, so it is not worth re-reading
+  // on every focus: the default 60s staleTime plus refetchOnWindowFocus meant clicking
+  // back into the window could start another full fetch, and this request is not cheap.
+  // Fifteen minutes, and only on a real remount.
   const { data, isLoading, isError } = useQuery({
     queryKey: ['robots'],
     queryFn: () => robotApi.getAll(0, 200).then((r) => r.data.data),
+    staleTime: 15 * 60_000,
+    gcTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const all = [...(data?.content ?? [])].sort((a, b) => {
