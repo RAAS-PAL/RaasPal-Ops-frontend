@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Bot, ChevronRight, LayoutGrid, Plus, Table2 } from 'lucide-react';
@@ -163,19 +163,18 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
 
-  // Back to the top of the list whenever the list itself changes. Keeping a deep
-  // position after a filter or a search would strand the reader among rows that are
-  // no longer the ones they asked for.
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [activeType, searchQuery]);
-
+  // Both handlers reset the list to its first rows. Keeping a deep position after a
+  // filter or a search would strand the reader among rows they did not ask for — and
+  // resetting here rather than in an effect means it happens with the change, not in
+  // a second render after it.
   function handleTypeChange(type: RobotType | 'ALL') {
     setActiveType(type);
+    setVisibleCount(PAGE_SIZE);
   }
 
   function handleSearch(q: string) {
     setSearchQuery(q);
+    setVisibleCount(PAGE_SIZE);
   }
 
   return (

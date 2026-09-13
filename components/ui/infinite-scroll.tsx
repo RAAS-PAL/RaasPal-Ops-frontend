@@ -29,10 +29,13 @@ export function InfiniteScroll({
   label?: string;
 }) {
   const sentinel = useRef<HTMLDivElement>(null);
-  // Kept in a ref so the observer is created once, not on every render that changes
-  // the callback identity.
+  // Held in a ref, written in an effect rather than during render, so the observer
+  // below is created once per hasMore change and not on every render that hands us a
+  // fresh callback identity.
   const reach = useRef(onReach);
-  reach.current = onReach;
+  useEffect(() => {
+    reach.current = onReach;
+  }, [onReach]);
 
   useEffect(() => {
     const node = sentinel.current;
