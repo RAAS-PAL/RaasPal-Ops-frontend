@@ -99,7 +99,10 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
         <section className="flex min-w-0 flex-1 flex-col">
           <AppTopBar eyebrow={t('eyebrow')} title={t('title')} searchPlaceholder={t('searchPlaceholder')} />
 
-          <div className="mx-auto w-full max-w-5xl space-y-5 p-4 sm:p-6">
+          {/* Full width, as PM Planning is: the pending-case table has eleven columns of
+              Thai text and was clipping its last two inside the old 64rem cap. The CM
+              report sheet sizes itself to A4 and centres, so it is unaffected. */}
+          <div className="w-full space-y-5 p-4 sm:p-6">
             {/* Sub-section switcher — hidden when printing a report below. */}
             <div className="flex flex-wrap gap-2 border-b border-[var(--app-border)] print:hidden">
               {groups.map((item) => {

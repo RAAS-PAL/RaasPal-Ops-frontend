@@ -777,11 +777,43 @@ export interface CaseReportRow {
   solution: string | null;
   openDate: string | null;
   reOnSite: string | null;
-  /** Inclusive of the open day, so a case opened today reads as 1. */
+  /** Days since the open date, not counting it: a case opened today reads 0. */
   days: number | null;
   sla: SlaStatus;
   /** The sheet's own wording: 'over SLA', 'Within SLA', 'On Hold', or empty. */
   slaLabel: string;
   province: string | null;
+  /**
+   * The monday ticket id, or a `manual-…` id for a row a person added by hand
+   * (see `isManualCaseRow`). Rows added by hand can be removed; board rows cannot.
+   */
   sourceItemId: string | null;
+  /** True once somebody has saved a correction; such a row survives a regeneration. */
+  edited: boolean;
+}
+
+/** Prefix of the ids the backend gives rows added by hand. */
+export const MANUAL_CASE_ROW_PREFIX = 'manual-';
+
+export function isManualCaseRow(row: Pick<CaseReportRow, 'sourceItemId'>): boolean {
+  return row.sourceItemId?.startsWith(MANUAL_CASE_ROW_PREFIX) ?? false;
+}
+
+/**
+ * A row as the edit form sends it, for a correction or a new row. The whole row goes
+ * every time; a null `days` or `sla` asks the backend to recompute them from `openDate`
+ * and `province`.
+ */
+export interface CaseRowEdit {
+  project: string | null;
+  branch: string | null;
+  robot: string | null;
+  serialNumber: string | null;
+  problem: string | null;
+  solution: string | null;
+  openDate: string | null;
+  reOnSite: string | null;
+  days: number | null;
+  sla: SlaStatus | null;
+  province: string | null;
 }
