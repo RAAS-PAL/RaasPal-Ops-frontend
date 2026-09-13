@@ -8,10 +8,12 @@ import {
   ExternalLink,
   Loader2,
   Pencil,
+  Plus,
   RefreshCw,
   Sparkles,
 } from 'lucide-react';
 import { caseReportApi } from '@/lib/api';
+import { isManualCaseRow } from '@/types/api';
 import type { CaseReportRow, CaseRowEdit, SlaStatus } from '@/types/api';
 import { CaseRowEditDialog } from './CaseRowEditDialog';
 
@@ -83,7 +85,8 @@ function SlaCell({ row }: { row: CaseReportRow }) {
 
 export function CasePendingPanel() {
   const [asOf, setAsOf] = useState<string>(todayInBangkok());
-  const [editing, setEditing] = useState<CaseReportRow | null>(null);
+  // The row being corrected, 'new' for one being added, null when the dialog is closed.
+  const [editing, setEditing] = useState<CaseReportRow | 'new' | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const queryKey = ['case-report', 'mk', asOf];
@@ -102,24 +105,48 @@ export function CasePendingPanel() {
     onSuccess: (fresh) => queryClient.setQueryData(queryKey, fresh),
   });
 
+  const closeDialog = () => {
+    setEditing(null);
+    setEditError(null);
+  };
+
   const save = useMutation({
     mutationFn: (edit: CaseRowEdit) =>
-      caseReportApi.editMkRow(asOf, editing!.sourceItemId!, edit).then((r) => r.data.data),
+      editing === 'new'
+        ? caseReportApi.addMkRow(asOf, edit).then((r) => r.data.data)
+        : caseReportApi.editMkRow(asOf, editing!.sourceItemId!, edit).then((r) => r.data.data),
     onSuccess: (saved) => {
-      queryClient.setQueryData<CaseReportRow[]>(queryKey, (current) =>
-        (current ?? []).map((r) => (r.sourceItemId === saved.sourceItemId ? saved : r)),
-      );
-      setEditing(null);
-      setEditError(null);
+      queryClient.setQueryData<CaseReportRow[]>(queryKey, (current) => {
+        const list = current ?? [];
+        return list.some((r) => r.sourceItemId === saved.sourceItemId)
+          ? list.map((r) => (r.sourceItemId === saved.sourceItemId ? saved : r))
+          : [...list, saved];
+      });
+      closeDialog();
     },
     onError: (e) => setEditError(errorMessage(e, 'Could not save the row.')),
+  });
+
+  const remove = useMutation({
+    mutationFn: (sourceItemId: string) => caseReportApi.removeMkRow(asOf, sourceItemId),
+    onSuccess: (_, sourceItemId) => {
+      // Renumber locally the way the backend did, so No stays contiguous without a refetch.
+      queryClient.setQueryData<CaseReportRow[]>(queryKey, (current) =>
+        (current ?? [])
+          .filter((r) => r.sourceItemId !== sourceItemId)
+          .map((r, i) => ({ ...r, no: i + 1 })),
+      );
+      closeDialog();
+    },
+    onError: (e) => setEditError(errorMessage(e, 'Could not remove the row.')),
   });
 
   const busy = isFetching || regenerate.isPending;
   const breached = rows.filter((r) => r.sla === 'BREACHED').length;
   const onHold = rows.filter((r) => r.sla === 'ON_HOLD').length;
   const unknown = rows.filter((r) => r.sla === 'UNKNOWN').length;
-  const edited = rows.filter((r) => r.edited).length;
+  const edited = rows.filter((r) => r.edited && !isManualCaseRow(r)).length;
+  const added = rows.filter(isManualCaseRow).length;
 
   return (
     <div className="space-y-4">
@@ -159,6 +186,20 @@ export function CasePendingPanel() {
         >
           {regenerate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           {regenerate.isPending ? 'Regenerating…' : 'Regenerate from monday'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setEditError(null);
+            setEditing('new');
+          }}
+          disabled={busy || rows.length === 0}
+          title="Add a case the board does not list. Generate the report first."
+          className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-2 text-sm font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-faint)] disabled:opacity-60"
+        >
+          <Plus className="h-4 w-4" />
+          Add row
         </button>
 
         <p className="ml-auto max-w-md text-xs text-[var(--app-muted)]">
@@ -208,6 +249,11 @@ export function CasePendingPanel() {
               {edited} edited by hand
             </span>
           )}
+          {added > 0 && (
+            <span className="rounded-lg border border-[var(--app-border)] px-3 py-1.5 text-[var(--app-muted)]">
+              {added} added by hand
+            </span>
+          )}
         </div>
       )}
 
@@ -242,10 +288,14 @@ export function CasePendingPanel() {
                     // A corrected row looks like any other, so say so: the reader comparing
                     // against the board needs to know this cell is a person's word, not monday's.
                     <span
-                      title="Edited by hand. Kept as is when the report is regenerated."
+                      title={
+                        isManualCaseRow(row)
+                          ? 'Added by hand — not on the monday board. Kept when the report is regenerated.'
+                          : 'Edited by hand. Kept as is when the report is regenerated.'
+                      }
                       className="ml-1 inline-block rounded bg-[var(--app-brand-soft)] px-1 text-[10px] font-semibold uppercase text-[var(--app-brand-dark)]"
                     >
-                      edited
+                      {isManualCaseRow(row) ? 'added' : 'edited'}
                     </span>
                   )}
                 </td>
@@ -279,9 +329,10 @@ export function CasePendingPanel() {
                 <td className="px-3 py-2.5">
                   <div className="flex items-center gap-2">
                     <SlaCell row={row} />
-                    {row.sourceItemId && (
+                    {row.sourceItemId && !isManualCaseRow(row) && (
                       // Where a wrong value actually gets fixed. Without this, a reviewer
                       // who spots a bad province has to go and find the ticket by hand.
+                      // A row added by hand has no ticket to open.
                       <a
                         href={`https://raaspal.monday.com/boards/1647612496/pulses/${row.sourceItemId}`}
                         target="_blank"
@@ -332,13 +383,18 @@ export function CasePendingPanel() {
 
       {editing && (
         <CaseRowEditDialog
-          key={editing.sourceItemId ?? editing.no}
-          row={editing}
-          saving={save.isPending}
+          key={editing === 'new' ? 'new' : (editing.sourceItemId ?? editing.no)}
+          row={editing === 'new' ? null : editing}
+          saving={save.isPending || remove.isPending}
           error={editError}
           onSave={(edit) => save.mutate(edit)}
+          onRemove={
+            editing !== 'new' && editing.sourceItemId
+              ? () => remove.mutate(editing.sourceItemId!)
+              : undefined
+          }
           onClose={() => {
-            if (!save.isPending) setEditing(null);
+            if (!save.isPending && !remove.isPending) closeDialog();
           }}
         />
       )}

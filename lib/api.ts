@@ -581,6 +581,19 @@ export const caseReportApi = {
       body,
       { params: { asOf } },
     ),
+
+  /** Append a row the board does not have. It is kept through regeneration. */
+  addMkRow: (asOf: string, body: CaseRowEdit) =>
+    api.post<ApiResponse<CaseReportRow>>('/api/v1/case-reports/mk/rows', body, {
+      params: { asOf },
+    }),
+
+  /** Remove a row that was added by hand. Board rows are refused. */
+  removeMkRow: (asOf: string, sourceItemId: string) =>
+    api.delete<ApiResponse<void>>(
+      `/api/v1/case-reports/mk/rows/${encodeURIComponent(sourceItemId)}`,
+      { params: { asOf } },
+    ),
 };
 
 /* ─── PM 52-week planning ─────────────────────────────────────────────────── */
