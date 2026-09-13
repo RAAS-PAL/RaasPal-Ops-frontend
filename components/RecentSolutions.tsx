@@ -45,7 +45,7 @@ export function RecentSolutions() {
         </div>
         <Link
           className="flex items-center gap-1 text-xs font-semibold text-[var(--app-muted)] transition hover:text-[var(--app-brand-dark)]"
-          href="/solutions"
+          href="/solutions?tab=solutions"
         >
           {t('viewAll')}
           <ChevronRight className="h-3.5 w-3.5" />

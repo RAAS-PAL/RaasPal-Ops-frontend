@@ -5,8 +5,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Bot, ClipboardList, FileText, Loader2, Plus, Trash2 } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
-import { AppSidebar } from '@/components/AppSidebar';
-import { AppTopBar } from '@/components/AppTopBar';
 import { ListSkeleton } from '@/components/ui/skeleton';
 import { StatusBadge, toneForStatus } from '@/components/ui/status-badge';
 import { proposalApi } from '@/lib/api';
@@ -117,10 +115,15 @@ function EmptyState({ filtered }: { filtered: boolean }) {
   );
 }
 
-export function ProposalsClient() {
+/**
+ * The generated proposals, filtered by the hub's search box.
+ *
+ * <p>Rendered inside the Solutions hub (one page, three tabs) rather than as a page of
+ * its own, which is why the shell and the search state live in the hub.
+ */
+export function ProposalsList({ searchQuery }: { searchQuery: string }) {
   const t = useTranslations('proposals');
   const queryClient = useQueryClient();
-  const [searchQuery, setSearchQuery] = useState('');
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['proposals'],
@@ -142,19 +145,7 @@ export function ProposalsClient() {
     : all;
 
   return (
-    <main className="min-h-dvh bg-[var(--app-bg)] text-[var(--app-text)] transition-colors">
-      <div className="flex min-h-dvh">
-        <AppSidebar />
-        <section className="flex min-w-0 flex-1 flex-col">
-          <AppTopBar
-            eyebrow={t('eyebrow')}
-            title={t('pageTitle')}
-            searchPlaceholder={t('searchPlaceholder')}
-            searchValue={searchQuery}
-            onSearchChange={setSearchQuery}
-          />
-
-          <div className="mx-auto w-full max-w-6xl space-y-4 p-4 sm:p-6">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-[var(--app-muted)]">
                 {isLoading
@@ -165,7 +156,7 @@ export function ProposalsClient() {
               </p>
               <Link
                 className="flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--app-brand-dark)]"
-                href="/generate-solution"
+                href="/solutions?tab=generate"
               >
                 <Plus className="h-4 w-4" />
                 {t('newSolution')}
@@ -197,8 +188,5 @@ export function ProposalsClient() {
               </div>
             )}
           </div>
-        </section>
-      </div>
-    </main>
   );
 }

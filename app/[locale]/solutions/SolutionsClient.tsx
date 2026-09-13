@@ -1,12 +1,9 @@
 'use client';
 
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Bot, ChevronRight, ClipboardList, FileText, Plus } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
-import { AppSidebar } from '@/components/AppSidebar';
-import { AppTopBar } from '@/components/AppTopBar';
 import { ListSkeleton } from '@/components/ui/skeleton';
 import { StatusBadge, toneForStatus } from '@/components/ui/status-badge';
 import { recommendationApi } from '@/lib/api';
@@ -101,9 +98,14 @@ function EmptyState({ filtered }: { filtered: boolean }) {
   );
 }
 
-export function SolutionsClient() {
+/**
+ * The saved solutions, filtered by the hub's search box.
+ *
+ * <p>Rendered inside the Solutions hub (one page, three tabs) rather than as a page of
+ * its own, which is why the shell and the search state live in the hub.
+ */
+export function SolutionsList({ searchQuery }: { searchQuery: string }) {
   const t = useTranslations('solutions');
-  const [searchQuery, setSearchQuery] = useState('');
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['recommendations'],
@@ -122,24 +124,8 @@ export function SolutionsClient() {
       })
     : all;
 
-  function handleSearch(q: string) {
-    setSearchQuery(q);
-  }
-
   return (
-    <main className="min-h-dvh bg-[var(--app-bg)] text-[var(--app-text)] transition-colors">
-      <div className="flex min-h-dvh">
-        <AppSidebar />
-        <section className="flex min-w-0 flex-1 flex-col">
-          <AppTopBar
-            eyebrow={t('eyebrow')}
-            title={t('pageTitle')}
-            searchPlaceholder={t('searchPlaceholder')}
-            searchValue={searchQuery}
-            onSearchChange={handleSearch}
-          />
-
-          <div className="mx-auto w-full max-w-6xl space-y-4 p-4 sm:p-6">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-[var(--app-muted)]">
                 {isLoading
@@ -150,7 +136,7 @@ export function SolutionsClient() {
               </p>
               <Link
                 className="flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--app-brand-dark)]"
-                href="/generate-solution"
+                href="/solutions?tab=generate"
               >
                 <Plus className="h-4 w-4" />
                 {t('newSolution')}
@@ -177,8 +163,5 @@ export function SolutionsClient() {
               </div>
             )}
           </div>
-        </section>
-      </div>
-    </main>
   );
 }

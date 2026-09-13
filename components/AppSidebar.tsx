@@ -6,8 +6,6 @@ import {
   CalendarRange,
   ChevronLeft,
   ChevronRight,
-  ClipboardList,
-  FileText,
   LayoutDashboard,
   Sparkles,
   Wrench,
@@ -21,9 +19,10 @@ import { useAuthStore } from '@/store/auth';
 export const navigationItems = [
   { title: 'Team Dashboard', labelKey: 'teamDashboard', href: '/', icon: LayoutDashboard },
   { title: 'Reports', labelKey: 'reports', href: '/reports', icon: CalendarClock },
-  { title: 'Generate Solution', labelKey: 'generateSolution', href: '/generate-solution', icon: ClipboardList },
-  { title: 'Solutions', labelKey: 'solutions', href: '/solutions', icon: Sparkles },
-  { title: 'Proposals', labelKey: 'proposals', href: '/proposals', icon: FileText },
+  // One entry for the whole solution workflow (generate → solutions → proposals);
+  // the page has tabs. The generation steps and proposal pages keep their own
+  // routes, so those paths light this entry up too.
+  { title: 'Solutions', labelKey: 'solutions', href: '/solutions', icon: Sparkles, alsoMatches: ['/generate-solution', '/proposals'] },
   { title: 'PM Planning', labelKey: 'pmPlanning', href: '/pm-planning', icon: CalendarRange },
   { title: 'Robots', labelKey: 'robots', href: '/robots', icon: Bot },
   { title: 'Tools', labelKey: 'tools', href: '/tools', icon: Wrench },
@@ -79,7 +78,10 @@ export function AppSidebar() {
 
       <nav className="space-y-1">
         {navigationItems.map((item) => {
-          const active = item.href === '/' ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const matches = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+          const active = item.href === '/'
+            ? pathname === item.href
+            : matches(item.href) || (('alsoMatches' in item ? item.alsoMatches : []) as string[]).some(matches);
 
           return (
           <Link

@@ -865,5 +865,14 @@
       "showing": "{count} of {total}",
       "noMatches": "No company matches that."
     }
+  },
+  "solutionsHub": {
+    "eyebrow": "Solution studio",
+    "title": "Solutions",
+    "tabs": {
+      "generate": "Generate",
+      "solutions": "Solutions",
+      "proposals": "Proposals"
+    }
   }
 }

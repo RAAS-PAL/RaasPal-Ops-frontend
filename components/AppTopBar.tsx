@@ -4,6 +4,11 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { TopNavigationMenu } from '@/components/TopNavigationMenu';
 import { UserMenu } from '@/components/UserMenu';
 
+/**
+ * The search box is drawn only when the page wires one up. It used to be drawn on
+ * every page, as a box with the placeholder in it that did nothing — which is the
+ * one thing a search box must never be.
+ */
 type AppTopBarProps = {
   eyebrow: string;
   title: string;
@@ -54,12 +59,7 @@ export function AppTopBar({
                 </button>
               )}
             </div>
-          ) : (
-            <div className="flex h-full w-full items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-muted)]">
-              <Search className="h-4 w-4 shrink-0" />
-              <span className="truncate">{searchPlaceholder}</span>
-            </div>
-          )}
+          ) : null}
         </div>
 
         <ThemeToggle />
