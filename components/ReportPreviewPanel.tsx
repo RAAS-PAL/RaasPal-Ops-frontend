@@ -38,6 +38,7 @@ import { sampleGausiumReport } from '@/lib/reports/gausium';
 import { monthYearLabel } from '@/lib/reports/preview';
 import { isoWeekRange, previousIsoWeek, weekRangeLabel } from '@/lib/report-week';
 import type { MonthlyPerformanceReport } from '@/lib/reports/types';
+import { InfiniteScroll } from '@/components/ui/infinite-scroll';
 import type { RobotUnitResponse } from '@/types/api';
 
 type Selection = { kind: 'sample' } | { kind: 'robot'; robot: RobotUnitResponse };
@@ -455,17 +456,11 @@ export function ReportPreviewPanel() {
           ))}
         </ul>
 
-        {hasMore && (
-          <div className="flex justify-center pt-2">
-            <button
-              type="button"
-              onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
-              className="rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-4 py-2 text-sm font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
-            >
-              Load more ({filtered.length - visibleCount} remaining)
-            </button>
-          </div>
-        )}
+        <InfiniteScroll
+          hasMore={hasMore}
+          onReach={() => setVisibleCount((n) => n + PAGE_SIZE)}
+          label={`Showing ${visibleCount} of ${filtered.length}`}
+        />
       </div>
     </div>
   );

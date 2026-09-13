@@ -22,6 +22,7 @@ import {
 import { customerApi } from '@/lib/api';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Button } from '@/components/ui/button';
+import { InfiniteScroll } from '@/components/ui/infinite-scroll';
 import type { CustomerResponse } from '@/types/api';
 
 const PAGE_SIZE = 10;
@@ -183,17 +184,11 @@ export function CustomerEmailPanel() {
           })}
         </ul>
 
-        {hasMore && (
-          <div className="flex justify-center">
-            <Button
-              type="button"
-              onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
-              className="border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text)] hover:border-[var(--app-brand)]"
-            >
-              Load more ({filtered.length - visibleCount} remaining)
-            </Button>
-          </div>
-        )}
+        <InfiniteScroll
+          hasMore={hasMore}
+          onReach={() => setVisibleCount((n) => n + PAGE_SIZE)}
+          label={`Showing ${visibleCount} of ${filtered.length}`}
+        />
       </div>
 
       {/* ── Right: compose ──────────────────────────────────────────────────── */}

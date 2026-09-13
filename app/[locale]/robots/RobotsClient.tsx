@@ -1,21 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Bot, ChevronLeft, ChevronRight, LayoutGrid, Plus, Table2 } from 'lucide-react';
+import { Bot, ChevronRight, LayoutGrid, Plus, Table2 } from 'lucide-react';
 import { RobotSpecMatrix } from '@/components/RobotSpecMatrix';
 import { Link } from '@/i18n/navigation';
 import { robotApi } from '@/lib/api';
 import { ROBOT_TYPES, TYPE_LABELS, TYPE_STYLES } from '@/lib/robot-types';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
+import { InfiniteScroll } from '@/components/ui/infinite-scroll';
 import { RobotDetailModal } from '@/components/RobotDetailModal';
 import { ListSkeleton } from '@/components/ui/skeleton';
 import { StatusBadge, toneForStatus } from '@/components/ui/status-badge';
 import type { RobotResponse, RobotType } from '@/types/api';
 
-const ITEMS_PER_PAGE = 9;
+/**
+ * Rows drawn before the reader scrolls, and the number added each time they reach the
+ * end. Twelve rather than the nine the pages used to hold: a page had to fit, a list
+ * only has to fill the screen it is on.
+ */
+const PAGE_SIZE = 12;
 
 export type RobotsView = 'catalog' | 'specs';
 
@@ -106,74 +112,6 @@ function RobotRow({ robot, onClick }: { robot: RobotResponse; onClick: () => voi
   );
 }
 
-/* ─── Pagination ──────────────────────────────────────────────────────────── */
-
-function Pagination({
-  currentPage,
-  totalPages,
-  onPageChange,
-}: {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-}) {
-  if (totalPages <= 1) return null;
-
-  const pages: (number | '…')[] = [];
-  if (totalPages <= 7) {
-    for (let i = 1; i <= totalPages; i++) pages.push(i);
-  } else if (currentPage <= 4) {
-    pages.push(1, 2, 3, 4, 5, '…', totalPages);
-  } else if (currentPage >= totalPages - 3) {
-    pages.push(1, '…', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
-  } else {
-    pages.push(1, '…', currentPage - 1, currentPage, currentPage + 1, '…', totalPages);
-  }
-
-  const btn = 'inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm font-semibold transition';
-
-  return (
-    <div className="flex items-center justify-center gap-1 pt-2">
-      <button
-        type="button"
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className={`${btn} border border-[var(--app-border)] text-[var(--app-muted)] hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)] disabled:opacity-30 disabled:cursor-not-allowed`}
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </button>
-
-      {pages.map((p, i) =>
-        p === '…' ? (
-          <span key={`ellipsis-${i}`} className="px-1 text-sm text-[var(--app-muted)]">…</span>
-        ) : (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onPageChange(p as number)}
-            className={`${btn} ${
-              p === currentPage
-                ? 'bg-[var(--app-brand)] text-white'
-                : 'border border-[var(--app-border)] text-[var(--app-muted)] hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)]'
-            }`}
-          >
-            {p}
-          </button>
-        ),
-      )}
-
-      <button
-        type="button"
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className={`${btn} border border-[var(--app-border)] text-[var(--app-muted)] hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)] disabled:opacity-30 disabled:cursor-not-allowed`}
-      >
-        <ChevronRight className="h-4 w-4" />
-      </button>
-    </div>
-  );
-}
-
 /* ─── Filter tabs ─────────────────────────────────────────────────────────── */
 
 const TYPE_KEYS: Array<RobotType | 'ALL'> = ['ALL', ...ROBOT_TYPES];
@@ -182,7 +120,7 @@ const TYPE_KEYS: Array<RobotType | 'ALL'> = ['ALL', ...ROBOT_TYPES];
 
 export function RobotsClient({ initialView = 'catalog' }: { initialView?: RobotsView }) {
   const [activeType, setActiveType] = useState<RobotType | 'ALL'>('ALL');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRobot, setSelectedRobot] = useState<RobotResponse | null>(null);
   const [view, setViewState] = useState<RobotsView>(initialView);
@@ -222,18 +160,22 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
     : all;
 
   const filtered = activeType === 'ALL' ? searched : searched.filter((r) => r.robotType === activeType);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const pageStart = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginated = filtered.slice(pageStart, pageStart + ITEMS_PER_PAGE);
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
+
+  // Back to the top of the list whenever the list itself changes. Keeping a deep
+  // position after a filter or a search would strand the reader among rows that are
+  // no longer the ones they asked for.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [activeType, searchQuery]);
 
   function handleTypeChange(type: RobotType | 'ALL') {
     setActiveType(type);
-    setCurrentPage(1);
   }
 
   function handleSearch(q: string) {
     setSearchQuery(q);
-    setCurrentPage(1);
   }
 
   return (
@@ -306,7 +248,7 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
             <p className="text-sm text-[var(--app-muted)]">
               {query
                 ? t('searchResults', { count: filtered.length, query: searchQuery })
-                : t('pageRange', { start: pageStart + 1, end: Math.min(pageStart + ITEMS_PER_PAGE, filtered.length), total: filtered.length })}
+                : t('pageRange', { start: 1, end: visible.length, total: filtered.length })}
             </p>
           )}
           <Link
@@ -340,8 +282,8 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
       )}
 
       {/* Brand groups */}
-      {paginated.length > 0 && (() => {
-        const groups = paginated.reduce<Record<string, RobotResponse[]>>((acc, robot) => {
+      {visible.length > 0 && (() => {
+        const groups = visible.reduce<Record<string, RobotResponse[]>>((acc, robot) => {
           (acc[robot.brand] ??= []).push(robot);
           return acc;
         }, {});
@@ -369,11 +311,11 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
         );
       })()}
 
-      {/* Pagination */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
+      {/* More rows as the reader reaches the end of the list */}
+      <InfiniteScroll
+        hasMore={hasMore}
+        onReach={() => setVisibleCount((n) => n + PAGE_SIZE)}
+        label={t('pageRange', { start: 1, end: visible.length, total: filtered.length })}
       />
        </>
       )}
