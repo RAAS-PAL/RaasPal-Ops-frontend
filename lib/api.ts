@@ -559,39 +559,44 @@ export const customerBundleApi = {
 };
 
 // Daily Pending Case Report
+/** The pending-case sheets the backend can generate, as they appear in its URLs. */
+export type CaseReportSlug = 'mk' | 'cleaning' | 'makro';
+
 export const caseReportApi = {
   /**
-   * The MK sheet: MK, Yayoi and Bonus Suki delivery cases.
+   * One pending-case sheet: `mk` (MK, Yayoi and Bonus Suki delivery cases),
+   * `cleaning` (every open cleaning case except Makro's and the airports') or
+   * `makro` (Makro's cleaning cases).
    *
    * The first call for a date reads monday live (slow, hence the timeout) and
    * freezes the result; later calls return the stored rows. `refresh` re-reads
-   * the board into the stored draft, keeping any rows a person has edited.
+   * the board into the stored draft, keeping any rows a person has edited or added.
    */
-  mk: (asOf?: string, refresh = false) =>
-    api.get<ApiResponse<CaseReportRow[]>>('/api/v1/case-reports/mk', {
+  rows: (report: CaseReportSlug, asOf?: string, refresh = false) =>
+    api.get<ApiResponse<CaseReportRow[]>>(`/api/v1/case-reports/${report}`, {
       params: { ...(asOf ? { asOf } : {}), ...(refresh ? { refresh: true } : {}) },
       timeout: 120_000,
       skipRetry: true,
     }),
 
   /** Overwrite one row of the stored draft for a date. Refused once it has been sent. */
-  editMkRow: (asOf: string, sourceItemId: string, body: CaseRowEdit) =>
+  editRow: (report: CaseReportSlug, asOf: string, sourceItemId: string, body: CaseRowEdit) =>
     api.put<ApiResponse<CaseReportRow>>(
-      `/api/v1/case-reports/mk/rows/${encodeURIComponent(sourceItemId)}`,
+      `/api/v1/case-reports/${report}/rows/${encodeURIComponent(sourceItemId)}`,
       body,
       { params: { asOf } },
     ),
 
   /** Append a row the board does not have. It is kept through regeneration. */
-  addMkRow: (asOf: string, body: CaseRowEdit) =>
-    api.post<ApiResponse<CaseReportRow>>('/api/v1/case-reports/mk/rows', body, {
+  addRow: (report: CaseReportSlug, asOf: string, body: CaseRowEdit) =>
+    api.post<ApiResponse<CaseReportRow>>(`/api/v1/case-reports/${report}/rows`, body, {
       params: { asOf },
     }),
 
   /** Remove a row that was added by hand. Board rows are refused. */
-  removeMkRow: (asOf: string, sourceItemId: string) =>
+  removeRow: (report: CaseReportSlug, asOf: string, sourceItemId: string) =>
     api.delete<ApiResponse<void>>(
-      `/api/v1/case-reports/mk/rows/${encodeURIComponent(sourceItemId)}`,
+      `/api/v1/case-reports/${report}/rows/${encodeURIComponent(sourceItemId)}`,
       { params: { asOf } },
     ),
 };

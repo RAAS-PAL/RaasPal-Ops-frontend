@@ -750,7 +750,9 @@
       "autoxing": "AutoXing report",
       "cmNew": "New report",
       "cmHistory": "History",
-      "caseMk": "MK pending"
+      "caseMk": "MK pending",
+      "caseCleaning": "Cleaning pending",
+      "caseMakro": "Makro pending"
     }
   },
   "userMenu": {
