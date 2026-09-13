@@ -29,6 +29,7 @@ import {
   X,
 } from 'lucide-react';
 import { partnerApi, robotUnitApi } from '@/lib/api';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import type {
   ApiKeyResponse,
@@ -241,6 +242,8 @@ function PartnerDetail({
   partnerNameById: Map<string, string>;
 }) {
   const t = useTranslations('partnersPanel');
+  const tCommon = useTranslations('common');
+  const { confirm, confirmDialog } = useConfirm();
   const queryClient = useQueryClient();
   const [keyLabel, setKeyLabel] = useState('');
   /** '' = never expires; otherwise a day count. */
@@ -426,7 +429,12 @@ function PartnerDetail({
           <ul className="space-y-1.5">
             {keys.map((k) => (
               <KeyRow key={k.id} k={k} onRevoke={() => {
-                if (confirm(t('revokeConfirm'))) revokeMutation.mutate(k.id);
+                void confirm({
+                  title: t('revoke'),
+                  kind: 'warn',
+                  confirmLabel: t('revoke'),
+                  message: t('revokeConfirm'),
+                }).then((ok) => ok && revokeMutation.mutate(k.id));
               }} revoking={revokeMutation.isPending} t={t} />
             ))}
           </ul>
@@ -559,9 +567,15 @@ function PartnerDetail({
                 <button
                   type="button"
                   onClick={() => {
-                    if (confirm(t('unassignConfirm', { robot: robotDisplayName(r), partner: partner.name }))) {
+                    void confirm({
+                      title: t('unassignConfirm', { robot: robotDisplayName(r), partner: partner.name }),
+                      kind: 'warn',
+                      confirmLabel: tCommon('confirm'),
+                      message: t('unassignConfirm', { robot: robotDisplayName(r), partner: partner.name }),
+                    }).then((ok) => {
+                      if (!ok) return;
                       unassignMutation.mutate(r.deployment!.deploymentId);
-                    }
+                    });
                   }}
                   disabled={unassignMutation.isPending}
                   aria-label={t('unassign')}
@@ -574,6 +588,7 @@ function PartnerDetail({
           </ul>
         )}
       </section>
+      {confirmDialog}
     </div>
   );
 }

@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react';
 import { customerApi, reportApi } from '@/lib/api';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import type { CustomerResponse, ReportSend } from '@/types/api';
 
 /** Dropdown label: append the branch so same-company branches are distinguishable. */
@@ -63,6 +64,7 @@ const STATUS_ICON: Record<ReportSend['status'], React.ReactNode> = {
 };
 
 export function ReportAutomationPanel() {
+  const { confirm, confirmDialog } = useConfirm();
   const [month, setMonth] = useState(previousMonth);
   const [customerId, setCustomerId] = useState('');
   /** Customers held back from "Run delivery now" (e.g. a site not fully registered yet). */
@@ -158,7 +160,21 @@ export function ReportAutomationPanel() {
         </label>
         <button
           type="button"
-          onClick={() => runMutation.mutate()}
+          onClick={() =>
+            void confirm({
+              title: 'Send this month\'s reports to every customer?',
+              kind: 'send',
+              confirmLabel: 'Send to all customers',
+              message: (
+                <>
+                  Every eligible customer receives their {month} performance report by email
+                  {excludedIds.size > 0 ? ` — except the ${excludedIds.size} you excluded` : ''}.
+                  Customers already sent this month are skipped. This cannot be recalled once it
+                  starts.
+                </>
+              ),
+            }).then((ok) => ok && runMutation.mutate())
+          }
           disabled={runMutation.isPending || running}
           title={
             excludedIds.size > 0
@@ -282,7 +298,21 @@ export function ReportAutomationPanel() {
           </select>
           <button
             type="button"
-            onClick={() => customerId && sendMutation.mutate(customerId)}
+            onClick={() => {
+              const target = customers.find((c) => c.id === customerId);
+              if (!target) return;
+              void confirm({
+                title: 'Email this report to the customer?',
+                kind: 'send',
+                confirmLabel: 'Send report',
+                message: (
+                  <>
+                    <strong>{customerLabel(target)}</strong> receives their {month} performance
+                    report by email. The send is recorded, so the full run skips them.
+                  </>
+                ),
+              }).then((ok) => ok && sendMutation.mutate(customerId));
+            }}
             disabled={!customerId || sendMutation.isPending || running}
             title="Email this customer their bundle for the selected month (recorded so the full run skips them)"
             className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
@@ -382,7 +412,19 @@ export function ReportAutomationPanel() {
                 {row.status !== 'SENT' && (
                   <button
                     type="button"
-                    onClick={() => sendMutation.mutate(row.customerProfileId)}
+                    onClick={() =>
+                      void confirm({
+                        title: 'Resend this report?',
+                        kind: 'send',
+                        confirmLabel: 'Send report',
+                        message: (
+                          <>
+                            <strong>{row.customerName}</strong> receives their {month} performance
+                            report by email.
+                          </>
+                        ),
+                      }).then((ok) => ok && sendMutation.mutate(row.customerProfileId))
+                    }
                     disabled={sendMutation.isPending}
                     className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm font-semibold text-[var(--app-brand-dark)] transition hover:border-[var(--app-brand)] disabled:opacity-50"
                   >
@@ -399,6 +441,7 @@ export function ReportAutomationPanel() {
           </ul>
         )}
       </div>
+      {confirmDialog}
     </div>
   );
 }

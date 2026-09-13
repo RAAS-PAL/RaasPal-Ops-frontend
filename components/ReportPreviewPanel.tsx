@@ -32,6 +32,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { reportApi, robotUnitApi, telemetryApi } from '@/lib/api';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { MonthlyReportView } from '@/components/report/MonthlyReportView';
 import { sampleGausiumReport } from '@/lib/reports/gausium';
 import { monthYearLabel } from '@/lib/reports/preview';
@@ -100,6 +101,7 @@ const CADENCE_LABEL: Record<string, string> = { MONTHLY: 'Monthly', WEEKLY: 'Wee
 const PAGE_SIZE = 10;
 
 export function ReportPreviewPanel() {
+  const { confirm, confirmDialog } = useConfirm();
   const [query, setQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -264,7 +266,20 @@ export function ReportPreviewPanel() {
             {isRobot && (
               <button
                 type="button"
-                onClick={() => emailMutation.mutate()}
+                onClick={() =>
+                  void confirm({
+                    title: 'Email this report to the customer?',
+                    kind: 'send',
+                    confirmLabel: 'Send report email',
+                    message: (
+                      <>
+                        The {periodLabel} report for <strong>{robotSn}</strong> goes to{' '}
+                        <strong>{selection.kind === 'robot' ? (selection.robot.deployment?.customerName ?? 'the customer') : 'the customer'}</strong>
+                        {' '}at their contact email. It cannot be recalled once sent.
+                      </>
+                    ),
+                  }).then((ok) => ok && emailMutation.mutate())
+                }
                 disabled={emailMutation.isPending || isWeekly}
                 title={isWeekly ? WEEKLY_SEND_NOTE : "Email this report link to the customer's contact email"}
                 className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
@@ -333,6 +348,7 @@ export function ReportPreviewPanel() {
             <MonthlyReportView report={report} />
           </div>
         )}
+        {confirmDialog}
       </div>
     );
   }
