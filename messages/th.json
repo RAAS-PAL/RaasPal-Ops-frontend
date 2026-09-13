@@ -865,5 +865,14 @@
       "showing": "{count} จาก {total}",
       "noMatches": "ไม่พบบริษัทที่ค้นหา"
     }
+  },
+  "solutionsHub": {
+    "eyebrow": "พื้นที่สร้างโซลูชัน",
+    "title": "โซลูชัน",
+    "tabs": {
+      "generate": "สร้างโซลูชัน",
+      "solutions": "โซลูชันทั้งหมด",
+      "proposals": "ข้อเสนอ"
+    }
   }
 }

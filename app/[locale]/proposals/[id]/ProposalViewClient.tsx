@@ -86,7 +86,7 @@ export function ProposalViewClient({ id }: ProposalViewClientProps) {
             {/* Back */}
             <Link
               className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--app-muted)] hover:text-[var(--app-brand-dark)]"
-              href="/proposals"
+              href="/solutions?tab=proposals"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to proposals

@@ -52,8 +52,8 @@ export async function Header() {
         <nav className="hidden sm:flex items-center gap-1" aria-label="Main navigation">
           {[
             { href: '/dashboard',    label: t('dashboard')    },
-            { href: '/generate-solution', label: t('generateSolution') },
-            { href: '/solutions',    label: t('solutions')    },
+            { href: '/solutions?tab=generate', label: t('generateSolution') },
+            { href: '/solutions?tab=solutions', label: t('solutions') },
             { href: '/robots',       label: t('robots')       },
           ].map(({ href, label }) => (
             <Link
