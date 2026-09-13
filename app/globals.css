@@ -92,6 +92,47 @@
   --app-hero-soft: rgba(255, 255, 255, 0.08);
 }
 
+/* ─── No drawn edges on layout ────────────────────────────────────────────────
+   The app's layout lines are all drawn with one token, `border-[var(--app-border)]`:
+   the outline of every card (85 places), the sidebar's right edge, the top bar's
+   bottom edge, the section dividers and the small chips. Rather than touch each
+   one, the token's colour is switched off here for every layout element, so the
+   page reads as surfaces on a ground rather than a grid of frames. Cards get a
+   soft lift in place of the outline so they still separate from the page.
+
+   What keeps its edge: form fields and buttons (an input without an edge is not
+   findable), table internals (header rule, row dividers — these are reading aids,
+   not frames), coloured alert boxes (border-red-200 etc. carry meaning) and the
+   dashed "add" tile, which uses the strong token.
+   Unlayered on purpose: it must beat the Tailwind utility it replaces.
+─────────────────────────────────────────────────────────────────────────── */
+:is(div, section, article, aside, nav, header, footer, main, a, ul, ol, li, p, span,
+    label, h1, h2, h3, h4, form, figure, details, summary, dl, dt, dd).border-\[var\(--app-border\)\] {
+  border-color: transparent;
+}
+
+:is(div, section, article, a).rounded-xl.border-\[var\(--app-border\)\],
+:is(div, section, article, a).rounded-2xl.border-\[var\(--app-border\)\] {
+  box-shadow:
+    0 1px 2px rgba(16, 37, 50, 0.04),
+    0 4px 14px rgba(16, 37, 50, 0.06);
+}
+
+/* Link cards used to show a brand-coloured edge on hover; the lift deepens instead. */
+a.rounded-xl.border-\[var\(--app-border\)\]:hover,
+a.rounded-2xl.border-\[var\(--app-border\)\]:hover {
+  box-shadow:
+    0 2px 4px rgba(16, 37, 50, 0.06),
+    0 10px 24px rgba(16, 37, 50, 0.10);
+}
+
+.dark :is(div, section, article, a).rounded-xl.border-\[var\(--app-border\)\],
+.dark :is(div, section, article, a).rounded-2xl.border-\[var\(--app-border\)\] {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 4px 14px rgba(0, 0, 0, 0.30);
+}
+
 /* ─── Login page (Bold & Premium) ─────────────────────────────────────────────
    Animated glow orbs + slow aurora drift for the gradient brand panel.
    Scoped to opt-in utility classes so nothing else in the app is affected.
