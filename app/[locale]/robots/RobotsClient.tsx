@@ -18,10 +18,10 @@ import type { RobotResponse, RobotType } from '@/types/api';
 
 /**
  * Rows drawn before the reader scrolls, and the number added each time they reach the
- * end. Twelve rather than the nine the pages used to hold: a page had to fit, a list
- * only has to fill the screen it is on.
+ * end. Twenty fills a tall screen in one batch, which is the point: a batch that does
+ * not reach the bottom of the window is revealed and immediately asked for again.
  */
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 20;
 
 export type RobotsView = 'catalog' | 'specs';
 
