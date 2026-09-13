@@ -43,22 +43,28 @@ interface FormState {
   province: string;
 }
 
-const EMPTY: FormState = {
-  project: 'MK',
-  branch: '',
-  robot: 'Pudu 1',
-  serialNumber: '',
-  problem: '',
-  solution: '',
-  openDate: '',
-  reOnSite: '',
-  days: '',
-  sla: '',
-  province: '',
-};
+/** What a new row starts with; the sheet decides the customer and the usual robot. */
+export interface NewRowDefaults {
+  project: string;
+  robot: string;
+}
 
-function toForm(row: CaseReportRow | null): FormState {
-  if (!row) return EMPTY;
+function toForm(row: CaseReportRow | null, defaults: NewRowDefaults): FormState {
+  if (!row) {
+    return {
+      project: defaults.project,
+      branch: '',
+      robot: defaults.robot,
+      serialNumber: '',
+      problem: '',
+      solution: '',
+      openDate: '',
+      reOnSite: '',
+      days: '',
+      sla: '',
+      province: '',
+    };
+  }
   return {
     project: row.project ?? '',
     branch: row.branch ?? '',
@@ -99,6 +105,8 @@ const LABEL = 'text-xs font-semibold uppercase tracking-wide text-[var(--app-mut
 interface Props {
   /** The row to correct, or null to add one. */
   row: CaseReportRow | null;
+  /** Pre-filled when `row` is null. */
+  newRow: NewRowDefaults;
   saving: boolean;
   error: string | null;
   onSave: (edit: CaseRowEdit) => void;
@@ -107,8 +115,8 @@ interface Props {
   onClose: () => void;
 }
 
-export function CaseRowEditDialog({ row, saving, error, onSave, onRemove, onClose }: Props) {
-  const [form, setForm] = useState<FormState>(() => toForm(row));
+export function CaseRowEditDialog({ row, newRow, saving, error, onSave, onRemove, onClose }: Props) {
+  const [form, setForm] = useState<FormState>(() => toForm(row, newRow));
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
   const adding = row === null;

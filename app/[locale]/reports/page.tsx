@@ -9,6 +9,8 @@ const VALID_TABS: readonly string[] = [
   'cm-new',
   'cm-history',
   'case-mk',
+  'case-cleaning',
+  'case-makro',
 ];
 
 export default async function ReportsPage({

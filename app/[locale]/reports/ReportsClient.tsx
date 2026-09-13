@@ -12,7 +12,7 @@ import { ReportPreviewPanel } from '@/components/ReportPreviewPanel';
 import { AutoxingReportPanel } from '@/components/AutoxingReportPanel';
 import { CmReportPanel } from '@/components/CmReportPanel';
 import { CmReportHistoryPanel } from '@/components/CmReportHistoryPanel';
-import { CasePendingPanel } from '@/components/CasePendingPanel';
+import { CASE_REPORTS, CasePendingPanel } from '@/components/CasePendingPanel';
 
 const REPORT_TABS = [
   'automation',
@@ -23,6 +23,8 @@ const REPORT_TABS = [
   'cm-new',
   'cm-history',
   'case-mk',
+  'case-cleaning',
+  'case-makro',
 ] as const;
 
 export type ReportTab = (typeof REPORT_TABS)[number];
@@ -44,6 +46,8 @@ const TAB_GROUP: Record<ReportTab, 'performance' | 'cm' | 'case'> = {
   'cm-new': 'cm',
   'cm-history': 'cm',
   'case-mk': 'case',
+  'case-cleaning': 'case',
+  'case-makro': 'case',
 };
 
 type ReportGroup = 'performance' | 'cm' | 'case';
@@ -87,6 +91,8 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
     ],
     case: [
       { id: 'case-mk', label: t('tabs.caseMk'), icon: <ClipboardList className="h-4 w-4" /> },
+      { id: 'case-cleaning', label: t('tabs.caseCleaning'), icon: <ClipboardList className="h-4 w-4" /> },
+      { id: 'case-makro', label: t('tabs.caseMakro'), icon: <ClipboardList className="h-4 w-4" /> },
     ],
   };
 
@@ -154,7 +160,9 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
             {tab === 'autoxing' && <AutoxingReportPanel />}
             {tab === 'cm-new' && <CmReportPanel />}
             {tab === 'cm-history' && <CmReportHistoryPanel />}
-            {tab === 'case-mk' && <CasePendingPanel />}
+            {tab === 'case-mk' && <CasePendingPanel report={CASE_REPORTS.mk} />}
+            {tab === 'case-cleaning' && <CasePendingPanel report={CASE_REPORTS.cleaning} />}
+            {tab === 'case-makro' && <CasePendingPanel report={CASE_REPORTS.makro} />}
           </div>
         </section>
       </div>

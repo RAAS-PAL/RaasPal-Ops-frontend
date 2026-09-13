@@ -750,7 +750,9 @@
       "autoxing": "รายงาน AutoXing",
       "cmNew": "สร้างรายงานใหม่",
       "cmHistory": "ประวัติรายงาน",
-      "caseMk": "MK เคสค้าง"
+      "caseMk": "MK เคสค้าง",
+      "caseCleaning": "Cleaning เคสค้าง",
+      "caseMakro": "Makro เคสค้าง"
     }
   },
   "userMenu": {

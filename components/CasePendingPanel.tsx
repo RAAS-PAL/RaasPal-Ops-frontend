@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { caseReportApi } from '@/lib/api';
+import type { CaseReportSlug } from '@/lib/api';
 import { isManualCaseRow } from '@/types/api';
 import type { CaseReportRow, CaseRowEdit, SlaStatus } from '@/types/api';
 import { CaseRowEditDialog } from './CaseRowEditDialog';
@@ -83,17 +84,57 @@ function SlaCell({ row }: { row: CaseReportRow }) {
   );
 }
 
-export function CasePendingPanel() {
+/**
+ * What differs between the sheets: where the rows come from, which of Project/Branch
+ * the sheet prints, and the defaults a new row starts with.
+ */
+export interface CaseReportSpec {
+  slug: CaseReportSlug;
+  /** The monday board the rows come from, for the per-row ticket link. */
+  boardId: string;
+  /** Which of the two site columns this sheet prints; the other is hidden. */
+  columns: ('project' | 'branch')[];
+  /** One line under the controls: what is on the sheet and the SLA rule. */
+  hint: string;
+  /** Pre-filled on "Add row". */
+  newRow: { project: string; robot: string };
+}
+
+export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
+  mk: {
+    slug: 'mk',
+    boardId: '1647612496',
+    columns: ['project', 'branch'],
+    hint: 'MK, Yayoi and Bonus Suki delivery cases. Days counts from the day after the case opened (opened today = 0); the SLA is 3 days inside greater Bangkok, 5 elsewhere.',
+    newRow: { project: 'MK', robot: 'Pudu 1' },
+  },
+  cleaning: {
+    slug: 'cleaning',
+    boardId: '3451717331',
+    columns: ['project'],
+    hint: 'Every open cleaning case except Makro’s and the airports’, which have their own sheets. Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
+    newRow: { project: '', robot: 'M50' },
+  },
+  makro: {
+    slug: 'makro',
+    boardId: '3451717331',
+    columns: ['branch'],
+    hint: 'Makro’s cleaning cases. Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
+    newRow: { project: 'Makro', robot: 'Omnie' },
+  },
+};
+
+export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
   const [asOf, setAsOf] = useState<string>(todayInBangkok());
   // The row being corrected, 'new' for one being added, null when the dialog is closed.
   const [editing, setEditing] = useState<CaseReportRow | 'new' | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  const queryKey = ['case-report', 'mk', asOf];
+  const queryKey = ['case-report', report.slug, asOf];
 
   const { data: rows = [], isFetching, isError, error, refetch } = useQuery({
     queryKey,
-    queryFn: async () => (await caseReportApi.mk(asOf)).data.data ?? [],
+    queryFn: async () => (await caseReportApi.rows(report.slug, asOf)).data.data ?? [],
     staleTime: 0,
     refetchOnWindowFocus: false,
   });
@@ -101,7 +142,7 @@ export function CasePendingPanel() {
   // Re-read the board into the stored draft. Edited rows come through untouched, which
   // is why this needs no confirmation: it cannot undo anyone's work.
   const regenerate = useMutation({
-    mutationFn: async () => (await caseReportApi.mk(asOf, true)).data.data ?? [],
+    mutationFn: async () => (await caseReportApi.rows(report.slug, asOf, true)).data.data ?? [],
     onSuccess: (fresh) => queryClient.setQueryData(queryKey, fresh),
   });
 
@@ -113,8 +154,8 @@ export function CasePendingPanel() {
   const save = useMutation({
     mutationFn: (edit: CaseRowEdit) =>
       editing === 'new'
-        ? caseReportApi.addMkRow(asOf, edit).then((r) => r.data.data)
-        : caseReportApi.editMkRow(asOf, editing!.sourceItemId!, edit).then((r) => r.data.data),
+        ? caseReportApi.addRow(report.slug, asOf, edit).then((r) => r.data.data)
+        : caseReportApi.editRow(report.slug, asOf, editing!.sourceItemId!, edit).then((r) => r.data.data),
     onSuccess: (saved) => {
       queryClient.setQueryData<CaseReportRow[]>(queryKey, (current) => {
         const list = current ?? [];
@@ -128,7 +169,7 @@ export function CasePendingPanel() {
   });
 
   const remove = useMutation({
-    mutationFn: (sourceItemId: string) => caseReportApi.removeMkRow(asOf, sourceItemId),
+    mutationFn: (sourceItemId: string) => caseReportApi.removeRow(report.slug, asOf, sourceItemId),
     onSuccess: (_, sourceItemId) => {
       // Renumber locally the way the backend did, so No stays contiguous without a refetch.
       queryClient.setQueryData<CaseReportRow[]>(queryKey, (current) =>
@@ -142,6 +183,8 @@ export function CasePendingPanel() {
   });
 
   const busy = isFetching || regenerate.isPending;
+  const showProject = report.columns.includes('project');
+  const showBranch = report.columns.includes('branch');
   const breached = rows.filter((r) => r.sla === 'BREACHED').length;
   const onHold = rows.filter((r) => r.sla === 'ON_HOLD').length;
   const unknown = rows.filter((r) => r.sla === 'UNKNOWN').length;
@@ -203,9 +246,7 @@ export function CasePendingPanel() {
         </button>
 
         <p className="ml-auto max-w-md text-xs text-[var(--app-muted)]">
-          MK, Yayoi and Bonus Suki delivery cases. Days counts from the day after the case
-          opened (opened today = 0); the SLA is 3 days inside greater Bangkok, 5 elsewhere.
-          Click a row&apos;s pencil to correct it.
+          {report.hint} Click a row&apos;s pencil to correct it.
         </p>
       </div>
 
@@ -264,8 +305,8 @@ export function CasePendingPanel() {
           <thead className="border-b border-[var(--app-border)] text-xs uppercase tracking-wide text-[var(--app-muted)]">
             <tr>
               <th className="px-3 py-2.5 font-semibold">No</th>
-              <th className="px-3 py-2.5 font-semibold">Project</th>
-              <th className="px-3 py-2.5 font-semibold">Branch</th>
+              {showProject && <th className="px-3 py-2.5 font-semibold">Project</th>}
+              {showBranch && <th className="px-3 py-2.5 font-semibold">Branch</th>}
               <th className="px-3 py-2.5 font-semibold">Robot</th>
               <th className="px-3 py-2.5 font-semibold">SN</th>
               <th className="px-3 py-2.5 font-semibold">Problem</th>
@@ -299,8 +340,10 @@ export function CasePendingPanel() {
                     </span>
                   )}
                 </td>
-                <td className="px-3 py-2.5 whitespace-nowrap font-medium">{row.project ?? '—'}</td>
-                <td className="px-3 py-2.5">{row.branch ?? '—'}</td>
+                {showProject && (
+                  <td className="px-3 py-2.5 font-medium">{row.project ?? '—'}</td>
+                )}
+                {showBranch && <td className="px-3 py-2.5">{row.branch ?? '—'}</td>}
                 <td className="px-3 py-2.5 whitespace-nowrap">{row.robot ?? '—'}</td>
                 <td className="px-3 py-2.5 whitespace-nowrap font-mono text-xs">
                   {row.serialNumber ?? '—'}
@@ -334,7 +377,7 @@ export function CasePendingPanel() {
                       // who spots a bad province has to go and find the ticket by hand.
                       // A row added by hand has no ticket to open.
                       <a
-                        href={`https://raaspal.monday.com/boards/1647612496/pulses/${row.sourceItemId}`}
+                        href={`https://raaspal.monday.com/boards/${report.boardId}/pulses/${row.sourceItemId}`}
                         target="_blank"
                         rel="noreferrer"
                         title="Open this ticket on monday.com"
@@ -366,7 +409,7 @@ export function CasePendingPanel() {
 
             {rows.length === 0 && !isFetching && !isError && (
               <tr>
-                <td colSpan={12} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
+                <td colSpan={10 + report.columns.length} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
                   No cases generated yet. Pick a date and press Generate.
                 </td>
               </tr>
@@ -385,6 +428,7 @@ export function CasePendingPanel() {
         <CaseRowEditDialog
           key={editing === 'new' ? 'new' : (editing.sourceItemId ?? editing.no)}
           row={editing === 'new' ? null : editing}
+          newRow={report.newRow}
           saving={save.isPending || remove.isPending}
           error={editError}
           onSave={(edit) => save.mutate(edit)}
