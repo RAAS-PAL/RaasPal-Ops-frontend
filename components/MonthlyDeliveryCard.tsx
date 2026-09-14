@@ -34,7 +34,11 @@ export function MonthlyDeliveryCard() {
 
   const running = status.data?.running ?? false;
   const rows = history.data ?? [];
-  const sentCustomerIds = new Set(rows.filter((r) => r.status === 'SENT').map((r) => r.customerProfileId));
+  // Coverage means the bundle reached them. A single robot's report sent from the
+  // preview tab is in the same history but is not the month's delivery.
+  const sentCustomerIds = new Set(
+    rows.filter((r) => r.status === 'SENT' && r.kind === 'BUNDLE').map((r) => r.customerProfileId),
+  );
   const totalCustomers = customers.data?.length ?? 0;
   const coverage = totalCustomers > 0 ? Math.round((sentCustomerIds.size / totalCustomers) * 100) : 0;
 
@@ -74,7 +78,7 @@ export function MonthlyDeliveryCard() {
         </div>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--app-faint)]">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[var(--app-brand)] to-[var(--app-brand-dark)] transition-[width] duration-500"
+            className="h-full rounded-full bg-[var(--app-brand)] transition-[width] duration-500"
             style={{ width: `${coverage}%` }}
           />
         </div>

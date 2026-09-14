@@ -394,6 +394,15 @@ export function ReportAutomationPanel() {
                       {STATUS_ICON[row.status]}
                       {row.status}
                     </span>
+                    {/* What went out. A robot report is one machine's page from the
+                        preview tab, not the month's bundle - it does not make the
+                        customer "delivered", so the badge keeps the two apart. */}
+                    {row.kind === 'ROBOT_REPORT' && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--app-faint)] px-2 py-0.5 text-xs font-semibold text-[var(--app-muted)]">
+                        Robot report
+                        {row.robotSerial && <span className="font-mono font-normal">{row.robotSerial}</span>}
+                      </span>
+                    )}
                     <span className="truncate">{row.customerName}</span>
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--app-muted)]">
@@ -409,7 +418,9 @@ export function ReportAutomationPanel() {
                     )}
                   </div>
                 </div>
-                {row.status !== 'SENT' && (
+                {/* Resend sends the bundle, so it is offered on bundle rows only; a
+                    failed robot report is retried from the Preview tab. */}
+                {row.status !== 'SENT' && row.kind === 'BUNDLE' && (
                   <button
                     type="button"
                     onClick={() =>
