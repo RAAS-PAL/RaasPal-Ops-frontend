@@ -121,13 +121,20 @@ export function PmYearGrid({ data, locale, onSelectWeek }: Props) {
   }
 
   return (
-    <div className="space-y-3">
+    // The page hands this component a bounded height and the scroll box takes what is
+    // left, so all vertical scrolling happens inside the box. That is what makes the
+    // sticky header and LOAD rows below actually hold: their top offsets were always
+    // correct, but the box used to be a max-height island inside a scrolling page, so
+    // the page carried the whole box - headers included - out of view before the box
+    // had anything of its own to scroll. min-h-0 is needed on both: a flex child
+    // defaults to min-height:auto and refuses to shrink below its content, which would
+    // hand the overflow straight back to the page.
+    <div className="flex min-h-0 flex-1 flex-col gap-3 print:block print:min-h-0">
       <Legend />
 
       <div
         ref={scrollRef}
-        className="overflow-auto rounded-xl border border-[var(--app-border)]"
-        style={{ maxHeight: '75vh' }}
+        className="min-h-0 flex-1 overflow-auto rounded-xl border border-[var(--app-border)]"
       >
         <div className="relative w-max" onMouseOver={trackColumn} onMouseLeave={hideColumn}>
           {/* Sits above the cells but below the sticky header and site column, so it
@@ -138,7 +145,12 @@ export function PmYearGrid({ data, locale, onSelectWeek }: Props) {
             className="pointer-events-none absolute bottom-0 left-0 top-0 z-[5] bg-[var(--app-brand)]/15 opacity-0"
             style={{ width: 0 }}
           />
-        <table className="w-max border-collapse text-xs">
+        {/* Separate borders, not collapsed. Collapsed borders belong to the table, so a
+            cell's box stops short of the line and only the box moves when it sticks -
+            which left a hairline along every row boundary of the frozen header that no
+            pinned cell painted, with the scrolling rows visible through it. Separate
+            with zero spacing puts each border inside its own cell, so it sticks too. */}
+        <table className="w-max border-separate border-spacing-0 text-xs">
           <thead>
             {/* Month band — the coarse anchor. */}
             <tr>
@@ -170,16 +182,25 @@ export function PmYearGrid({ data, locale, onSelectWeek }: Props) {
                   key={column.week}
                   scope="col"
                   data-week={column.week}
-                  className={`sticky z-30 border-b border-[var(--app-border)] p-0 text-center font-semibold ${
+                  // Opaque base, with the tint composited on top of it. A sticky cell
+                  // is see-through wherever it has no background of its own, and
+                  // columnTint is deliberately translucent - and empty on even months -
+                  // so using it as the background let the rows underneath scroll
+                  // straight through this frozen row: red status blocks, borders, bars.
+                  className={`group/week sticky z-30 border-b border-[var(--app-border)] bg-[var(--app-panel-soft)] p-0 text-center font-semibold ${
                     column.isMonthStart ? 'border-l-2 border-l-[var(--app-border-strong)]' : ''
-                  } ${columnTint(column)} hover:bg-[var(--app-brand)]/15`}
+                  }`}
                   style={{ top: MONTH_ROW_H, height: WEEK_ROW_H }}
                 >
+                  <span
+                    aria-hidden
+                    className={`pointer-events-none absolute inset-0 ${columnTint(column)} group-hover/week:bg-[var(--app-brand)]/15`}
+                  />
                   <button
                     type="button"
                     onClick={() => onSelectWeek(column.week)}
                     title={`${t('grid.week')} ${column.week} · ${weekRangeLabel(data.year, column.week, locale)}`}
-                    className={`h-full w-8 text-[10px] font-bold transition ${
+                    className={`relative h-full w-8 text-[10px] font-bold transition ${
                       column.isCurrentWeek
                         ? 'text-[var(--app-brand-dark)]'
                         : 'text-[var(--app-muted)] hover:text-[var(--app-brand-dark)]'
@@ -206,13 +227,18 @@ export function PmYearGrid({ data, locale, onSelectWeek }: Props) {
                 return (
                   <td
                     key={column.week}
+                    // As the week row above: the panel background has to stay unmixed
+                    // with columnTint. Both are bg utilities, so they collided and CSS
+                    // source order decided the winner - which is how a row meant to be
+                    // frozen ended up translucent.
                     className={`sticky z-20 border-b border-[var(--app-border)] bg-[var(--app-panel-soft)] p-0 align-bottom ${
                       column.isMonthStart ? 'border-l-2 border-l-[var(--app-border-strong)]' : ''
-                    } ${columnTint(column)}`}
+                    }`}
                     style={{ top: MONTH_ROW_H + WEEK_ROW_H }}
                     data-week={column.week}
                   >
-                    <div className="flex h-6 w-8 items-end justify-center px-1 pb-0.5">
+                    <span aria-hidden className={`pointer-events-none absolute inset-0 ${columnTint(column)}`} />
+                    <div className="relative flex h-6 w-8 items-end justify-center px-1 pb-0.5">
                       {total ? (
                         <div
                           className="w-full rounded-[2px] bg-[var(--app-brand)]"
@@ -359,7 +385,9 @@ function GroupBlock({
  * it in a per-cell class means re-rendering the whole grid to move it.
  *
  * <p>Translucent rather than solid so it composites over the row-hover highlight
- * instead of cancelling it.
+ * instead of cancelling it, and empty on even months. That makes it unusable as the
+ * background of a sticky cell: the frozen header and LOAD rows need an opaque base of
+ * their own, so there this goes on an inset overlay layered over that base.
  */
 function columnTint(column: WeekColumn): string {
   if (column.isCurrentWeek) return 'bg-[var(--app-brand)]/10';

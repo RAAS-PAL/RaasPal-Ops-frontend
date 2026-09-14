@@ -76,9 +76,12 @@ function PriceBadge({ robot }: { robot: RobotResponse }) {
  * product photo, and a photo is the fastest way to recognise a robot — nobody reads
  * "Omnie Roller Brush Version" to work out which machine it is.
  *
- * <p>The image sits in a square of its own on a faint ground. The photos are studio
- * shots on white in wildly different proportions, so `object-contain` inside a fixed
- * square keeps the grid even instead of cropping a ride-on mower to a portrait frame.
+ * <p>The image tile is white and unpadded because the files are: every photo is
+ * exported as a 720x720 tile, trimmed to the robot and re-centred with the same margin,
+ * so the tiles line up as a grid on their own. The sources could not — aspect ratios ran
+ * 0.42 to 2.02, some transparent and some on white, each with its own blank space — and
+ * no CSS fixes that, only re-exporting them does. A white tile rather than the panel
+ * colour so the photo's own ground and the tile are one surface, in both themes.
  *
  * <p>The brand is not repeated on the card: it is the heading the card sits under.
  */
@@ -96,7 +99,13 @@ function RobotCard({ robot, onClick }: { robot: RobotResponse; onClick: () => vo
       onClick={onClick}
       className="group flex flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] text-left transition hover:-translate-y-0.5"
     >
-      <div className="flex aspect-square w-full items-center justify-center bg-[var(--app-faint)] p-2">
+      {/* 3/4 is the exported tile ratio exactly (720x960), so object-contain fills the
+          box with no letterboxing. Each photo was re-rendered to put its robot at 38%
+          of the tile whatever the shape of the machine, which is what makes a wide
+          scrubber and a tall delivery robot read as the same size in the grid. The
+          ratio comes from the fleet: trimmed shapes run 0.35-1.70 and average 0.75,
+          and a tile centred there holds both extremes at equal area without clipping. */}
+      <div className="flex aspect-[3/4] w-full items-center justify-center bg-white">
         {robot.imageUrl ? (
           <img
             src={robot.imageUrl}

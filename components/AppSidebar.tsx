@@ -38,8 +38,15 @@ export function AppSidebar() {
   return (
     // print:hidden — see AppTopBar. Navigation never belongs in a printed document,
     // and leaving it in also narrows the printable width of the report beside it.
+    // sticky + h-dvh: the page itself scrolls, so as a plain flex child the nav slid
+    // away up the screen on any long list — the catalogue, the pending-case table —
+    // and getting to another section meant scrolling back to the top first. Sticky
+    // keeps it against the viewport without taking the whole shell into a fixed-height
+    // layout, which would change how every page scrolls and how they print. Its own
+    // overflow-y-auto is for the short-window case: a 600px-tall window cannot fit
+    // eight nav items plus the account card, and without it the card is unreachable.
     <aside
-      className={`hidden shrink-0 border-r border-[var(--app-border)] bg-[var(--app-panel-soft)] px-4 py-5 transition-[width] duration-200 print:hidden lg:flex lg:flex-col ${
+      className={`sticky top-0 hidden h-dvh shrink-0 overflow-y-auto border-r border-[var(--app-border)] bg-[var(--app-panel-soft)] px-4 py-5 transition-[width] duration-200 print:hidden lg:flex lg:flex-col ${
         collapsed ? 'w-20' : 'w-64 xl:w-72'
       }`}
     >
