@@ -2,15 +2,19 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Bot, Handshake, Radio, Users } from 'lucide-react';
+import { Bot, Handshake, Mail, Radio, Users } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { CvteMonitorPanel } from '@/components/CvteMonitorPanel';
 import { CustomersPanel } from '@/components/CustomersPanel';
+import { CustomerEmailPanel } from '@/components/CustomerEmailPanel';
 import { RobotsPanel } from '@/components/RobotsPanel';
 import { PartnersPanel } from '@/components/PartnersPanel';
 
-const TOOL_TABS = ['monitor', 'customers', 'robots', 'partners'] as const;
+// 'email' sits beside 'customers' rather than in Reports, where it used to live under
+// the Gausium performance reports: it writes a message to whichever customers are
+// picked and has nothing to do with a robot's telemetry.
+const TOOL_TABS = ['monitor', 'customers', 'email', 'robots', 'partners'] as const;
 
 export type ToolTab = (typeof TOOL_TABS)[number];
 
@@ -27,6 +31,7 @@ export function ToolsClient({ initialTab = 'monitor' }: { initialTab?: ToolTab }
   const tabs: { id: ToolTab; label: string; icon: React.ReactNode }[] = [
     { id: 'monitor', label: t('tabs.monitor'), icon: <Radio className="h-4 w-4" /> },
     { id: 'customers', label: t('tabs.customers'), icon: <Users className="h-4 w-4" /> },
+    { id: 'email', label: t('tabs.email'), icon: <Mail className="h-4 w-4" /> },
     { id: 'robots', label: t('tabs.robots'), icon: <Bot className="h-4 w-4" /> },
     { id: 'partners', label: t('tabs.partners'), icon: <Handshake className="h-4 w-4" /> },
   ];
@@ -63,6 +68,7 @@ export function ToolsClient({ initialTab = 'monitor' }: { initialTab?: ToolTab }
 
             {tab === 'monitor' && <CvteMonitorPanel />}
             {tab === 'customers' && <CustomersPanel />}
+            {tab === 'email' && <CustomerEmailPanel />}
             {tab === 'robots' && <RobotsPanel />}
             {tab === 'partners' && <PartnersPanel />}
           </div>
