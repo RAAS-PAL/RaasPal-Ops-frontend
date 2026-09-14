@@ -531,7 +531,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
 
       <p className="text-xs text-[var(--app-muted)]">
         {parts
-          ? 'Required Part, Waiting, Waiting From and Part Received are read from the board’s own columns; nothing is written by AI. Corrections made here are saved to this date’s report only; the monday ticket is never changed.'
+          ? 'Required Part, Waiting, Waiting From and Part Received are written from each ticket’s comment thread, in the team’s wording; a value typed into the board’s own columns wins. A blank cell means the thread did not say. Corrections made here are saved to this date’s report only; the monday ticket is never changed.'
           : 'Solution is written from each ticket’s comment thread, in the team’s wording. The board’s own Solution cell wins where somebody typed one. Corrections made here are saved to this date’s report only; the monday ticket is never changed.'}
       </p>
 
