@@ -208,7 +208,7 @@ export function DeliveryReportView({ report }: { report: AutoxingDeliveryReport 
       <div className="flex items-center gap-2">
         <Image alt="RAAS PAL" src="/raas-pal-logo.png" width={34} height={34} className="h-9 w-9 object-contain" />
         <div>
-          <p className="text-xl font-extrabold leading-none" style={{ color: '#0b7cc0' }}>RAAS PAL</p>
+          <p className="text-xl font-extrabold leading-none" style={{ color: '#1d4ed8' }}>RAAS PAL</p>
           <p className="text-[8px] font-bold uppercase tracking-[3px]" style={{ color: INK_FAINT }}>
             Robot as a Service
           </p>
@@ -220,8 +220,11 @@ export function DeliveryReportView({ report }: { report: AutoxingDeliveryReport 
         <h1 className="text-[30px] font-extrabold leading-tight tracking-tight" style={{ color: INK }}>
           Executive Robot Performance Report : {report.periodLabel}
         </h1>
+        {/* Flat brand blue, matching the console and the email the customer opened
+            to get here. Hard-coded rather than a token because this page is also
+            rendered to PDF, where CSS variables do not resolve. */}
         <span className="rounded-full px-3 py-1.5 text-xs font-extrabold uppercase tracking-wider text-white"
-              style={{ background: 'linear-gradient(90deg,#16b9d1,#0b7cc0)' }}>
+              style={{ background: '#2563eb' }}>
           Delivery
         </span>
       </div>
