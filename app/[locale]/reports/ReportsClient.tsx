@@ -25,6 +25,7 @@ const REPORT_TABS = [
   'case-mk',
   'case-cleaning',
   'case-makro',
+  'case-aotga',
 ] as const;
 
 export type ReportTab = (typeof REPORT_TABS)[number];
@@ -48,6 +49,7 @@ const TAB_GROUP: Record<ReportTab, 'performance' | 'cm' | 'case'> = {
   'case-mk': 'case',
   'case-cleaning': 'case',
   'case-makro': 'case',
+  'case-aotga': 'case',
 };
 
 type ReportGroup = 'performance' | 'cm' | 'case';
@@ -135,6 +137,7 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
       { id: 'case-mk', label: t('tabs.caseMk'), icon: <ClipboardList className="h-4 w-4" /> },
       { id: 'case-cleaning', label: t('tabs.caseCleaning'), icon: <ClipboardList className="h-4 w-4" /> },
       { id: 'case-makro', label: t('tabs.caseMakro'), icon: <ClipboardList className="h-4 w-4" /> },
+      { id: 'case-aotga', label: t('tabs.caseAotga'), icon: <ClipboardList className="h-4 w-4" /> },
     ],
   };
 
@@ -237,6 +240,7 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
             {tab === 'case-mk' && <CasePendingPanel report={CASE_REPORTS.mk} />}
             {tab === 'case-cleaning' && <CasePendingPanel report={CASE_REPORTS.cleaning} />}
             {tab === 'case-makro' && <CasePendingPanel report={CASE_REPORTS.makro} />}
+            {tab === 'case-aotga' && <CasePendingPanel report={CASE_REPORTS.aotga} />}
           </div>
         </section>
       </div>

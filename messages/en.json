@@ -751,7 +751,8 @@
       "cmHistory": "History",
       "caseMk": "MK pending",
       "caseCleaning": "Cleaning pending",
-      "caseMakro": "Makro pending"
+      "caseMakro": "Makro pending",
+      "caseAotga": "AOTGA pending"
     },
     "brands": {
       "gausium": "Gausium",

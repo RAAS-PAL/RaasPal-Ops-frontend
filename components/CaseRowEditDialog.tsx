@@ -184,7 +184,12 @@ export function CaseRowEditDialog({ row, newRow, saving, error, onSave, onRemove
               </label>
               <label className="flex flex-col gap-1.5 sm:col-span-2">
                 <span className={LABEL}>Solution</span>
-                <textarea className={FIELD} rows={4} value={form.solution} onChange={(e) => set('solution', e.target.value)} />
+                <textarea
+                  className={`${FIELD} resize-y leading-relaxed`}
+                  rows={12}
+                  value={form.solution}
+                  onChange={(e) => set('solution', e.target.value)}
+                />
               </label>
               <label className="flex flex-col gap-1.5">
                 <span className={LABEL}>Open Date</span>

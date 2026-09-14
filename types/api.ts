@@ -806,6 +806,16 @@ export interface CaseReportRow {
   /** The sheet's own wording: 'over SLA', 'Within SLA', 'On Hold', or empty. */
   slaLabel: string;
   province: string | null;
+  /** AOTGA only. The board's Spare Parts Name. Null on every other sheet. */
+  requiredPart?: string | null;
+  /** AOTGA only. What the case is waiting on, in the RE team's words. */
+  waiting?: string | null;
+  /** AOTGA only. Whose court the wait is in: AOTGA, the supplier, or RAASPAL. */
+  waitingFrom?: string | null;
+  /** AOTGA only. When the part arrived; null while it is still on its way. */
+  partReceived?: string | null;
+  /** AOTGA only. Days since partReceived, counted like `days`. Null until received. */
+  agingAfterReceived?: number | null;
   /**
    * The monday ticket id, or a `manual-…` id for a row a person added by hand
    * (see `isManualCaseRow`). Rows added by hand can be removed; board rows cannot.

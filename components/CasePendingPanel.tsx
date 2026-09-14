@@ -96,6 +96,12 @@ export interface CaseReportSpec {
   boardId: string;
   /** Which of the two site columns this sheet prints; the other is hidden. */
   columns: ('project' | 'branch')[];
+  /**
+   * What the sheet is judging. `sla` prints Solution, RE On Site and an SLA verdict;
+   * `parts` (RAW_AOTGA) prints what was ordered, who it is waited on and when it arrived,
+   * and no verdict at all.
+   */
+  layout: 'sla' | 'parts';
   /** One line under the controls: what is on the sheet and the SLA rule. */
   hint: string;
   /** Pre-filled on "Add row". */
@@ -107,6 +113,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     slug: 'mk',
     boardId: '1647612496',
     columns: ['project', 'branch'],
+    layout: 'sla',
     hint: 'MK, Yayoi and Bonus Suki delivery cases. Days counts from the day after the case opened (opened today = 0); the SLA is 3 days inside greater Bangkok, 5 elsewhere.',
     newRow: { project: 'MK', robot: 'Pudu 1' },
   },
@@ -114,6 +121,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     slug: 'cleaning',
     boardId: '3451717331',
     columns: ['project'],
+    layout: 'sla',
     hint: 'Every open cleaning case except Makro’s and the airports’, which have their own sheets. Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
     newRow: { project: '', robot: 'M50' },
   },
@@ -121,14 +129,42 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     slug: 'makro',
     boardId: '3451717331',
     columns: ['branch'],
+    layout: 'sla',
     hint: 'Makro’s cleaning cases. Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
     newRow: { project: 'Makro', robot: 'Omnie' },
+  },
+  aotga: {
+    slug: 'aotga',
+    boardId: '3451717331',
+    columns: ['project'],
+    layout: 'parts',
+    hint: 'The airports’ open cleaning cases, tracked by spare-part turnaround rather than SLA. Days and Aging After Received both count from the day after (opened or received today = 0). The 3-day SLA is computed but the sheet does not print it.',
+    newRow: { project: 'AOTGA-', robot: 'M75' },
   },
 };
 
 /** "A, B, C" or one per line on the board -> ["A", "B", "C"]. A lone serial is itself. */
 function serialLines(serialNumber: string): string[] {
   return serialNumber.split(/\s*[,\n]\s*/).map((s) => s.trim()).filter(Boolean);
+}
+
+/**
+ * Where a wrong value actually gets fixed. Without this, a reviewer who spots a bad
+ * value has to go and find the ticket by hand. A row added by hand has no ticket to open.
+ */
+function TicketLink({ row, boardId }: { row: CaseReportRow; boardId: string }) {
+  if (!row.sourceItemId || isManualCaseRow(row)) return null;
+  return (
+    <a
+      href={`https://raaspal.monday.com/boards/${boardId}/pulses/${row.sourceItemId}`}
+      target="_blank"
+      rel="noreferrer"
+      title="Open this ticket on monday.com"
+      className="text-[var(--app-muted)] transition hover:text-[var(--app-brand-dark)]"
+    >
+      <ExternalLink className="h-3.5 w-3.5" />
+    </a>
+  );
 }
 
 export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
@@ -209,6 +245,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
   });
   const showProject = report.columns.includes('project');
   const showBranch = report.columns.includes('branch');
+  const parts = report.layout === 'parts';
   const breached = rows.filter((r) => r.sla === 'BREACHED').length;
   const onHold = rows.filter((r) => r.sla === 'ON_HOLD').length;
   const unknown = rows.filter((r) => r.sla === 'UNKNOWN').length;
@@ -345,11 +382,26 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
               <th className="px-3 py-2.5 font-semibold">Robot</th>
               <th className="px-3 py-2.5 font-semibold">SN</th>
               <th className="px-3 py-2.5 font-semibold">Problem</th>
-              <th className="px-3 py-2.5 font-semibold">Solution</th>
+              {parts ? (
+                <>
+                  <th className="px-3 py-2.5 font-semibold">Required Part</th>
+                  <th className="px-3 py-2.5 font-semibold">Waiting</th>
+                  <th className="px-3 py-2.5 font-semibold">Waiting From</th>
+                </>
+              ) : (
+                <th className="px-3 py-2.5 font-semibold">Solution</th>
+              )}
               <th className="px-3 py-2.5 font-semibold">Open Date</th>
-              <th className="px-3 py-2.5 font-semibold">RE On Site</th>
+              {!parts && <th className="px-3 py-2.5 font-semibold">RE On Site</th>}
               <th className="px-3 py-2.5 text-right font-semibold">Days</th>
-              <th className="px-3 py-2.5 font-semibold">SLA</th>
+              {parts ? (
+                <>
+                  <th className="px-3 py-2.5 font-semibold">Part Received</th>
+                  <th className="px-3 py-2.5 text-right font-semibold">Aging After Received</th>
+                </>
+              ) : (
+                <th className="px-3 py-2.5 font-semibold">SLA</th>
+              )}
               <th className="px-3 py-2.5">
                 <span className="sr-only">Edit</span>
               </th>
@@ -397,39 +449,56 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
                     {row.problem ?? '—'}
                   </span>
                 </td>
-                <td className="max-w-[18rem] px-3 py-2.5">
-                  {row.solution ? (
-                    <span className="line-clamp-3" title={row.solution}>
-                      {row.solution}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-[var(--app-muted)]">—</span>
-                  )}
-                </td>
+                {parts ? (
+                  <>
+                    <td className="max-w-[14rem] px-3 py-2.5">{row.requiredPart ?? '—'}</td>
+                    <td className="max-w-[18rem] px-3 py-2.5">
+                      {row.waiting ? (
+                        <span className="line-clamp-3" title={row.waiting}>
+                          {row.waiting}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-[var(--app-muted)]">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 whitespace-nowrap">{row.waitingFrom ?? '—'}</td>
+                  </>
+                ) : (
+                  <td className="max-w-[18rem] px-3 py-2.5">
+                    {row.solution ? (
+                      <span className="line-clamp-3" title={row.solution}>
+                        {row.solution}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-[var(--app-muted)]">—</span>
+                    )}
+                  </td>
+                )}
                 <td className="px-3 py-2.5 whitespace-nowrap tabular-nums">{row.openDate ?? '—'}</td>
-                <td className="px-3 py-2.5 whitespace-nowrap tabular-nums">{row.reOnSite ?? '—'}</td>
+                {!parts && (
+                  <td className="px-3 py-2.5 whitespace-nowrap tabular-nums">{row.reOnSite ?? '—'}</td>
+                )}
                 <td className="px-3 py-2.5 text-right font-semibold tabular-nums">
                   {row.days ?? '—'}
                 </td>
-                <td className="px-3 py-2.5">
-                  <div className="flex items-center gap-2">
-                    <SlaCell row={row} />
-                    {row.sourceItemId && !isManualCaseRow(row) && (
-                      // Where a wrong value actually gets fixed. Without this, a reviewer
-                      // who spots a bad province has to go and find the ticket by hand.
-                      // A row added by hand has no ticket to open.
-                      <a
-                        href={`https://raaspal.monday.com/boards/${report.boardId}/pulses/${row.sourceItemId}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Open this ticket on monday.com"
-                        className="text-[var(--app-muted)] transition hover:text-[var(--app-brand-dark)]"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    )}
-                  </div>
-                </td>
+                {parts ? (
+                  <>
+                    <td className="px-3 py-2.5 whitespace-nowrap tabular-nums">{row.partReceived ?? '—'}</td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center justify-end gap-2 font-semibold tabular-nums">
+                        {row.agingAfterReceived ?? '—'}
+                        <TicketLink row={row} boardId={report.boardId} />
+                      </div>
+                    </td>
+                  </>
+                ) : (
+                  <td className="px-3 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <SlaCell row={row} />
+                      <TicketLink row={row} boardId={report.boardId} />
+                    </div>
+                  </td>
+                )}
                 <td className="px-2 py-2.5">
                   {row.sourceItemId && (
                     <button
@@ -451,7 +520,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
 
             {rows.length === 0 && !isFetching && !isError && (
               <tr>
-                <td colSpan={10 + report.columns.length} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
+                <td colSpan={(parts ? 12 : 10) + report.columns.length} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
                   No cases generated yet. Pick a date and press Generate.
                 </td>
               </tr>
@@ -461,9 +530,9 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
       </div>
 
       <p className="text-xs text-[var(--app-muted)]">
-        Solution is written from each ticket&apos;s comment thread, in the team&apos;s wording. The
-        board&apos;s own Solution cell wins where somebody typed one. Corrections made here are
-        saved to this date&apos;s report only; the monday ticket is never changed.
+        {parts
+          ? 'Required Part, Waiting, Waiting From and Part Received are read from the board’s own columns; nothing is written by AI. Corrections made here are saved to this date’s report only; the monday ticket is never changed.'
+          : 'Solution is written from each ticket’s comment thread, in the team’s wording. The board’s own Solution cell wins where somebody typed one. Corrections made here are saved to this date’s report only; the monday ticket is never changed.'}
       </p>
 
       {editing && (
