@@ -132,7 +132,7 @@ export function LoginForm({ locale }: LoginFormProps) {
       )}
 
       <Button
-        className="h-11 w-full rounded-xl bg-gradient-to-r from-[var(--app-brand)] to-[var(--app-brand-dark)] font-semibold text-white shadow-lg shadow-[var(--app-brand-glow)] transition hover:shadow-xl hover:shadow-[var(--app-brand-glow)] hover:brightness-105 focus-visible:ring-[var(--app-brand)] active:scale-[0.99]"
+        className="h-11 w-full rounded-xl bg-[var(--app-brand)] font-semibold text-white shadow-sm transition hover:brightness-105 focus-visible:ring-[var(--app-brand)] active:scale-[0.99]"
         disabled={loading}
         type="submit"
       >

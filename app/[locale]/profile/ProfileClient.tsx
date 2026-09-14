@@ -67,7 +67,7 @@ function AccountCard({ user }: { user: UserResponse }) {
   return (
     <section className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-5">
       <div className="flex items-start gap-4">
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--app-brand)] to-[var(--app-brand-dark)] text-lg font-bold text-white shadow-sm shadow-[var(--app-brand-glow)]">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--app-brand)] text-lg font-bold text-white shadow-sm">
           {user.fullName.slice(0, 2).toUpperCase()}
         </span>
         <div className="min-w-0 flex-1">
@@ -234,7 +234,7 @@ function ChangePasswordCard() {
 
         <div className="flex justify-end">
           <Button
-            className="h-10 rounded-xl bg-gradient-to-r from-[var(--app-brand)] to-[var(--app-brand-dark)] px-5 font-semibold text-white shadow-md shadow-[var(--app-brand-glow)] transition hover:brightness-105 active:scale-[0.99]"
+            className="h-10 rounded-xl bg-[var(--app-brand)] px-5 font-semibold text-white shadow-sm transition hover:brightness-105 active:scale-[0.99]"
             disabled={busy || incomplete}
             type="submit"
           >

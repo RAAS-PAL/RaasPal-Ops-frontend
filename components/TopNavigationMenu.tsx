@@ -64,7 +64,7 @@ export function TopNavigationMenu() {
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="flex items-center gap-3 border-b border-[var(--app-border)] bg-[var(--app-panel-alt)] p-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--app-brand)] to-[var(--app-brand-dark)] shadow-md shadow-[var(--app-brand-glow)]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--app-brand)] shadow-sm">
                 <Image
                   alt="RAAS PAL logo"
                   className="h-7 w-7 object-contain"
@@ -96,7 +96,7 @@ export function TopNavigationMenu() {
                   role="menuitem"
                 >
                   {active && (
-                    <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[var(--app-brand)] to-[var(--app-brand-dark)]" />
+                    <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-[var(--app-brand)]" />
                   )}
                   <item.icon className={`h-4 w-4 shrink-0 ${active ? 'text-[var(--app-brand)]' : ''}`} />
                   {t(item.labelKey)}
@@ -107,7 +107,7 @@ export function TopNavigationMenu() {
             <div className="border-t border-[var(--app-border)] p-4">
               <p className="text-xs font-semibold uppercase text-[var(--app-muted)]">{sidebarT('signedInAs')}</p>
               <div className="mt-3 flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[var(--app-brand)] to-[var(--app-brand-dark)] text-sm font-bold text-white shadow-sm shadow-[var(--app-brand-glow)]">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--app-brand)] text-sm font-bold text-white shadow-sm">
                   RE
                 </span>
                 <div>
