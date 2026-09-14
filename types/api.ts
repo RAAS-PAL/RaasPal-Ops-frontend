@@ -595,12 +595,22 @@ export interface TelemetrySyncSummary {
 // Automated report delivery history (report_sends)
 export type ReportSendStatus = 'SENT' | 'FAILED' | 'SKIPPED';
 
+/**
+ * BUNDLE is the month's deliverable (Manage automation / Company report). ROBOT_REPORT
+ * is one robot's report sent from the Preview tab — in the history so it is visible,
+ * but never counted as the customer having been delivered to.
+ */
+export type ReportSendKind = 'BUNDLE' | 'ROBOT_REPORT';
+
 export interface ReportSend {
   id: string;
   customerProfileId: string;
   customerName: string;
   reportMonth: string;
   status: ReportSendStatus;
+  kind: ReportSendKind;
+  /** Set for ROBOT_REPORT rows only. */
+  robotSerial: string | null;
   recipientEmail: string | null;
   errorMessage: string | null;
   sentAt: string;

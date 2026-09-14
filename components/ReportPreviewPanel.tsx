@@ -5,9 +5,10 @@
  *
  * Search a registered robot (by SN / name / customer), pick it, choose a period —
  * a calendar month or an ISO week (Mon–Sun) — and render the real
- * <MonthlyReportView> with that robot's customer/site/SN. A built-in "sample data"
- * option always works so the format can be demoed even before any robot is
- * registered.
+ * <MonthlyReportView> with that robot's customer/site/SN. The format itself can be
+ * seen without a robot on the public example page linked at the top; the sample
+ * shortcut that used to sit here was removed because a preview with invented
+ * numbers next to the real Send button invited mistakes.
  *
  * Sharing and emailing stay monthly-only: a report link is keyed on robot+month,
  * so a weekly report has nowhere to be sent yet. The buttons are disabled rather
@@ -23,25 +24,22 @@ import {
   Building2,
   CheckCircle2,
   ExternalLink,
-  FlaskConical,
   Loader2,
   Mail,
   MapPin,
   RefreshCw,
   Search,
-  Sparkles,
 } from 'lucide-react';
 import { reportApi, robotUnitApi, telemetryApi } from '@/lib/api';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { MonthlyReportView } from '@/components/report/MonthlyReportView';
-import { sampleGausiumReport } from '@/lib/reports/gausium';
 import { monthYearLabel } from '@/lib/reports/preview';
 import { isoWeekRange, previousIsoWeek, weekRangeLabel } from '@/lib/report-week';
 import type { MonthlyPerformanceReport } from '@/lib/reports/types';
 import { InfiniteScroll } from '@/components/ui/infinite-scroll';
 import type { RobotUnitResponse } from '@/types/api';
 
-type Selection = { kind: 'sample' } | { kind: 'robot'; robot: RobotUnitResponse };
+type Selection = { kind: 'robot'; robot: RobotUnitResponse };
 
 /** Which window the report covers. */
 type PeriodKind = 'month' | 'week';
@@ -139,7 +137,7 @@ export function ReportPreviewPanel() {
   const isRobot = selection?.kind === 'robot';
   const robotSn = selection?.kind === 'robot' ? selection.robot.serialNumber : undefined;
 
-  // Real robot → aggregate live telemetry from the API; sample → static layout data.
+  // Aggregate live telemetry from the API for the selected robot and period.
   const {
     data: robotReport,
     isLoading: reportLoading,
@@ -174,10 +172,7 @@ export function ReportPreviewPanel() {
     mutationFn: () => reportApi.sendEmail(robotSn!, month).then((r) => r.data),
   });
 
-  const report: MonthlyPerformanceReport | null | undefined =
-    selection?.kind === 'sample'
-      ? { ...sampleGausiumReport, periodLabel }
-      : robotReport;
+  const report: MonthlyPerformanceReport | null | undefined = robotReport;
 
   /* ── Selected: show the report with a control bar ──────────────────────── */
   if (selection) {
@@ -275,7 +270,7 @@ export function ReportPreviewPanel() {
                     message: (
                       <>
                         The {periodLabel} report for <strong>{robotSn}</strong> goes to{' '}
-                        <strong>{selection.kind === 'robot' ? (selection.robot.deployment?.customerName ?? 'the customer') : 'the customer'}</strong>
+                        <strong>{selection.robot.deployment?.customerName ?? 'the customer'}</strong>
                         {' '}at their contact email. It cannot be recalled once sent.
                       </>
                     ),
@@ -325,13 +320,6 @@ export function ReportPreviewPanel() {
           </p>
         )}
 
-        {selection.kind === 'sample' && (
-          <div className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-            <FlaskConical className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>Sample data — representative values for confirming the layout.</span>
-          </div>
-        )}
-
         {isRobot && reportLoading && (
           <div className="flex items-center gap-2 py-10 text-sm text-[var(--app-muted)]">
             <Loader2 className="h-4 w-4 animate-spin" /> Aggregating this robot&apos;s telemetry…
@@ -360,7 +348,7 @@ export function ReportPreviewPanel() {
       <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4">
         <p className="text-sm font-semibold text-[var(--app-text)]">Report layout preview</p>
         <p className="mt-1 text-xs text-[var(--app-muted)]">
-          Pick a robot to preview its report page for a month or a week, or use sample data to confirm the format.
+          Pick a robot to preview its report page for a month or a week.
         </p>
         <a
           href={`/${locale}/report/example`}
@@ -372,21 +360,6 @@ export function ReportPreviewPanel() {
           Open public example page (no login) — shareable with customers
         </a>
       </div>
-
-      {/* Sample shortcut */}
-      <button
-        type="button"
-        onClick={() => setSelection({ kind: 'sample' })}
-        className="flex w-full items-center gap-3 rounded-xl border border-[var(--app-brand)] bg-[var(--app-brand-soft)] p-4 text-left transition hover:opacity-90"
-      >
-        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--app-brand)] text-white">
-          <Sparkles className="h-5 w-5" />
-        </span>
-        <span>
-          <span className="block text-sm font-semibold text-[var(--app-text)]">Preview with sample data</span>
-          <span className="block text-xs text-[var(--app-muted)]">See the report format immediately — no robot needed</span>
-        </span>
-      </button>
 
       {/* Search */}
       <div className="space-y-3">
@@ -416,7 +389,7 @@ export function ReportPreviewPanel() {
         {!isLoading && !isError && filtered.length === 0 && (
           <div className="rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-panel)] py-10 text-center text-sm text-[var(--app-muted)]">
             {robots.length === 0
-              ? 'No robots registered yet. Use the sample preview above, or register a robot first.'
+              ? 'No robots registered yet. Register a robot first.'
               : 'No robots match your search.'}
           </div>
         )}
