@@ -17,11 +17,12 @@ import { StatusBadge, toneForStatus } from '@/components/ui/status-badge';
 import type { RobotResponse, RobotType } from '@/types/api';
 
 /**
- * Rows drawn before the reader scrolls, and the number added each time they reach the
- * end. Twenty fills a tall screen in one batch, which is the point: a batch that does
- * not reach the bottom of the window is revealed and immediately asked for again.
+ * Cards drawn before the reader scrolls, and the number added each time they reach the
+ * end. Thirty because these are cards in a grid up to eight wide, not rows: a batch
+ * that does not reach the bottom of the window is revealed and immediately asked for
+ * again, which works but is visible.
  */
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 30;
 
 export type RobotsView = 'catalog' | 'specs';
 
@@ -95,7 +96,7 @@ function RobotCard({ robot, onClick }: { robot: RobotResponse; onClick: () => vo
       onClick={onClick}
       className="group flex flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] text-left transition hover:-translate-y-0.5"
     >
-      <div className="flex aspect-square w-full items-center justify-center bg-[var(--app-faint)] p-3">
+      <div className="flex aspect-square w-full items-center justify-center bg-[var(--app-faint)] p-2">
         {robot.imageUrl ? (
           <img
             src={robot.imageUrl}
@@ -104,25 +105,25 @@ function RobotCard({ robot, onClick }: { robot: RobotResponse; onClick: () => vo
             className="h-full w-full object-contain transition group-hover:scale-[1.03]"
           />
         ) : (
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
-            <Bot className="h-6 w-6" />
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
+            <Bot className="h-4 w-4" />
           </span>
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-2 p-3">
-        <p className="truncate text-sm font-bold text-[var(--app-text)]" title={robot.model}>
+      <div className="flex flex-1 flex-col gap-1.5 p-2.5">
+        <p className="truncate text-[13px] font-bold leading-tight text-[var(--app-text)]" title={robot.model}>
           {robot.model}
         </p>
 
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1">
           <TypeBadge type={robot.robotType} />
           <StatusBadge tone={toneForStatus(robot.testStatus)}>{robot.testStatus}</StatusBadge>
           <PriceBadge robot={robot} />
         </div>
 
         {specs.length > 0 && (
-          <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--app-muted)]">
+          <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-[var(--app-muted)]">
             {specs.map((v) => (
               <span key={v}>{v}</span>
             ))}
@@ -328,7 +329,7 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
                     {t('modelCount', { count: robots.length })}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
                   {robots.map((robot) => (
                     <RobotCard key={robot.id} robot={robot} onClick={() => setSelectedRobot(robot)} />
                   ))}
