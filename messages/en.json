@@ -753,6 +753,15 @@
       "caseMk": "MK pending",
       "caseCleaning": "Cleaning pending",
       "caseMakro": "Makro pending"
+    },
+    "brands": {
+      "gausium": "Gausium",
+      "pudu": "Pudu",
+      "autoxing": "AutoXing"
+    },
+    "pudu": {
+      "title": "Pudu performance reports are not built yet",
+      "description": "Nothing collects run data from Pudu robots: the platform has telemetry integrations for Gausium and AutoXing only, so there is no history to report on. It needs Pudu open-API credentials and an adapter, after which these reports work the way Gausium’s do. Pudu delivery robots are tracked today through the monday boards, under Pending cases."
     }
   },
   "userMenu": {

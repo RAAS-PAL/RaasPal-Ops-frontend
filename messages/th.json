@@ -753,6 +753,15 @@
       "caseMk": "MK เคสค้าง",
       "caseCleaning": "Cleaning เคสค้าง",
       "caseMakro": "Makro เคสค้าง"
+    },
+    "brands": {
+      "gausium": "Gausium",
+      "pudu": "Pudu",
+      "autoxing": "AutoXing"
+    },
+    "pudu": {
+      "title": "ยังไม่มีรายงานประสิทธิภาพของ Pudu",
+      "description": "ระบบยังไม่ได้ดึงข้อมูลการทำงานจากหุ่นยนต์ Pudu — ปัจจุบันเชื่อมต่อ telemetry เฉพาะ Gausium และ AutoXing จึงยังไม่มีประวัติให้ออกรายงาน ต้องมี Pudu open API และตัวเชื่อมต่อก่อน แล้วรายงานจะทำงานเหมือนของ Gausium ส่วนหุ่นยนต์ส่งอาหาร Pudu ตอนนี้ติดตามผ่านบอร์ด monday ในหัวข้อเคสค้าง"
     }
   },
   "userMenu": {
