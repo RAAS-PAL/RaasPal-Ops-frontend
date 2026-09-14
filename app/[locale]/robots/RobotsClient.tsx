@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Bot, ChevronRight, LayoutGrid, Plus, Table2 } from 'lucide-react';
+import { Bot, LayoutGrid, Plus, Table2 } from 'lucide-react';
 import { RobotSpecMatrix } from '@/components/RobotSpecMatrix';
 import { Link } from '@/i18n/navigation';
 import { robotApi } from '@/lib/api';
@@ -66,51 +66,73 @@ function PriceBadge({ robot }: { robot: RobotResponse }) {
   return null;
 }
 
-/* ─── Robot row ───────────────────────────────────────────────────────────── */
+/* ─── Robot card ──────────────────────────────────────────────────────────── */
 
-function RobotRow({ robot, onClick }: { robot: RobotResponse; onClick: () => void }) {
+/**
+ * One model as a card, photo first.
+ *
+ * <p>Rows suited the catalogue when it was nineteen text entries. Now every model has a
+ * product photo, and a photo is the fastest way to recognise a robot — nobody reads
+ * "Omnie Roller Brush Version" to work out which machine it is.
+ *
+ * <p>The image sits in a square of its own on a faint ground. The photos are studio
+ * shots on white in wildly different proportions, so `object-contain` inside a fixed
+ * square keeps the grid even instead of cropping a ride-on mower to a portrait frame.
+ *
+ * <p>The brand is not repeated on the card: it is the heading the card sits under.
+ */
+function RobotCard({ robot, onClick }: { robot: RobotResponse; onClick: () => void }) {
   const s = robot.spec;
   const specs = [
-    s?.speedMs != null             && `${s.speedMs} m/s`,
+    s?.speedMs != null && `${s.speedMs} m/s`,
     s?.batteryWorkTimeSweepHr != null && `${s.batteryWorkTimeSweepHr} hr`,
-    s?.widthCleaningMm != null     && `${s.widthCleaningMm} mm`,
+    s?.widthCleaningMm != null && `${s.widthCleaningMm} mm`,
   ].filter(Boolean) as string[];
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-[var(--app-faint)]"
+      className="group flex flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] text-left transition hover:-translate-y-0.5"
     >
-      {robot.imageUrl ? (
-        <img
-          src={robot.imageUrl}
-          alt={robot.model}
-          className="h-9 w-9 shrink-0 rounded-lg object-contain bg-[var(--app-faint)]"
-        />
-      ) : (
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
-          <Bot className="h-4 w-4" />
-        </span>
-      )}
-
-      <p className="w-44 shrink-0 truncate text-sm font-semibold text-[var(--app-text)]">{robot.model}</p>
-
-      <div className="flex flex-1 flex-wrap items-center gap-1.5 min-w-0">
-        <TypeBadge type={robot.robotType} />
-        <StatusBadge tone={toneForStatus(robot.testStatus)}>{robot.testStatus}</StatusBadge>
-        <PriceBadge robot={robot} />
+      <div className="flex aspect-square w-full items-center justify-center bg-[var(--app-faint)] p-3">
+        {robot.imageUrl ? (
+          <img
+            src={robot.imageUrl}
+            alt={robot.model}
+            loading="lazy"
+            className="h-full w-full object-contain transition group-hover:scale-[1.03]"
+          />
+        ) : (
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
+            <Bot className="h-6 w-6" />
+          </span>
+        )}
       </div>
 
-      {specs.length > 0 && (
-        <div className="hidden lg:flex items-center gap-4 shrink-0 text-xs text-[var(--app-muted)]">
-          {specs.map((v) => <span key={v}>{v}</span>)}
-        </div>
-      )}
+      <div className="flex flex-1 flex-col gap-2 p-3">
+        <p className="truncate text-sm font-bold text-[var(--app-text)]" title={robot.model}>
+          {robot.model}
+        </p>
 
-      <ChevronRight className="ml-2 h-4 w-4 shrink-0 text-[var(--app-muted)] opacity-40" />
-    </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <TypeBadge type={robot.robotType} />
+          <StatusBadge tone={toneForStatus(robot.testStatus)}>{robot.testStatus}</StatusBadge>
+          <PriceBadge robot={robot} />
+        </div>
+
+        {specs.length > 0 && (
+          <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--app-muted)]">
+            {specs.map((v) => (
+              <span key={v}>{v}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    </button>
   );
 }
+
 
 /* ─── Filter tabs ─────────────────────────────────────────────────────────── */
 
@@ -306,9 +328,9 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
                     {t('modelCount', { count: robots.length })}
                   </span>
                 </div>
-                <div className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] divide-y divide-[var(--app-border)]">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
                   {robots.map((robot) => (
-                    <RobotRow key={robot.id} robot={robot} onClick={() => setSelectedRobot(robot)} />
+                    <RobotCard key={robot.id} robot={robot} onClick={() => setSelectedRobot(robot)} />
                   ))}
                 </div>
               </div>
