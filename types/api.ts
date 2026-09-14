@@ -36,11 +36,18 @@ export interface AuthResponse {
   user: UserResponse;
 }
 
+/**
+ * Mirrors the backend's Role enum. There is no SPECIALIST - the RE team signs in
+ * as RAASPAL_TEAM, and INVENTORY_STAFF is the RIMS warehouse login, which shares
+ * this backend but may not email customers.
+ */
+export type UserRole = 'ADMIN' | 'RAASPAL_TEAM' | 'CUSTOMER' | 'INVENTORY_STAFF';
+
 export interface UserResponse {
   id: string;
   email: string;
   fullName: string;
-  role: 'ADMIN' | 'SPECIALIST';
+  role: UserRole;
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -50,7 +57,13 @@ export interface CreateUserRequest {
   email: string;
   password: string;
   fullName: string;
-  role: 'ADMIN' | 'SPECIALIST';
+  role: UserRole;
+}
+
+/** Self-service only: the account is always the caller's own, so there is no id. */
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 /*

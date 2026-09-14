@@ -772,6 +772,47 @@
     "teamRole": "RAASPAL_TEAM",
     "signOut": "Sign out"
   },
+  "profile": {
+    "eyebrow": "Account",
+    "title": "Profile",
+    "account": {
+      "title": "Account details",
+      "description": "Your name and email are set by an admin. Ask one if either needs changing.",
+      "name": "Full name",
+      "email": "Email",
+      "role": "Access role",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Inactive",
+      "memberSince": "Member since",
+      "updated": "Last updated",
+      "roles": {
+        "ADMIN": "Admin",
+        "RAASPAL_TEAM": "RAASPAL team",
+        "CUSTOMER": "Customer",
+        "INVENTORY_STAFF": "Inventory staff"
+      }
+    },
+    "password": {
+      "title": "Change password",
+      "description": "Enter your current password to set a new one.",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "hint": "At least {min} characters, and different from your current one.",
+      "show": "Show password",
+      "hide": "Hide password",
+      "submit": "Change password",
+      "submitting": "Changing…",
+      "success": "Your password has been changed. Other devices signed in with the old password stay signed in until their session expires.",
+      "errors": {
+        "tooShort": "The new password must be at least {min} characters.",
+        "mismatch": "The new passwords do not match.",
+        "same": "The new password must be different from your current one.",
+        "generic": "Could not change the password. Please try again."
+      }
+    }
+  },
   "language": {
     "select": "Language",
     "en": "English",
