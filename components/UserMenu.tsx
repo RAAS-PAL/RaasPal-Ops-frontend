@@ -3,7 +3,6 @@
 import {
   ChevronDown,
   LogOut,
-  Settings,
   ShieldCheck,
   UserCircle,
 } from 'lucide-react';
@@ -20,12 +19,17 @@ export function UserMenu() {
   const { logout, user } = useAuthStore();
   const t = useTranslations('userMenu');
 
-  // Only Profile has somewhere to go. Settings has no page yet, and Access role is
-  // a readout - the real role from /me, not the RAASPAL_TEAM placeholder it used to
-  // show under every account, admins included.
+  // Profile navigates; Access role is a readout - the real role from /me, not the
+  // RAASPAL_TEAM placeholder it used to show under every account, admins included.
+  //
+  // A "Settings" entry sat here with nothing behind it. The app's only two per-user
+  // preferences are theme and language, and both already have their own always-visible
+  // control in the top bar, so the page would have duplicated them or been empty. The
+  // capability actually missing is team administration - /api/v1/users is built and
+  // ADMIN-only but has no screen - and that is not a personal preference, so it wants
+  // its own entry rather than this one.
   const menuItems = [
     { label: t('profile'), detail: t('profileDetail'), icon: UserCircle, href: '/profile' },
-    { label: t('settings'), detail: t('settingsDetail'), icon: Settings },
     { label: t('accessRole'), detail: user?.role ?? t('teamRole'), icon: ShieldCheck },
   ];
 

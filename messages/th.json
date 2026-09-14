@@ -766,8 +766,6 @@
   "userMenu": {
     "profile": "โปรไฟล์",
     "profileDetail": "ดูรายละเอียดบัญชี",
-    "settings": "ตั้งค่า",
-    "settingsDetail": "การตั้งค่าและพื้นที่ทำงาน",
     "accessRole": "สิทธิ์การเข้าถึง",
     "teamRole": "RAASPAL_TEAM",
     "signOut": "ออกจากระบบ"
