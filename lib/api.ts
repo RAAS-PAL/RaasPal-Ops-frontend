@@ -73,6 +73,7 @@ import type {
   ApiResponse,
   AutoxingDeliveryReport,
   AuthResponse,
+  ChangePasswordRequest,
   CmReportDraft,
   CmReportRequest,
   CmReportResponse,
@@ -269,6 +270,14 @@ export const authApi = {
 
   verifyPassword: (password: string) =>
     api.post<ApiResponse<void>>('/api/v1/auth/verify-password', { password }),
+
+  /**
+   * Change your own password. The backend checks the current one and refuses a new
+   * one shorter than 8 characters or equal to the old; each comes back as a 400 whose
+   * message is meant for the screen. Existing sessions elsewhere are not revoked.
+   */
+  changePassword: (body: ChangePasswordRequest) =>
+    api.post<ApiResponse<void>>('/api/v1/auth/change-password', body),
 
   /*
    * Self-service registration was removed along with the /register page. This is an
