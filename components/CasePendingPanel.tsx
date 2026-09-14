@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
   CalendarDays,
+  Download,
   ExternalLink,
   Loader2,
   Pencil,
@@ -125,6 +126,11 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
   },
 };
 
+/** "A, B, C" or one per line on the board -> ["A", "B", "C"]. A lone serial is itself. */
+function serialLines(serialNumber: string): string[] {
+  return serialNumber.split(/\s*[,\n]\s*/).map((s) => s.trim()).filter(Boolean);
+}
+
 export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
   const { confirm, confirmDialog } = useConfirm();
   const [asOf, setAsOf] = useState<string>(todayInBangkok());
@@ -185,6 +191,22 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
   });
 
   const busy = isFetching || regenerate.isPending;
+
+  // Download, not a link: the token lives in localStorage and only the axios
+  // interceptor attaches it, so an <a href> to the endpoint would arrive anonymous.
+  const exportExcel = useMutation({
+    mutationFn: async () => {
+      const res = await caseReportApi.exportExcel(report.slug, asOf);
+      const disposition = String(res.headers['content-disposition'] ?? '');
+      const named = /filename="?([^";]+)"?/.exec(disposition)?.[1];
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = named ?? `${report.slug}-pending-${asOf}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+  });
   const showProject = report.columns.includes('project');
   const showBranch = report.columns.includes('branch');
   const breached = rows.filter((r) => r.sla === 'BREACHED').length;
@@ -245,6 +267,17 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
         >
           <Plus className="h-4 w-4" />
           Add row
+        </button>
+
+        <button
+          type="button"
+          onClick={() => exportExcel.mutate()}
+          disabled={busy || exportExcel.isPending || rows.length === 0}
+          title="Download this sheet as Excel, exactly as shown - corrections included."
+          className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-2 text-sm font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-faint)] disabled:opacity-60"
+        >
+          {exportExcel.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          {exportExcel.isPending ? 'Preparing…' : 'Export Excel'}
         </button>
 
         <p className="ml-auto max-w-md text-xs text-[var(--app-muted)]">
@@ -347,8 +380,15 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
                 )}
                 {showBranch && <td className="px-3 py-2.5">{row.branch ?? '—'}</td>}
                 <td className="px-3 py-2.5 whitespace-nowrap">{row.robot ?? '—'}</td>
-                <td className="px-3 py-2.5 whitespace-nowrap font-mono text-xs">
-                  {row.serialNumber ?? '—'}
+                {/* A cleaning case can name several robots, typed into one board field
+                    as "A, B, C". One per line, each unbroken, so three serials do not
+                    stretch the column across the screen or snap in the middle. */}
+                <td className="px-3 py-2.5 font-mono text-xs">
+                  {row.serialNumber
+                    ? serialLines(row.serialNumber).map((sn) => (
+                        <span key={sn} className="block whitespace-nowrap">{sn}</span>
+                      ))
+                    : '—'}
                 </td>
                 {/* Long Thai prose. Clamped so one verbose ticket does not push the SLA
                     column off the screen; the full text is in the title attribute. */}

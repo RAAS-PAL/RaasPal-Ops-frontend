@@ -608,6 +608,20 @@ export const caseReportApi = {
       `/api/v1/case-reports/${report}/rows/${encodeURIComponent(sourceItemId)}`,
       { params: { asOf } },
     ),
+
+  /**
+   * The sheet for a date as an .xlsx - the same rows the screen shows, corrections
+   * included. Fetched through axios rather than a plain link so the bearer token goes
+   * with it; the caller turns the blob into a download. A date that has not been
+   * generated yet is generated on the way, which is why the timeout matches `rows`.
+   */
+  exportExcel: (report: CaseReportSlug, asOf: string) =>
+    api.get<Blob>(`/api/v1/case-reports/${report}/export`, {
+      params: { asOf },
+      responseType: 'blob',
+      timeout: 120_000,
+      skipRetry: true,
+    }),
 };
 
 /* ─── PM 52-week planning ─────────────────────────────────────────────────── */
