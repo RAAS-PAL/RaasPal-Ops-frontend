@@ -2,24 +2,24 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Building2, CalendarClock, ClipboardList, FileSearch, Gauge, History, Mail, Wrench } from 'lucide-react';
+import { Building2, CalendarClock, ClipboardList, FileSearch, Gauge, History, Wrench } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { ReportAutomationPanel } from '@/components/ReportAutomationPanel';
 import { CustomerBundlePanel } from '@/components/CustomerBundlePanel';
-import { CustomerEmailPanel } from '@/components/CustomerEmailPanel';
 import { ReportPreviewPanel } from '@/components/ReportPreviewPanel';
 import { AutoxingReportPanel } from '@/components/AutoxingReportPanel';
 import { CmReportPanel } from '@/components/CmReportPanel';
 import { CmReportHistoryPanel } from '@/components/CmReportHistoryPanel';
 import { CASE_REPORTS, CasePendingPanel } from '@/components/CasePendingPanel';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const REPORT_TABS = [
   'automation',
   'company',
-  'email',
   'preview',
   'autoxing',
+  'pudu',
   'cm-new',
   'cm-history',
   'case-mk',
@@ -40,9 +40,9 @@ export type ReportTab = (typeof REPORT_TABS)[number];
 const TAB_GROUP: Record<ReportTab, 'performance' | 'cm' | 'case'> = {
   automation: 'performance',
   company: 'performance',
-  email: 'performance',
   preview: 'performance',
   autoxing: 'performance',
+  pudu: 'performance',
   'cm-new': 'cm',
   'cm-history': 'cm',
   'case-mk': 'case',
@@ -58,10 +58,40 @@ const GROUP_DEFAULT_TAB: Record<ReportGroup, ReportTab> = {
   case: 'case-mk',
 };
 
+/**
+ * Performance reporting is split by robot brand, because each brand is a different
+ * integration rather than a different view of one.
+ *
+ * <p>Gausium is the finished one: its cloud is polled, task history is stored, and the
+ * monthly customer bundle is built and emailed from it. AutoXing has an adapter but no
+ * stored history, so its report is a live pull for one robot at a time. Pudu has no
+ * data source at all, and says so rather than offering a form that cannot work.
+ *
+ * <p>Note what the brand names here describe: which integration feeds a report, not a
+ * filter applied to it. The monthly pipeline is brand-agnostic in code — it reports on
+ * whatever has telemetry — and today everything with telemetry is Gausium.
+ */
+type ReportBrand = 'gausium' | 'pudu' | 'autoxing';
+
+const TAB_BRAND: Record<string, ReportBrand> = {
+  automation: 'gausium',
+  company: 'gausium',
+  preview: 'gausium',
+  autoxing: 'autoxing',
+  pudu: 'pudu',
+};
+
+const BRAND_DEFAULT_TAB: Record<ReportBrand, ReportTab> = {
+  gausium: 'automation',
+  pudu: 'pudu',
+  autoxing: 'autoxing',
+};
+
 export function ReportsClient({ initialTab = 'automation' }: { initialTab?: ReportTab }) {
   const t = useTranslations('reports');
   const [tab, setTab] = useState<ReportTab>(initialTab);
   const group = TAB_GROUP[tab];
+  const brand = TAB_BRAND[tab];
 
   // Keep the active tab in the URL so a report view is shareable/bookmarkable.
   const selectTab = (next: ReportTab) => {
@@ -77,14 +107,26 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
 
   // A lookup rather than a ternary: with three groups a nested conditional stops
   // being readable, and a fourth report would have to nest again.
-  const TABS_BY_GROUP: Record<ReportGroup, { id: ReportTab; label: string; icon: React.ReactNode }[]> = {
-    performance: [
+  const brands: { id: ReportBrand; label: string }[] = [
+    { id: 'gausium', label: t('brands.gausium') },
+    { id: 'pudu', label: t('brands.pudu') },
+    { id: 'autoxing', label: t('brands.autoxing') },
+  ];
+
+  // Per brand, not per group: the performance group's tabs depend on which brand's
+  // reporting is being looked at. A brand with one tab shows no tab row at all.
+  const TABS_BY_BRAND: Record<ReportBrand, { id: ReportTab; label: string; icon: React.ReactNode }[]> = {
+    gausium: [
       { id: 'automation', label: t('tabs.automation'), icon: <CalendarClock className="h-4 w-4" /> },
       { id: 'company', label: t('tabs.company'), icon: <Building2 className="h-4 w-4" /> },
-      { id: 'email', label: t('tabs.email'), icon: <Mail className="h-4 w-4" /> },
       { id: 'preview', label: t('tabs.preview'), icon: <FileSearch className="h-4 w-4" /> },
-      { id: 'autoxing', label: t('tabs.autoxing'), icon: <Gauge className="h-4 w-4" /> },
     ],
+    autoxing: [{ id: 'autoxing', label: t('tabs.autoxing'), icon: <Gauge className="h-4 w-4" /> }],
+    pudu: [],
+  };
+
+  const TABS_BY_GROUP: Record<ReportGroup, { id: ReportTab; label: string; icon: React.ReactNode }[]> = {
+    performance: brand ? TABS_BY_BRAND[brand] : [],
     cm: [
       { id: 'cm-new', label: t('tabs.cmNew'), icon: <Wrench className="h-4 w-4" /> },
       { id: 'cm-history', label: t('tabs.cmHistory'), icon: <History className="h-4 w-4" /> },
@@ -96,7 +138,8 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
     ],
   };
 
-  const tabs = TABS_BY_GROUP[group];
+  // One tab is not a choice; drawing a row of one reads as a disabled control.
+  const tabs = TABS_BY_GROUP[group].length > 1 ? TABS_BY_GROUP[group] : [];
 
   return (
     <main className="min-h-dvh bg-[var(--app-bg)] text-[var(--app-text)] transition-colors">
@@ -131,7 +174,31 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
               })}
             </div>
 
+            {/* Brand switcher — performance only, where each brand is its own integration */}
+            {group === 'performance' && (
+              <div className="flex flex-wrap gap-1 print:hidden">
+                {brands.map((item) => {
+                  const active = brand === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => selectTab(BRAND_DEFAULT_TAB[item.id])}
+                      className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                        active
+                          ? 'bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]'
+                          : 'text-[var(--app-muted)] hover:bg-[var(--app-faint)] hover:text-[var(--app-text)]'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Tab switcher — scrolls horizontally instead of wrapping/overflowing */}
+            {tabs.length > 0 && (
             <div className="flex max-w-full gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-1 print:hidden sm:inline-flex sm:w-fit">
               {tabs.map((item) => {
                 const active = tab === item.id;
@@ -152,12 +219,19 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
                 );
               })}
             </div>
+            )}
 
             {tab === 'automation' && <ReportAutomationPanel />}
             {tab === 'company' && <CustomerBundlePanel />}
-            {tab === 'email' && <CustomerEmailPanel />}
             {tab === 'preview' && <ReportPreviewPanel />}
             {tab === 'autoxing' && <AutoxingReportPanel />}
+            {tab === 'pudu' && (
+              <EmptyState
+                icon={Gauge}
+                title={t('pudu.title')}
+                description={t('pudu.description')}
+              />
+            )}
             {tab === 'cm-new' && <CmReportPanel />}
             {tab === 'cm-history' && <CmReportHistoryPanel />}
             {tab === 'case-mk' && <CasePendingPanel report={CASE_REPORTS.mk} />}
