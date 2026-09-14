@@ -179,10 +179,20 @@ export function PmPlanningClient({
     // bg/text on the root, as every other page does it: body paints itself from
     // --canvas, which is dark even in the light theme, so a page that does not set
     // its own background renders light-mode text straight onto it.
-    <main className="min-h-dvh bg-[var(--app-bg)] text-[var(--app-text)] transition-colors">
-      <div className="flex min-h-dvh">
+    // The year grid is the one view that pins its own header rows, so it gets a shell
+    // exactly the height of the viewport with the page scroll turned off: the grid then
+    // owns the vertical scroll and its sticky Site/month/week/LOAD cells stay put. The
+    // month view is an ordinary document and keeps normal page scrolling, hence the
+    // conditional rather than a global change. Print undoes it - a fixed-height,
+    // overflow-hidden shell prints as a single cropped page.
+    <main
+      className={`bg-[var(--app-bg)] text-[var(--app-text)] transition-colors ${
+        view === 'year' ? 'h-dvh overflow-hidden print:h-auto print:overflow-visible' : 'min-h-dvh'
+      }`}
+    >
+      <div className={`flex ${view === 'year' ? 'h-full print:h-auto' : 'min-h-dvh'}`}>
         <AppSidebar />
-        <section className="flex min-w-0 flex-1 flex-col">
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col">
           <AppTopBar
             eyebrow={t('eyebrow')}
             title={t('title')}
@@ -191,7 +201,11 @@ export function PmPlanningClient({
             onSearchChange={setSearch}
           />
 
-          <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4 sm:p-6">
+          <div
+            className={`mx-auto w-full max-w-[1600px] space-y-4 p-4 sm:p-6 ${
+              view === 'year' ? 'flex min-h-0 flex-1 flex-col print:block print:min-h-0' : ''
+            }`}
+          >
             {/* View switch and period controls */}
             <div className="flex flex-wrap items-center gap-2">
               <div className="inline-flex rounded-lg border border-[var(--app-border)] p-0.5">
