@@ -97,15 +97,14 @@ export default async function SolutionTypePage({
             </Link>
 
             {/* Hero banner */}
-            <div className="bg-aurora animate-aurora relative overflow-hidden rounded-2xl p-6 text-white shadow-lg shadow-[var(--app-brand-glow)]">
-              <div className="pointer-events-none absolute -right-14 -top-14 h-52 w-52 rounded-full bg-cyan-300/30 blur-3xl animate-float-orb" />
+            <div className="bg-[var(--app-hero)] relative overflow-hidden rounded-2xl p-6 text-white shadow-sm">
               <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-wider text-cyan-100">{t(`forms.${type}.kicker`)}</p>
+                  <p className="text-sm font-semibold uppercase tracking-wider text-blue-200">{t(`forms.${type}.kicker`)}</p>
                   <h2 className="mt-3 max-w-xl text-3xl font-bold">{t(`forms.${type}.headline`)}</h2>
                   <p className="mt-3 max-w-lg text-sm leading-6 text-white/75">{t(`forms.${type}.description`)}</p>
                 </div>
-                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-cyan-100 ring-1 ring-white/20 backdrop-blur-sm">
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-blue-200 ring-1 ring-white/20 backdrop-blur-sm">
                   <Icon className="h-7 w-7" />
                 </span>
               </div>
@@ -136,7 +135,7 @@ export default async function SolutionTypePage({
 
             {/* CTA */}
             <Link
-              className="flex h-14 w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-[var(--app-brand)] to-[var(--app-brand-dark)] text-base font-bold text-white shadow-lg shadow-[var(--app-brand-glow)] transition hover:-translate-y-0.5 hover:shadow-xl"
+              className="flex h-14 w-full items-center justify-center gap-3 rounded-xl bg-[var(--app-brand)] text-base font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl"
               href={`/generate-solution/${solutionType}/upload`}
             >
               <Upload className="h-5 w-5" />

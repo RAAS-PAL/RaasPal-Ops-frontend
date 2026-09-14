@@ -31,7 +31,7 @@ export function AppTopBar({
     // Pages that print (the CM report, the monthly report preview) render inside
     // this shell, so without it the title bar, theme toggle, language switcher and
     // user menu are all pushed onto a trailing page of the PDF.
-    <header className="sticky top-0 z-30 border-b border-[var(--app-border)] bg-[var(--app-panel)]/85 px-4 py-3 backdrop-blur-xl print:hidden sm:px-6">
+    <header className="sticky top-0 z-30 border-b border-[var(--app-border)] bg-[var(--app-panel)] px-4 py-3 text-[var(--app-text)] print:hidden sm:px-6">
       <div className="flex items-center gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase text-[var(--app-muted)]">{eyebrow}</p>

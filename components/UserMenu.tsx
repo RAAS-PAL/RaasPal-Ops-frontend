@@ -69,7 +69,7 @@ export function UserMenu() {
         onClick={() => setOpen((value) => !value)}
         type="button"
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[var(--app-brand)] to-[var(--app-brand-dark)] text-xs font-bold text-white">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--app-nav-bg)] text-xs font-bold text-[var(--app-nav-text)]">
           {user?.fullName?.slice(0, 2).toUpperCase() ?? 'RE'}
         </span>
         <span className="hidden text-left sm:block">
@@ -91,7 +91,7 @@ export function UserMenu() {
           >
             <div className="border-b border-[var(--app-border)] bg-[var(--app-panel-alt)] p-4">
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[var(--app-brand)] to-[var(--app-brand-dark)] text-sm font-bold text-white">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--app-nav-bg)] text-sm font-bold text-[var(--app-nav-text)]">
                   {user?.fullName?.slice(0, 2).toUpperCase() ?? 'RE'}
                 </span>
                 <div>

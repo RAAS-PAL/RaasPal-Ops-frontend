@@ -40,9 +40,8 @@ export default async function LocaleHomePage() {
           <div className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
 
             {/* Slim hero band — report automation is the primary destination */}
-            <div className="relative overflow-hidden rounded-2xl px-5 py-4 text-white shadow-md shadow-[var(--app-brand-glow)] sm:px-6">
-              <div className="animate-aurora absolute inset-0 bg-gradient-to-br from-[#0a4d6b] via-[var(--app-brand-dark)] to-[#1b4ed8]" />
-              <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_0%_0%,rgba(255,255,255,0.16),transparent_55%)]" />
+            <div className="relative overflow-hidden rounded-2xl px-5 py-4 text-white shadow-sm sm:px-6">
+              <div className="absolute inset-0 bg-[var(--app-hero)]" />
 
               <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
@@ -84,10 +83,10 @@ export default async function LocaleHomePage() {
                 {quickLinks.map(({ href, icon: Icon, label }) => (
                   <Link
                     key={href}
-                    className="group flex items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4 transition hover:-translate-y-0.5 hover:border-[var(--app-brand)] hover:shadow-md hover:shadow-[var(--app-brand-glow)]"
+                    className="group flex items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4 transition hover:-translate-y-0.5 hover:border-[var(--app-brand)]"
                     href={href}
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)] transition group-hover:bg-gradient-to-br group-hover:from-[var(--app-brand)] group-hover:to-[var(--app-brand-dark)] group-hover:text-white">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)] transition group-hover:bg-[var(--app-brand)] group-hover:text-white">
                       <Icon className="h-5 w-5" />
                     </span>
                     <p className="min-w-0 truncate text-sm font-semibold text-[var(--app-text)]">{label}</p>

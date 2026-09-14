@@ -41,22 +41,31 @@
   --success:       #3fb950;
   --info:          #388bfd;
 
-  /* RAAS PAL app theme - light */
-  --app-bg:        #f4fbff;
-  --app-panel:     #ffffff;
-  --app-panel-soft:#eaf8fd;
-  --app-panel-alt: #f7fcff;
-  --app-border:    #d8ecf4;
-  --app-border-strong:#b8dbe8;
-  --app-text:      #102532;
-  --app-muted:     #607784;
-  --app-faint:     #ecf8fc;
-  --app-brand:     #16b9d1;
-  --app-brand-dark:#087ec3;
-  --app-brand-soft:#dff7fc;
-  --app-brand-glow:rgba(22, 185, 209, 0.28);
-  --app-hero:      #072536;
-  --app-hero-soft: rgba(255, 255, 255, 0.10);
+  /* RAAS PAL app theme - light. Navy + Blue: neutral slate surfaces with one blue
+     reserved for primary actions and the selected nav item, so colour means
+     "act here" rather than decoration. Status colours (emerald / amber / red / sky)
+     are untouched and stay semantic. */
+  --app-bg:        #f8fafc;   /* cool white ground        */
+  --app-panel:     #ffffff;   /* cards                    */
+  --app-panel-soft:#f1f5f9;   /* table headers, wells     */
+  --app-panel-alt: #f8fafc;   /* inputs, hover rows       */
+  --app-border:    #e2e8f0;
+  --app-border-strong:#cbd5e1;
+  --app-text:      #0f172a;
+  --app-muted:     #64748b;
+  --app-faint:     #f1f5f9;
+  --app-brand:     #2563eb;   /* primary actions, selected items; white text 5.2:1 */
+  --app-brand-dark:#1d4ed8;   /* brand as text/link on white                      */
+  --app-brand-soft:#dbeafe;   /* tinted chips and icon wells                      */
+  --app-hero:      #16213c;   /* dark banners: login panel, dashboard, step headers */
+
+  /* Sidebar and the account avatar: always navy, whatever the page theme. */
+  --app-nav-bg:    #16213c;
+  --app-nav-panel: #223050;   /* raised bits on navy: collapse button, account card, hover */
+  --app-nav-border:#2b3a5c;
+  --app-nav-text:  #f1f5f9;
+  --app-nav-muted: #94a3b8;
+  --app-nav-active:#2563eb;   /* the selected nav item - the same blue as a primary button */
 }
 
 .dark {
@@ -75,21 +84,28 @@
   --accent-faint:  rgba(22, 201, 228, 0.14);
   --accent-glow:   rgba(22, 201, 228, 0.28);
 
-  --app-bg:        #061723;
-  --app-panel:     #0d2533;
-  --app-panel-soft:#0a202e;
-  --app-panel-alt: #102f41;
-  --app-border:    #22495d;
-  --app-border-strong:#2f637b;
-  --app-text:      #f0fbff;
-  --app-muted:     #9bc2d1;
-  --app-faint:     #123244;
-  --app-brand:     #16c9e4;
-  --app-brand-dark:#35a8ff;
-  --app-brand-soft:rgba(22, 201, 228, 0.16);
-  --app-brand-glow:rgba(22, 201, 228, 0.34);
-  --app-hero:      #071b29;
-  --app-hero-soft: rgba(255, 255, 255, 0.08);
+  /* Same navy family in the dark, one step deeper than the sidebar so it still
+     reads as a separate surface. Brand text lightens so it stays legible on navy. */
+  --app-bg:        #0b1220;
+  --app-panel:     #111a2e;
+  --app-panel-soft:#0f172a;
+  --app-panel-alt: #172136;
+  --app-border:    #1e293b;
+  --app-border-strong:#334155;
+  --app-text:      #e2e8f0;
+  --app-muted:     #94a3b8;
+  --app-faint:     #172136;
+  --app-brand:     #3b82f6;
+  --app-brand-dark:#93c5fd;
+  --app-brand-soft:rgba(59, 130, 246, 0.18);
+  --app-hero:      #16213c;
+
+  --app-nav-bg:    #16213c;
+  --app-nav-panel: #223050;
+  --app-nav-border:#2b3a5c;
+  --app-nav-text:  #f1f5f9;
+  --app-nav-muted: #94a3b8;
+  --app-nav-active:#2563eb;
 }
 
 /* ─── No drawn edges on layout ────────────────────────────────────────────────
@@ -131,43 +147,6 @@ a.rounded-2xl.border-\[var\(--app-border\)\]:hover {
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.35),
     0 4px 14px rgba(0, 0, 0, 0.30);
-}
-
-/* ─── Login page (Bold & Premium) ─────────────────────────────────────────────
-   Animated glow orbs + slow aurora drift for the gradient brand panel.
-   Scoped to opt-in utility classes so nothing else in the app is affected.
-─────────────────────────────────────────────────────────────────────────── */
-
-@keyframes float-orb {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50%      { transform: translate3d(0, -26px, 0) scale(1.06); }
-}
-
-@keyframes float-orb-alt {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50%      { transform: translate3d(18px, 16px, 0) scale(0.94); }
-}
-
-@keyframes aurora-pan {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.animate-float-orb      { animation: float-orb 11s ease-in-out infinite; }
-.animate-float-orb-alt  { animation: float-orb-alt 13s ease-in-out infinite; }
-.animate-aurora         { background-size: 200% 200%; animation: aurora-pan 18s ease infinite; }
-
-/* Reusable premium gradient banner background (teal→blue).
-   Pair with `animate-aurora` for the slow drift and `overflow-hidden` for orbs. */
-.bg-aurora {
-  background-image: linear-gradient(135deg, #0a4d6b 0%, var(--app-brand-dark) 50%, #1b4ed8 100%);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-float-orb,
-  .animate-float-orb-alt,
-  .animate-aurora { animation: none; }
 }
 
 @theme inline {
