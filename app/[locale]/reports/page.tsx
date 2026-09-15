@@ -6,6 +6,7 @@ const VALID_TABS: readonly string[] = [
   'company',
   'preview',
   'zero-data',
+  'contracts',
   'autoxing',
   'pudu',
   'cm-new',

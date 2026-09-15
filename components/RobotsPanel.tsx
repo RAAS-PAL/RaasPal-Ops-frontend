@@ -696,6 +696,16 @@ export function RobotsPanel() {
                     {r.deployment.contractStartDate ?? '…'} → {r.deployment.contractEndDate ?? t('contractOpenEnded')}
                   </span>
                 )}
+                {r.deployment?.contractStatus === 'ENDED' && (
+                  <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-950/30 dark:text-red-300 dark:ring-red-900/40">
+                    {t('contractEnded')}
+                  </span>
+                )}
+                {r.deployment?.contractStatus === 'ENDING_SOON' && (
+                  <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/40">
+                    {t('contractEndsIn', { days: r.deployment.daysToContractEnd ?? 0 })}
+                  </span>
+                )}
               </div>
               </div>
             </div>

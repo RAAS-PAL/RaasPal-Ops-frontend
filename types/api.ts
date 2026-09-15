@@ -471,7 +471,13 @@ export interface DeploymentInfo {
    * a month that begins after it produces no report. Null = no end known.
    */
   contractEndDate: string | null;
+  /** NONE (no end date) / ACTIVE / ENDING_SOON (within 30 days) / ENDED, as of today. */
+  contractStatus: ContractStatus;
+  /** Days from today to the end date; negative once ended; null when no end date. */
+  daysToContractEnd: number | null;
 }
+
+export type ContractStatus = 'NONE' | 'ACTIVE' | 'ENDING_SOON' | 'ENDED';
 
 export interface RobotUnitResponse {
   id: string;
@@ -587,9 +593,21 @@ export interface TelemetrySyncStatus {
   lastSummary: TelemetrySyncSummary | null;
 }
 
-/* ─── Robots with no data ─────────────────────────────────────────────────── */
+/* ─── Robots with no data (the customer success worklist) ─────────────────── */
 
-/** One in-contract robot that logged no task in the month. */
+/** Why a robot logged nothing — the three cases that need different people. */
+export type ZeroDataReason = 'NEVER_SYNCED' | 'SYNC_FAILING' | 'NO_TASKS';
+
+export type FollowupStatus = 'TO_CONTACT' | 'CONTACTED' | 'RESOLVED';
+export type FollowupOutcome =
+  | 'ROBOT_OFFLINE'
+  | 'IN_STORAGE'
+  | 'CONTRACT_ENDED'
+  | 'REGISTRATION_ERROR'
+  | 'SYNC_PROBLEM'
+  | 'OTHER';
+
+/** One in-contract robot that logged no task in the month, with its follow-up. */
 export interface ZeroDataRobot {
   robotUnitId: string;
   serialNumber: string;
@@ -601,11 +619,23 @@ export interface ZeroDataRobot {
   site: string | null;
   contractStartDate: string | null;
   contractEndDate: string | null;
+  contractStatus: ContractStatus;
+  daysToContractEnd: number | null;
   /** Business-zone date of the last task it ever logged; null if never. */
   lastDataDate: string | null;
   daysSinceLastData: number | null;
-  /** "Never synced any task" or "No tasks this month". */
-  reason: string;
+  lastSyncAttemptAt: string | null;
+  lastSyncSuccessAt: string | null;
+  /** The last sync failure's message; null after a success. */
+  lastSyncError: string | null;
+  reason: ZeroDataReason;
+  followupStatus: FollowupStatus | null;
+  followupOutcome: FollowupOutcome | null;
+  followupNote: string | null;
+  followupUpdatedBy: string | null;
+  followupUpdatedAt: string | null;
+  /** Already held back from this month's customer report. */
+  excludedFromReport: boolean;
 }
 
 export interface ZeroDataRobotsResponse {
@@ -614,7 +644,43 @@ export interface ZeroDataRobotsResponse {
   /** Active deployments whose contract overlaps the month. */
   inScope: number;
   zeroData: number;
+  toContact: number;
+  contacted: number;
+  resolved: number;
   robots: ZeroDataRobot[];
+}
+
+export interface ZeroDataFollowupRequest {
+  status: FollowupStatus;
+  outcome?: FollowupOutcome | null;
+  note?: string | null;
+}
+
+/* ─── Contracts ending / ended ────────────────────────────────────────────── */
+
+export interface ExpiringContract {
+  robotUnitId: string;
+  serialNumber: string;
+  name: string | null;
+  brand: string | null;
+  model: string | null;
+  customerProfileId: string;
+  customerName: string;
+  site: string | null;
+  contractStartDate: string | null;
+  contractEndDate: string;
+  /** Negative once ended. */
+  daysToEnd: number;
+  status: ContractStatus;
+  /** When the ending-soon alert was emailed; null if not yet. */
+  alertedAt: string | null;
+}
+
+export interface ContractExpiryResponse {
+  asOf: string;
+  windowDays: number;
+  endingSoon: ExpiringContract[];
+  ended: ExpiringContract[];
 }
 
 /** Aggregate outcome of a fleet-wide sync run. */

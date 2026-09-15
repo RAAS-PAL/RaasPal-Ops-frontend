@@ -111,6 +111,8 @@ import type {
   TelemetrySyncResult,
   TelemetrySyncStatus,
   ZeroDataRobotsResponse,
+  ZeroDataFollowupRequest,
+  ContractExpiryResponse,
   TestStatus,
   TranslationResponse,
   UserResponse,
@@ -505,6 +507,30 @@ export const telemetryApi = {
   zeroData: (month?: string) =>
     api.get<ApiResponse<ZeroDataRobotsResponse>>('/api/v1/telemetry/zero-data', {
       params: { month: month || undefined },
+    }),
+
+  /** Record what was done about one zero-data entry. Returns the refreshed list. */
+  saveZeroDataFollowup: (robotUnitId: string, month: string, body: ZeroDataFollowupRequest) =>
+    api.put<ApiResponse<ZeroDataRobotsResponse>>(
+      `/api/v1/telemetry/zero-data/${robotUnitId}/followup`,
+      body,
+      { params: { month } },
+    ),
+
+  /** Hold the robot back from its customer's report for the month. Returns the refreshed list. */
+  excludeZeroDataRobot: (robotUnitId: string, month: string) =>
+    api.post<ApiResponse<ZeroDataRobotsResponse>>(
+      `/api/v1/telemetry/zero-data/${robotUnitId}/exclude`,
+      null,
+      { params: { month } },
+    ),
+};
+
+// Contracts — ending within a window, and already ended.
+export const contractsApi = {
+  expiring: (withinDays = 30) =>
+    api.get<ApiResponse<ContractExpiryResponse>>('/api/v1/robot-units/contracts/expiring', {
+      params: { withinDays },
     }),
 };
 
