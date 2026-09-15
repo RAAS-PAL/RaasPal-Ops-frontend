@@ -68,12 +68,11 @@ export function generateStaticParams() {
 
 export const metadata: Metadata = {
   title: {
-    default: 'RAAS PAL - Robot Recommendation System',
+    default: 'RAAS PAL Operations',
     template: '%s - RAAS PAL',
   },
   description:
-    'AI-powered robot recommendation platform by RAAS PAL. ' +
-    'Match the right cleaning robot to your workspace in minutes.',
+    'RAAS PAL internal operations platform for customers, robots, service, reporting, and solutions.',
 };
 
 /* ─── Layout ─────────────────────────────────────────────────────────────── */

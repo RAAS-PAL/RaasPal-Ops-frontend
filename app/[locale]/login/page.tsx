@@ -14,26 +14,25 @@
  */
 
 import Image from 'next/image';
-import { Bot, FileText, Sparkles } from 'lucide-react';
-import { Link } from '@/i18n/navigation';
+import { FileText, Sparkles, Users } from 'lucide-react';
 import { LoginForm } from './LoginForm';
 import { setRequestLocale } from 'next-intl/server';
 
 const highlights = [
   {
-    icon: Sparkles,
-    title: 'AI requirement extraction',
-    description: 'Upload any survey — Excel, PDF, or image — and let AI structure it instantly.',
-  },
-  {
-    icon: Bot,
-    title: 'Smart robot matching',
-    description: 'Compare requirements against the approved catalog for 2–3 ranked options.',
+    icon: Users,
+    title: 'Customers and fleet',
+    description: 'Manage customers, sites, robots, and deployments from one workspace.',
   },
   {
     icon: FileText,
-    title: 'Instant proposals',
-    description: 'Generate a polished, on-brand proposal for the option you choose.',
+    title: 'Reports and service',
+    description: 'Prepare performance reports, track maintenance, and keep follow-up work visible.',
+  },
+  {
+    icon: Sparkles,
+    title: 'AI-assisted solutions',
+    description: 'Turn customer requirements into recommendations and professional proposals.',
   },
 ];
 
@@ -74,11 +73,11 @@ export default async function LoginPage({
           {/* Headline + feature highlights */}
           <div className="relative z-10 max-w-md">
             <h2 className="text-3xl font-bold leading-tight text-white xl:text-4xl">
-              The right robot for every space — in minutes.
+              One place to run RAAS PAL operations.
             </h2>
             <p className="mt-3 text-sm leading-6 text-white/70">
-              RAAS PAL turns a customer survey into ranked robot recommendations and a
-              ready-to-send proposal, powered by AI.
+              Manage the customer journey—from solution planning and robot deployment to
+              service oversight and reporting—in one secure team workspace.
             </p>
 
             <ul className="mt-8 space-y-4">
@@ -118,7 +117,7 @@ export default async function LoginPage({
               </div>
               <h1 className="text-2xl font-bold text-[var(--app-text)]">RAAS PAL</h1>
               <p className="mt-1 text-sm text-[var(--app-muted)]">
-                AI-powered robot recommendation platform
+                Internal operations platform
               </p>
             </div>
 
@@ -127,7 +126,7 @@ export default async function LoginPage({
               <div className="mb-7">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--app-brand-soft)] px-3 py-1 text-xs font-semibold text-[var(--app-brand-dark)]">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Team portal
+                  Operations portal
                 </span>
                 <h2 className="mt-4 text-2xl font-bold tracking-tight text-[var(--app-text)]">
                   Welcome back
@@ -148,7 +147,7 @@ export default async function LoginPage({
             </div>
 
             <p className="mt-6 text-center text-xs text-[var(--app-muted)]">
-              Final solution confirmation requires RAASPAL verification and/or site survey.
+              Authorized RAAS PAL team members only.
             </p>
           </div>
         </section>

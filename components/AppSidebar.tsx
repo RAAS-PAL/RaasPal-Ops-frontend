@@ -47,7 +47,7 @@ export function AppSidebar() {
     // eight nav items plus the account card, and without it the card is unreachable.
     <aside
       className={`sticky top-0 hidden h-dvh shrink-0 overflow-y-auto border-r border-[var(--app-nav-border)] bg-[var(--app-nav-bg)] px-4 py-5 text-[var(--app-nav-text)] transition-[width] duration-200 print:hidden lg:flex lg:flex-col ${
-        collapsed ? 'w-20' : 'w-64 xl:w-72'
+        collapsed ? 'w-20' : 'w-60 xl:w-64'
       }`}
     >
       <div className={`mb-8 flex items-center gap-3 px-2 ${collapsed ? 'justify-center' : ''}`}>
