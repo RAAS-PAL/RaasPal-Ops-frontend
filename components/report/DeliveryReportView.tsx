@@ -1,6 +1,7 @@
 /**
  * DeliveryReportView — RAASPAL "Executive Robot Performance Report" for delivery
- * robots (AutoXing), the delivery counterpart to {@link MonthlyReportView}.
+ * robots (AutoXing and PUDU), the delivery counterpart to {@link MonthlyReportView}.
+ * Both brands' services emit {@link DeliveryReportData}; nothing here is brand-specific.
  *
  * Delivery robots have no cleaning area, water or consumables, so Part 1 reports
  * tasks/distance/time, Part 2 shows delivery-share and active-day gauges plus a
@@ -11,7 +12,7 @@
  * Rendered as white "paper" in both themes so it prints and shares consistently.
  */
 import Image from 'next/image';
-import type { AutoxingDeliveryReport } from '@/types/api';
+import type { DeliveryReportData } from '@/types/api';
 
 /* ─── Palette (matches MonthlyReportView / the approved PowerPoint) ────────── */
 
@@ -142,7 +143,7 @@ function Ring({ label, percent, sub }: { label: string; percent: number; sub: st
 }
 
 /** Daily task-volume bars; the busiest day is emphasised and labelled. */
-function DailyChart({ daily }: { daily: AutoxingDeliveryReport['daily'] }) {
+function DailyChart({ daily }: { daily: DeliveryReportData['daily'] }) {
   if (daily.length === 0) return null;
   const max = Math.max(...daily.map((d) => d.count), 1);
   const W = 640, padL = 8, padR = 8, baseY = 140, plotH = 110;
@@ -193,7 +194,7 @@ function DailyChart({ daily }: { daily: AutoxingDeliveryReport['daily'] }) {
 
 /* ─── Report ──────────────────────────────────────────────────────────────── */
 
-export function DeliveryReportView({ report }: { report: AutoxingDeliveryReport }) {
+export function DeliveryReportView({ report }: { report: DeliveryReportData }) {
   const s = report.summary;
   const breakdown = report.categories.length
     ? report.categories.map((c) => `${CATEGORY_LABELS[c.category] ?? c.category} ×${c.count}`).join(' · ')
@@ -231,7 +232,7 @@ export function DeliveryReportView({ report }: { report: AutoxingDeliveryReport 
 
       {/* Identity */}
       <div className="mt-6 grid gap-3.5 sm:grid-cols-2">
-        <InfoTable rows={[['Customer', report.customerName], ['Site / Branch', report.siteBranch]]} />
+        <InfoTable rows={[['Customer', report.customerName ?? '—'], ['Site / Branch', report.siteBranch ?? '—']]} />
         <InfoTable
           rows={[
             ['Robot Name', report.robotName],

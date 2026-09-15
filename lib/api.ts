@@ -72,6 +72,8 @@ import type {
   CaseRowEdit,
   ApiResponse,
   AutoxingDeliveryReport,
+  PuduDeliveryReport,
+  PuduStatus,
   AuthResponse,
   ChangePasswordRequest,
   CmReportDraft,
@@ -461,6 +463,27 @@ export const autoxingApi = {
       timeout: 120_000,
       skipRetry: true,
     }),
+};
+
+// PUDU — on-demand delivery report preview (no persistence). Reads PUDU's data-board
+// live for one robot by serial number. Same report shape as AutoXing's.
+export const puduApi = {
+  /**
+   * Delivery report for one PUDU robot. `from`/`to` are "YYYY-MM-DD" and optional
+   * (backend defaults to the last 30 days, Bangkok time). Range max is 31 days.
+   * Two paged reads (this period and the previous one) at 20 rows a page, so a
+   * whole-account month can take a while — hence the longer timeout.
+   */
+  preview: (sn: string, from?: string, to?: string, shopId?: string, customerName?: string) =>
+    api.get<ApiResponse<PuduDeliveryReport>>('/api/v1/pudu/report/preview', {
+      params: { sn, from, to, shopId: shopId || undefined, customerName: customerName || undefined },
+      timeout: 120_000,
+      skipRetry: true,
+    }),
+
+  /** Credentials present? With `check`, also whether PUDU's health check accepts them. */
+  status: (check = false) =>
+    api.get<ApiResponse<PuduStatus>>('/api/v1/pudu/report/status', { params: { check } }),
 };
 
 // Telemetry — on-demand sync from the brand API (e.g. Gausium) into robot_task_reports

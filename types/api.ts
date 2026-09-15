@@ -676,18 +676,64 @@ export interface AutoxingSummary {
   busiestDurationSeconds: number;
 }
 
-export interface AutoxingDeliveryReport {
+/**
+ * What DeliveryReportView reads — the shape the AutoXing and PUDU reports share.
+ * Metres and seconds throughout; each brand's service converts to these.
+ */
+export interface DeliveryReportData {
   robotId: string;
   robotName: string;
   model: string | null;
-  customerName: string;
-  siteBranch: string;
+  customerName: string | null;
+  siteBranch: string | null;
   periodLabel: string;
-  liveStatus: AutoxingLiveStatus | null;
   summary: AutoxingSummary;
   categories: AutoxingCategoryStat[];
   daily: AutoxingDailyStat[];
+  note: string | null;
+}
+
+export interface AutoxingDeliveryReport extends DeliveryReportData {
+  customerName: string;
+  siteBranch: string;
+  liveStatus: AutoxingLiveStatus | null;
   note: string;
+}
+
+/* ─── PUDU delivery report ────────────────────────────────────────────────── */
+
+/** Totals for the window of equal length immediately before the report's. */
+export interface PuduPreviousPeriod {
+  periodLabel: string;
+  totalTasks: number;
+  totalMileageMeters: number;
+  totalDurationSeconds: number;
+  tableCount: number;
+  trayCount: number;
+}
+
+/** What PUDU reports that the shared shape has no slot for. */
+export interface PuduExtras {
+  tableCount: number;
+  trayCount: number;
+  /** Total distance over total running time; null when the robot was idle. */
+  avgSpeedMps: number | null;
+  previousPeriod: PuduPreviousPeriod | null;
+}
+
+/**
+ * One PUDU robot over a date range, read live from PUDU's data-board. No live
+ * status — the data-board is statistics only.
+ */
+export interface PuduDeliveryReport extends DeliveryReportData {
+  pudu: PuduExtras;
+}
+
+/** Whether the backend has PUDU credentials, and — when checked — whether PUDU accepts them. */
+export interface PuduStatus {
+  configured: boolean;
+  healthy?: boolean;
+  error?: string;
 }
 
 /* ─── Corrective Maintenance reports ──────────────────────────────────────── */

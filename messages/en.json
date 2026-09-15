@@ -752,7 +752,8 @@
       "caseMk": "MK pending",
       "caseCleaning": "Cleaning pending",
       "caseMakro": "Makro pending",
-      "caseAotga": "AOTGA pending"
+      "caseAotga": "AOTGA pending",
+      "pudu": "PUDU report"
     },
     "brands": {
       "gausium": "Gausium",

@@ -9,10 +9,10 @@ import { ReportAutomationPanel } from '@/components/ReportAutomationPanel';
 import { CustomerBundlePanel } from '@/components/CustomerBundlePanel';
 import { ReportPreviewPanel } from '@/components/ReportPreviewPanel';
 import { AutoxingReportPanel } from '@/components/AutoxingReportPanel';
+import { PuduReportPanel } from '@/components/PuduReportPanel';
 import { CmReportPanel } from '@/components/CmReportPanel';
 import { CmReportHistoryPanel } from '@/components/CmReportHistoryPanel';
 import { CASE_REPORTS, CasePendingPanel } from '@/components/CasePendingPanel';
-import { EmptyState } from '@/components/ui/empty-state';
 
 const REPORT_TABS = [
   'automation',
@@ -66,8 +66,9 @@ const GROUP_DEFAULT_TAB: Record<ReportGroup, ReportTab> = {
  *
  * <p>Gausium is the finished one: its cloud is polled, task history is stored, and the
  * monthly customer bundle is built and emailed from it. AutoXing has an adapter but no
- * stored history, so its report is a live pull for one robot at a time. Pudu has no
- * data source at all, and says so rather than offering a form that cannot work.
+ * stored history, so its report is a live pull for one robot at a time. Pudu is the
+ * same shape as AutoXing — a live pull per robot from PUDU's data-board — and shares
+ * AutoXing's report view; until its credentials are set the panel says so.
  *
  * <p>Note what the brand names here describe: which integration feeds a report, not a
  * filter applied to it. The monthly pipeline is brand-agnostic in code — it reports on
@@ -124,7 +125,7 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
       { id: 'preview', label: t('tabs.preview'), icon: <FileSearch className="h-4 w-4" /> },
     ],
     autoxing: [{ id: 'autoxing', label: t('tabs.autoxing'), icon: <Gauge className="h-4 w-4" /> }],
-    pudu: [],
+    pudu: [{ id: 'pudu', label: t('tabs.pudu'), icon: <Gauge className="h-4 w-4" /> }],
   };
 
   const TABS_BY_GROUP: Record<ReportGroup, { id: ReportTab; label: string; icon: React.ReactNode }[]> = {
@@ -228,13 +229,7 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
             {tab === 'company' && <CustomerBundlePanel />}
             {tab === 'preview' && <ReportPreviewPanel />}
             {tab === 'autoxing' && <AutoxingReportPanel />}
-            {tab === 'pudu' && (
-              <EmptyState
-                icon={Gauge}
-                title={t('pudu.title')}
-                description={t('pudu.description')}
-              />
-            )}
+            {tab === 'pudu' && <PuduReportPanel />}
             {tab === 'cm-new' && <CmReportPanel />}
             {tab === 'cm-history' && <CmReportHistoryPanel />}
             {tab === 'case-mk' && <CasePendingPanel report={CASE_REPORTS.mk} />}
