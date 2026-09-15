@@ -681,6 +681,7 @@
       "preview": "Report Preview",
       "customers": "Customers",
       "robots": "Robots",
+      "contracts": "Contracts",
       "partners": "Partners"
     },
     "automationComingSoon": "Scheduled report automation is coming soon."
@@ -753,7 +754,6 @@
       "company": "Company report",
       "preview": "Report preview",
       "zeroData": "No data",
-      "contracts": "Contracts",
       "autoxing": "AutoXing report",
       "cmNew": "New report",
       "cmHistory": "History",

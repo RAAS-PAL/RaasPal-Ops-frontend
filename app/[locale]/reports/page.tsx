@@ -6,7 +6,6 @@ const VALID_TABS: readonly string[] = [
   'company',
   'preview',
   'zero-data',
-  'contracts',
   'autoxing',
   'pudu',
   'cm-new',
@@ -26,11 +25,12 @@ export default async function ReportsPage({
 }) {
   const { tab } = await searchParams;
 
-  // "Email customers" moved to Tools. Redirected rather than dropped, so a bookmark or
-  // a pasted link lands on the panel instead of silently opening Manage automation.
-  if (tab === 'email') {
+  // "Email customers" and "Contracts" both moved to Tools. Redirected rather than
+  // dropped, so a bookmark or a pasted link lands on the panel instead of silently
+  // opening Manage automation.
+  if (tab === 'email' || tab === 'contracts') {
     const { locale } = await params;
-    redirect({ href: '/tools?tab=email', locale });
+    redirect({ href: `/tools?tab=${tab}`, locale });
   }
   const initialTab: ReportTab = VALID_TABS.includes(tab ?? '') ? (tab as ReportTab) : 'automation';
   return <ReportsClient initialTab={initialTab} />;

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Building2, CalendarClock, CalendarX2, ClipboardList, FileSearch, FileSignature, Gauge, History, Wrench } from 'lucide-react';
+import { Building2, CalendarClock, CalendarX2, ClipboardList, FileSearch, Gauge, History, Wrench } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { ReportAutomationPanel } from '@/components/ReportAutomationPanel';
@@ -10,7 +10,6 @@ import { CustomerBundlePanel } from '@/components/CustomerBundlePanel';
 import { ReportPreviewPanel } from '@/components/ReportPreviewPanel';
 import { AutoxingReportPanel } from '@/components/AutoxingReportPanel';
 import { ZeroDataPanel } from '@/components/ZeroDataPanel';
-import { ContractsPanel } from '@/components/ContractsPanel';
 import { CmReportPanel } from '@/components/CmReportPanel';
 import { CmReportHistoryPanel } from '@/components/CmReportHistoryPanel';
 import { CASE_REPORTS, CasePendingPanel } from '@/components/CasePendingPanel';
@@ -21,7 +20,6 @@ const REPORT_TABS = [
   'company',
   'preview',
   'zero-data',
-  'contracts',
   'autoxing',
   'pudu',
   'cm-new',
@@ -47,7 +45,6 @@ const TAB_GROUP: Record<ReportTab, 'performance' | 'cm' | 'case'> = {
   company: 'performance',
   preview: 'performance',
   'zero-data': 'performance',
-  contracts: 'performance',
   autoxing: 'performance',
   pudu: 'performance',
   'cm-new': 'cm',
@@ -86,7 +83,6 @@ const TAB_BRAND: Record<string, ReportBrand> = {
   company: 'gausium',
   preview: 'gausium',
   'zero-data': 'gausium',
-  contracts: 'gausium',
   autoxing: 'autoxing',
   pudu: 'pudu',
 };
@@ -131,7 +127,6 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
       { id: 'company', label: t('tabs.company'), icon: <Building2 className="h-4 w-4" /> },
       { id: 'preview', label: t('tabs.preview'), icon: <FileSearch className="h-4 w-4" /> },
       { id: 'zero-data', label: t('tabs.zeroData'), icon: <CalendarX2 className="h-4 w-4" /> },
-      { id: 'contracts', label: t('tabs.contracts'), icon: <FileSignature className="h-4 w-4" /> },
     ],
     autoxing: [{ id: 'autoxing', label: t('tabs.autoxing'), icon: <Gauge className="h-4 w-4" /> }],
     pudu: [],
@@ -238,7 +233,6 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
             {tab === 'company' && <CustomerBundlePanel />}
             {tab === 'preview' && <ReportPreviewPanel />}
             {tab === 'zero-data' && <ZeroDataPanel />}
-            {tab === 'contracts' && <ContractsPanel />}
             {tab === 'autoxing' && <AutoxingReportPanel />}
             {tab === 'pudu' && (
               <EmptyState
