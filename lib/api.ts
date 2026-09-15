@@ -304,10 +304,16 @@ export const fileApi = {
 
 // Requirements
 export const requirementApi = {
+  /**
+   * Reads a survey (Excel, PDF or image) with a model call, so it gets a longer
+   * timeout and skips the automatic retry — at the default 60s a large PDF timed out
+   * and the retry paid for a second extraction of the same file.
+   */
   extractFromFile: (fileId: string, robotType: RobotType) =>
     api.post<ApiResponse<RequirementResponse>>(
       `/api/v1/requirements/extract-from-file/${fileId}`,
       { robotType },
+      { timeout: 240_000, skipRetry: true },
     ),
 };
 
@@ -317,6 +323,13 @@ export const recommendationApi = {
     api.post<ApiResponse<RecommendationResponse>>(
       `/api/v1/recommendations/generate/${requirementId}`,
       body ?? {},
+      // Three fully written options over the whole catalogue is a minutes-long model
+      // call, not a request. At the default 60s it timed out and the automatic retry
+      // fired a SECOND generation while the first was still running server-side —
+      // double the cost, two recommendations, and an error either way. The timeout is
+      // deliberately longer than the backend's own Anthropic read timeout, so the
+      // server fails first and can say why.
+      { timeout: 360_000, skipRetry: true },
     ),
 
   getAll: (page = 0, size = 20) =>
@@ -328,8 +341,12 @@ export const recommendationApi = {
 
 // Proposals
 export const proposalApi = {
+  /** A full proposal document from the largest model — minutes, and never retried. */
   generate: (body: GenerateProposalRequest) =>
-    api.post<ApiResponse<GeneratedProposalResponse>>('/api/v1/proposals/generate', body),
+    api.post<ApiResponse<GeneratedProposalResponse>>('/api/v1/proposals/generate', body, {
+      timeout: 360_000,
+      skipRetry: true,
+    }),
 
   getAll: (page = 0, size = 20) =>
     api.get<ApiResponse<PagedResponse<GeneratedProposalResponse>>>('/api/v1/proposals', { params: { page, size, sort: 'createdAt,desc' } }),
@@ -346,8 +363,12 @@ export const proposalApi = {
 
 // Translation
 export const translateApi = {
+  /** Also a model call: a batch of strings can outrun the default timeout. */
   toThai: (texts: string[]) =>
-    api.post<ApiResponse<TranslationResponse>>('/api/v1/translate/thai', { texts }),
+    api.post<ApiResponse<TranslationResponse>>('/api/v1/translate/thai', { texts }, {
+      timeout: 120_000,
+      skipRetry: true,
+    }),
 };
 
 // CVTE C3 status (kept separate from robotApi — see [[CvteDevice]] on the backend)
