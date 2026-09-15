@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Building2, CalendarClock, ClipboardList, FileSearch, Gauge, History, Wrench } from 'lucide-react';
+import { Building2, CalendarClock, CalendarX2, ClipboardList, FileSearch, Gauge, History, Wrench } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { ReportAutomationPanel } from '@/components/ReportAutomationPanel';
 import { CustomerBundlePanel } from '@/components/CustomerBundlePanel';
 import { ReportPreviewPanel } from '@/components/ReportPreviewPanel';
 import { AutoxingReportPanel } from '@/components/AutoxingReportPanel';
+import { ZeroDataPanel } from '@/components/ZeroDataPanel';
 import { CmReportPanel } from '@/components/CmReportPanel';
 import { CmReportHistoryPanel } from '@/components/CmReportHistoryPanel';
 import { CASE_REPORTS, CasePendingPanel } from '@/components/CasePendingPanel';
@@ -18,6 +19,7 @@ const REPORT_TABS = [
   'automation',
   'company',
   'preview',
+  'zero-data',
   'autoxing',
   'pudu',
   'cm-new',
@@ -42,6 +44,7 @@ const TAB_GROUP: Record<ReportTab, 'performance' | 'cm' | 'case'> = {
   automation: 'performance',
   company: 'performance',
   preview: 'performance',
+  'zero-data': 'performance',
   autoxing: 'performance',
   pudu: 'performance',
   'cm-new': 'cm',
@@ -79,6 +82,7 @@ const TAB_BRAND: Record<string, ReportBrand> = {
   automation: 'gausium',
   company: 'gausium',
   preview: 'gausium',
+  'zero-data': 'gausium',
   autoxing: 'autoxing',
   pudu: 'pudu',
 };
@@ -122,6 +126,7 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
       { id: 'automation', label: t('tabs.automation'), icon: <CalendarClock className="h-4 w-4" /> },
       { id: 'company', label: t('tabs.company'), icon: <Building2 className="h-4 w-4" /> },
       { id: 'preview', label: t('tabs.preview'), icon: <FileSearch className="h-4 w-4" /> },
+      { id: 'zero-data', label: t('tabs.zeroData'), icon: <CalendarX2 className="h-4 w-4" /> },
     ],
     autoxing: [{ id: 'autoxing', label: t('tabs.autoxing'), icon: <Gauge className="h-4 w-4" /> }],
     pudu: [],
@@ -227,6 +232,7 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
             {tab === 'automation' && <ReportAutomationPanel />}
             {tab === 'company' && <CustomerBundlePanel />}
             {tab === 'preview' && <ReportPreviewPanel />}
+            {tab === 'zero-data' && <ZeroDataPanel />}
             {tab === 'autoxing' && <AutoxingReportPanel />}
             {tab === 'pudu' && (
               <EmptyState

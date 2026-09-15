@@ -466,6 +466,11 @@ export interface DeploymentInfo {
    * customer had it. Null reports whole months.
    */
   contractStartDate: string | null;
+  /**
+   * ISO date the contract ends, inclusive. The last monthly report clips to it, and
+   * a month that begins after it produces no report. Null = no end known.
+   */
+  contractEndDate: string | null;
 }
 
 export interface RobotUnitResponse {
@@ -488,6 +493,8 @@ export interface RegisterRobotRequest {
   reportCadence?: ReportCadence | null;
   /** ISO date (YYYY-MM-DD), or null for whole-month reports. */
   contractStartDate?: string | null;
+  /** ISO date (YYYY-MM-DD) the contract ends, inclusive; null = no end known. */
+  contractEndDate?: string | null;
 }
 
 // Edit an existing robot — serial number is immutable, so it is not included.
@@ -500,6 +507,8 @@ export interface UpdateRobotRequest {
   reportCadence?: ReportCadence | null;
   /** ISO date (YYYY-MM-DD), or null for whole-month reports. */
   contractStartDate?: string | null;
+  /** ISO date (YYYY-MM-DD) the contract ends, inclusive; null = no end known. */
+  contractEndDate?: string | null;
 }
 
 /* ─── Partners (distributor/service partners + their API keys) ─────────────── */
@@ -576,6 +585,36 @@ export interface TelemetrySyncStatus {
   processed: number;
   total: number;
   lastSummary: TelemetrySyncSummary | null;
+}
+
+/* ─── Robots with no data ─────────────────────────────────────────────────── */
+
+/** One in-contract robot that logged no task in the month. */
+export interface ZeroDataRobot {
+  robotUnitId: string;
+  serialNumber: string;
+  name: string | null;
+  brand: string | null;
+  model: string | null;
+  customerProfileId: string;
+  customerName: string;
+  site: string | null;
+  contractStartDate: string | null;
+  contractEndDate: string | null;
+  /** Business-zone date of the last task it ever logged; null if never. */
+  lastDataDate: string | null;
+  daysSinceLastData: number | null;
+  /** "Never synced any task" or "No tasks this month". */
+  reason: string;
+}
+
+export interface ZeroDataRobotsResponse {
+  month: string;
+  monthLabel: string;
+  /** Active deployments whose contract overlaps the month. */
+  inScope: number;
+  zeroData: number;
+  robots: ZeroDataRobot[];
 }
 
 /** Aggregate outcome of a fleet-wide sync run. */

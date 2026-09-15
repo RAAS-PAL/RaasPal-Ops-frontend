@@ -110,6 +110,7 @@ import type {
   ReportSend,
   TelemetrySyncResult,
   TelemetrySyncStatus,
+  ZeroDataRobotsResponse,
   TestStatus,
   TranslationResponse,
   UserResponse,
@@ -496,6 +497,15 @@ export const telemetryApi = {
   /** Progress of the running sync, or the outcome of the last finished one. */
   syncStatus: () =>
     api.get<ApiResponse<TelemetrySyncStatus>>('/api/v1/telemetry/sync-status'),
+
+  /**
+   * Every in-contract robot that logged no task in `month` ("YYYY-MM"). Computed on
+   * request, nothing stored. Omit the month for last month.
+   */
+  zeroData: (month?: string) =>
+    api.get<ApiResponse<ZeroDataRobotsResponse>>('/api/v1/telemetry/zero-data', {
+      params: { month: month || undefined },
+    }),
 };
 
 /**

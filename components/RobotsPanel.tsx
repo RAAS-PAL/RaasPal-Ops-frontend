@@ -86,6 +86,7 @@ const EMPTY_FORM: RegisterRobotRequest = {
   site: '',
   reportCadence: 'MONTHLY',
   contractStartDate: '',
+  contractEndDate: '',
 };
 
 /** Prefill the form from an existing robot (for the edit flow). */
@@ -99,6 +100,7 @@ function toForm(r: RobotUnitResponse): RegisterRobotRequest {
     site: r.deployment?.site ?? '',
     reportCadence: r.deployment?.reportCadence ?? 'MONTHLY',
     contractStartDate: r.deployment?.contractStartDate ?? '',
+    contractEndDate: r.deployment?.contractEndDate ?? '',
   };
 }
 
@@ -308,10 +310,15 @@ export function RobotsPanel() {
           site: form.site,
           reportCadence: form.reportCadence,
           contractStartDate: emptyToNull(form.contractStartDate),
+          contractEndDate: emptyToNull(form.contractEndDate),
         },
       });
     } else {
-      registerMutation.mutate({ ...form, contractStartDate: emptyToNull(form.contractStartDate) });
+      registerMutation.mutate({
+        ...form,
+        contractStartDate: emptyToNull(form.contractStartDate),
+        contractEndDate: emptyToNull(form.contractEndDate),
+      });
     }
   }
 
@@ -392,6 +399,17 @@ export function RobotsPanel() {
               onChange={(e) => field('contractStartDate', e.target.value)}
             />
             <p className="text-xs text-[var(--app-muted)]">{t('contractStartDateHint')}</p>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-[var(--app-muted)]">{t('contractEndDate')}</label>
+            <input
+              type="date"
+              className={inputClass}
+              value={form.contractEndDate ?? ''}
+              min={form.contractStartDate || undefined}
+              onChange={(e) => field('contractEndDate', e.target.value)}
+            />
+            <p className="text-xs text-[var(--app-muted)]">{t('contractEndDateHint')}</p>
           </div>
         </div>
 
@@ -668,6 +686,15 @@ export function RobotsPanel() {
                 </span>
                 {r.deployment?.site && (
                   <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{r.deployment.site}</span>
+                )}
+                {(r.deployment?.contractStartDate || r.deployment?.contractEndDate) && (
+                  <span
+                    className="inline-flex items-center gap-1 tabular-nums"
+                    title={t('contractDates')}
+                  >
+                    <CalendarCheck className="h-3.5 w-3.5" />
+                    {r.deployment.contractStartDate ?? '…'} → {r.deployment.contractEndDate ?? t('contractOpenEnded')}
+                  </span>
                 )}
               </div>
               </div>
