@@ -197,3 +197,38 @@ export type KpiSyncStatus = {
   configured: boolean;
   lastSummary: KpiSyncSummary | null;
 };
+
+/* ─── CSAT workbook uploads ───────────────────────────────────────────────── */
+
+/**
+ * One upload in the workbook history.
+ *
+ * `current` is derived on the server — the most recent upload for a survey —
+ * not a stored flag, which is why deleting the current row promotes the one
+ * before it instead of leaving a survey with nothing marked.
+ */
+export type CsatWorkbookHistoryEntry = {
+  id: string;
+  /** INSTALLATION | PM | CM_CLEANING | CM_DELIVERY */
+  stream: string;
+  /** The same survey as the key the CSAT response uses: installation, pm, cleaning, delivery. */
+  streamLabel: CsatStreamKey;
+  fileName: string;
+  sizeBytes: number;
+  uploadedAt: string;
+  uploadedBy: string | null;
+  uploadedByName: string | null;
+  note: string | null;
+  current: boolean;
+};
+
+/** What an upload did. `duplicate` means the file was already the current one. */
+export type CsatWorkbookUploadResult = {
+  id: string;
+  stream: CsatStreamKey;
+  fileName: string;
+  sizeBytes: number;
+  uploadedAt: string;
+  duplicate: boolean;
+  warnings: string[];
+};

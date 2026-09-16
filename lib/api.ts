@@ -67,7 +67,15 @@ api.interceptors.response.use(
 
 /* ─── Typed helpers ───────────────────────────────────────────────────────── */
 
-import type { KpiCaseMetrics, MondaySyncConfig, KpiCsat, CsatSourceStatus, KpiSyncStatus } from './kpi/api-types';
+import type {
+  KpiCaseMetrics,
+  MondaySyncConfig,
+  KpiCsat,
+  CsatSourceStatus,
+  KpiSyncStatus,
+  CsatWorkbookHistoryEntry,
+  CsatWorkbookUploadResult,
+} from './kpi/api-types';
 import type {
   CaseReportRow,
   CaseRowEdit,
@@ -698,6 +706,46 @@ export const kpiApi = {
 
   /** Board and column mapping, and whether a monday token is configured. Never returns the token. */
   config: () => api.get<ApiResponse<MondaySyncConfig>>('/api/v1/kpi/monday/config'),
+
+  /**
+   * Every workbook upload, newest first, with the current one per survey marked.
+   * This is the history behind the CSAT figures.
+   */
+  csatWorkbooks: () =>
+    api.get<ApiResponse<CsatWorkbookHistoryEntry[]>>('/api/v1/kpi/csat/workbooks'),
+
+  /**
+   * Uploads one survey workbook, making it the current one for its survey.
+   *
+   * The server parses it before storing, so a file whose survey cannot be told
+   * comes back as a 400 with the reason rather than being accepted and then
+   * silently ignored. A longer timeout and no retry: parsing is real work, and
+   * a retry would upload the same file twice.
+   */
+  uploadCsatWorkbook: (file: File, note?: string) => {
+    const body = new FormData();
+    body.append('file', file);
+    if (note) body.append('note', note);
+    return api.post<ApiResponse<CsatWorkbookUploadResult>>('/api/v1/kpi/csat/workbooks', body, {
+      // Undefined, not 'multipart/form-data': the instance default is
+      // application/json, and only clearing it lets the browser write the
+      // header with the boundary the server needs to split the parts.
+      headers: { 'Content-Type': undefined },
+      timeout: 120_000,
+      skipRetry: true,
+    });
+  },
+
+  /**
+   * Removes one upload. Deleting the current workbook for a survey is how a
+   * wrong upload is undone — the one before it becomes current again.
+   */
+  deleteCsatWorkbook: (id: string) =>
+    api.delete<ApiResponse<CsatWorkbookHistoryEntry>>(`/api/v1/kpi/csat/workbooks/${id}`),
+
+  /** The stored file itself, as it was uploaded. */
+  downloadCsatWorkbook: (id: string) =>
+    api.get<Blob>(`/api/v1/kpi/csat/workbooks/${id}/download`, { responseType: 'blob' }),
 };
 
 // Daily Pending Case Report
