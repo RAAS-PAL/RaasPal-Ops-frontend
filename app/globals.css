@@ -258,9 +258,12 @@ html {
 
 /* ─── Selection ───────────────────────────────────────────────────────────── */
 
+/* Ink stays the page's text colour: --accent is later redefined to the
+   pale brand chip for shadcn, so `color: var(--accent)` painted selected
+   text pale-blue on a pale-blue highlight and it disappeared. */
 ::selection {
-  background-color: var(--accent-faint);
-  color: var(--accent);
+  background-color: var(--app-brand-soft);
+  color: var(--app-text);
 }
 
 /* ─── Focus ring ──────────────────────────────────────────────────────────── */
