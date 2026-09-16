@@ -647,7 +647,9 @@ export const caseReportApi = {
   rows: (report: CaseReportSlug, asOf?: string, refresh = false) =>
     api.get<ApiResponse<CaseReportRow[]>>(`/api/v1/case-reports/${report}`, {
       params: { ...(asOf ? { asOf } : {}), ...(refresh ? { refresh: true } : {}) },
-      timeout: 120_000,
+      // Model calls now run concurrently server-side, so a sheet is well under a
+      // minute; the ceiling is for a large sheet on a slow day, not the norm.
+      timeout: 300_000,
       skipRetry: true,
     }),
 

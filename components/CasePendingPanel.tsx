@@ -217,6 +217,11 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
     queryFn: async () => (await caseReportApi.rows(report.slug, asOf)).data.data ?? [],
     staleTime: 0,
     refetchOnWindowFocus: false,
+    // The first call for a date generates the sheet: minutes of monday and model calls.
+    // A timeout is "still working", not a blip, and the query layer's default three
+    // retries fired three more generations of the same sheet. The server now joins a
+    // duplicate onto the running one, but the client should not send it at all.
+    retry: false,
   });
 
   // Re-read the board into the stored draft. Edited rows come through untouched, which
