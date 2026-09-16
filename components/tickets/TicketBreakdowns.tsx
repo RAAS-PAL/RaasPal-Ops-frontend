@@ -40,7 +40,7 @@ function BarList({
           <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[var(--app-faint)]">
             <div
               className="h-full rounded-full transition-[width]"
-              style={{ width: `${max === 0 ? 0 : Math.max(2, (r.value / max) * 100)}%`, background: fill[r.tone ?? tone] }}
+              style={{ width: r.value === 0 || max === 0 ? 0 : `${Math.max(2, (r.value / max) * 100)}%`, background: fill[r.tone ?? tone] }}
             />
           </div>
         </li>
