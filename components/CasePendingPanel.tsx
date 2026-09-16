@@ -12,6 +12,8 @@ import {
   Plus,
   RefreshCw,
   Sparkles,
+  Trash2,
+  Undo2,
 } from 'lucide-react';
 import { caseReportApi } from '@/lib/api';
 import { useConfirm } from '@/components/ui/confirm-dialog';
@@ -209,6 +211,8 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
   const [editError, setEditError] = useState<string | null>(null);
   // On Hold only. 'all' is the default: the sheet's point is both boards at once.
   const [boardFilter, setBoardFilter] = useState<CaseBoard | 'all'>('all');
+  // Removed rows are hidden by default; the chip toggles them into view for restoring.
+  const [showRemoved, setShowRemoved] = useState(false);
   const queryClient = useQueryClient();
   const queryKey = ['case-report', report.slug, asOf];
 
@@ -253,19 +257,47 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
     onError: (e) => setEditError(errorMessage(e, 'Could not save the row.')),
   });
 
+  // Mirror the backend's numbering: 1..n over the rows on the sheet, 0 for a removed one.
+  const renumber = (list: CaseReportRow[]) => {
+    let next = 1;
+    return list.map((r) => ({ ...r, no: r.removed ? 0 : next++ }));
+  };
+
   const remove = useMutation({
     mutationFn: (sourceItemId: string) => caseReportApi.removeRow(report.slug, asOf, sourceItemId),
     onSuccess: (_, sourceItemId) => {
-      // Renumber locally the way the backend did, so No stays contiguous without a refetch.
+      // A row added by hand is gone; a board row stays, hidden, so it can be restored.
       queryClient.setQueryData<CaseReportRow[]>(queryKey, (current) =>
-        (current ?? [])
-          .filter((r) => r.sourceItemId !== sourceItemId)
-          .map((r, i) => ({ ...r, no: i + 1 })),
+        renumber(
+          (current ?? [])
+            .filter((r) => !(r.sourceItemId === sourceItemId && isManualCaseRow(r)))
+            .map((r) => (r.sourceItemId === sourceItemId ? { ...r, removed: true } : r)),
+        ),
       );
       closeDialog();
     },
     onError: (e) => setEditError(errorMessage(e, 'Could not remove the row.')),
   });
+
+  const restore = useMutation({
+    mutationFn: (sourceItemId: string) => caseReportApi.restoreRow(report.slug, asOf, sourceItemId),
+    onSuccess: (_, sourceItemId) => {
+      queryClient.setQueryData<CaseReportRow[]>(queryKey, (current) =>
+        renumber((current ?? []).map((r) => (r.sourceItemId === sourceItemId ? { ...r, removed: false } : r))),
+      );
+    },
+    onError: (e) => setEditError(errorMessage(e, 'Could not restore the row.')),
+  });
+
+  const askRemove = (row: CaseReportRow) =>
+    void confirm({
+      title: 'Remove this row?',
+      kind: 'delete',
+      confirmLabel: 'Remove row',
+      message: isManualCaseRow(row)
+        ? `Row ${row.no} is taken off this date's report. It was added by hand, so nothing on monday changes.`
+        : `Row ${row.no} is taken off this date's report and stays off if the report is regenerated. The monday ticket is not changed, and you can put the row back from the "removed" chip.`,
+    }).then((ok) => ok && remove.mutate(row.sourceItemId!));
 
   const busy = isFetching || regenerate.isPending;
 
@@ -288,14 +320,19 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
   const showBranch = report.columns.includes('branch');
   const showBoard = report.boardFilter === true;
   const parts = report.layout === 'parts';
+  // What is stored includes rows a person removed; the sheet is the rest. Every total
+  // below is of the sheet, so "12 cases" is what the customer would get.
+  const sheet = rows.filter((r) => !r.removed);
+  const removedRows = rows.filter((r) => r.removed);
   // The filter narrows what is shown, not what is stored: the totals and the download
   // stay whole-sheet, so "12 cases" means the report, not the current view.
-  const visible = showBoard && boardFilter !== 'all' ? rows.filter((r) => r.board === boardFilter) : rows;
-  const breached = rows.filter((r) => r.sla === 'BREACHED').length;
-  const onHold = rows.filter((r) => r.sla === 'ON_HOLD').length;
-  const unknown = rows.filter((r) => r.sla === 'UNKNOWN').length;
-  const edited = rows.filter((r) => r.edited && !isManualCaseRow(r)).length;
-  const added = rows.filter(isManualCaseRow).length;
+  const onBoard = showBoard && boardFilter !== 'all' ? sheet.filter((r) => r.board === boardFilter) : sheet;
+  const visible = showRemoved ? [...onBoard, ...removedRows] : onBoard;
+  const breached = sheet.filter((r) => r.sla === 'BREACHED').length;
+  const onHold = sheet.filter((r) => r.sla === 'ON_HOLD').length;
+  const unknown = sheet.filter((r) => r.sla === 'UNKNOWN').length;
+  const edited = sheet.filter((r) => r.edited && !isManualCaseRow(r)).length;
+  const added = sheet.filter(isManualCaseRow).length;
 
   return (
     <div className="space-y-4">
@@ -348,7 +385,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
               className="inline-flex overflow-hidden rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] text-sm"
             >
               {(['all', 'CLEANING', 'DELIVERY'] as const).map((option) => {
-                const count = option === 'all' ? rows.length : rows.filter((r) => r.board === option).length;
+                const count = option === 'all' ? sheet.length : sheet.filter((r) => r.board === option).length;
                 const active = boardFilter === option;
                 return (
                   <button
@@ -364,7 +401,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
                     }`}
                   >
                     {option === 'all' ? 'All' : BOARD_LABEL[option]}
-                    {rows.length > 0 && <span className="ml-1.5 tabular-nums opacity-70">{count}</span>}
+                    {sheet.length > 0 && <span className="ml-1.5 tabular-nums opacity-70">{count}</span>}
                   </button>
                 );
               })}
@@ -420,8 +457,23 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
       {rows.length > 0 && (
         <div className="flex flex-wrap gap-2 text-sm">
           <span className="rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-3 py-1.5">
-            {rows.length} case{rows.length === 1 ? '' : 's'}
+            {sheet.length} case{sheet.length === 1 ? '' : 's'}
           </span>
+          {removedRows.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowRemoved((v) => !v)}
+              aria-pressed={showRemoved}
+              title={showRemoved ? 'Hide the removed rows' : 'Show the removed rows, to put one back'}
+              className={`rounded-lg border px-3 py-1.5 transition ${
+                showRemoved
+                  ? 'border-[var(--app-brand)] bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]'
+                  : 'border-[var(--app-border)] text-[var(--app-muted)] hover:bg-[var(--app-faint)]'
+              }`}
+            >
+              {removedRows.length} removed by hand
+            </button>
+          )}
           {breached > 0 && (
             <span className="rounded-lg bg-red-50 px-3 py-1.5 font-semibold text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-900">
               {breached} over SLA
@@ -490,9 +542,21 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
           </thead>
           <tbody className="divide-y divide-[var(--app-border)]">
             {visible.map((row) => (
-              <tr key={row.sourceItemId ?? row.no} className="align-top">
+              <tr
+                key={row.sourceItemId ?? row.no}
+                className={`align-top ${row.removed ? 'bg-[var(--app-faint)] text-[var(--app-muted)] opacity-70' : ''}`}
+              >
                 <td className="px-3 py-2.5 tabular-nums text-[var(--app-muted)]">
-                  {row.no}
+                  {row.removed ? (
+                    <span
+                      title="Removed from this date's report by hand. Not on the Excel; stays off if regenerated."
+                      className="inline-block rounded bg-[var(--app-bg)] px-1 text-[10px] font-semibold uppercase ring-1 ring-inset ring-[var(--app-border)]"
+                    >
+                      removed
+                    </span>
+                  ) : (
+                    row.no
+                  )}
                   {row.edited && (
                     // A corrected row looks like any other, so say so: the reader comparing
                     // against the board needs to know this cell is a person's word, not monday's.
@@ -589,7 +653,21 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
                   </td>
                 )}
                 <td className="px-2 py-2.5">
-                  {row.sourceItemId && (
+                  {row.sourceItemId && row.removed && (
+                    <button
+                      type="button"
+                      onClick={() => restore.mutate(row.sourceItemId!)}
+                      disabled={restore.isPending}
+                      title="Put this row back on the report"
+                      aria-label={`Restore row for ticket ${row.sourceItemId}`}
+                      className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-[var(--app-brand-dark)] transition hover:bg-[var(--app-brand-soft)] disabled:opacity-60"
+                    >
+                      <Undo2 className="h-3.5 w-3.5" />
+                      Restore
+                    </button>
+                  )}
+                  {row.sourceItemId && !row.removed && (
+                    <span className="inline-flex items-center">
                     <button
                       type="button"
                       onClick={() => {
@@ -602,6 +680,17 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => askRemove(row)}
+                      disabled={remove.isPending}
+                      title="Remove this row from the report"
+                      aria-label={`Remove row ${row.no}`}
+                      className="rounded-lg p-1.5 text-[var(--app-muted)] transition hover:bg-red-50 hover:text-red-700 disabled:opacity-60 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                    </span>
                   )}
                 </td>
               </tr>
@@ -639,17 +728,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
           saving={save.isPending || remove.isPending}
           error={editError}
           onSave={(edit) => save.mutate(edit)}
-          onRemove={
-            editing !== 'new' && editing.sourceItemId
-              ? () =>
-                  void confirm({
-                    title: 'Remove this row?',
-                    kind: 'delete',
-                    confirmLabel: 'Remove row',
-                    message: `Row ${editing.no} is taken off this date's report. It was added by hand, so nothing on monday changes.`,
-                  }).then((ok) => ok && remove.mutate(editing.sourceItemId!))
-              : undefined
-          }
+          onRemove={editing !== 'new' && editing.sourceItemId ? () => askRemove(editing) : undefined}
           onClose={() => {
             if (!save.isPending && !remove.isPending) closeDialog();
           }}

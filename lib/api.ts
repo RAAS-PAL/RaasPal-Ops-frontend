@@ -667,10 +667,21 @@ export const caseReportApi = {
       params: { asOf },
     }),
 
-  /** Remove a row that was added by hand. Board rows are refused. */
+  /**
+   * Take a row off this date's report. A board row is kept hidden (a regeneration will
+   * not bring it back; see restoreRow); a row added by hand is deleted. monday is untouched.
+   */
   removeRow: (report: CaseReportSlug, asOf: string, sourceItemId: string) =>
     api.delete<ApiResponse<void>>(
       `/api/v1/case-reports/${report}/rows/${encodeURIComponent(sourceItemId)}`,
+      { params: { asOf } },
+    ),
+
+  /** Put a removed board row back on the sheet. */
+  restoreRow: (report: CaseReportSlug, asOf: string, sourceItemId: string) =>
+    api.post<ApiResponse<CaseReportRow>>(
+      `/api/v1/case-reports/${report}/rows/${encodeURIComponent(sourceItemId)}/restore`,
+      null,
       { params: { asOf } },
     ),
 

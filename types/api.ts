@@ -934,6 +934,12 @@ export interface CaseReportRow {
   sourceItemId: string | null;
   /** True once somebody has saved a correction; such a row survives a regeneration. */
   edited: boolean;
+  /**
+   * True once a person has taken this board row off the report. Still returned, so the
+   * sheet can show what was removed and put it back; never on the Excel. Rows added by
+   * hand are deleted outright instead. Absent on rows frozen before the field existed.
+   */
+  removed?: boolean;
 }
 
 /** Prefix of the ids the backend gives rows added by hand. */
