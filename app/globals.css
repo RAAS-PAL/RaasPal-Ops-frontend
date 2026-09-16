@@ -407,3 +407,20 @@ html {
     overflow: visible !important;
   }
 }
+
+/* ─── Chart tokens (service-ticket analytics) ───────────────────────────────
+   Two categorical slots, validated for CVD separation and 3:1 contrast against
+   --app-panel in both modes (dataviz validator, 2026-09-16). Series colours
+   are for marks only; text and labels wear the --app-* ink tokens. */
+:root {
+  --viz-series-1: #2a78d6;   /* slot 1 blue   - done / single-series bars */
+  --viz-series-2: #eb6834;   /* slot 2 orange - still open                */
+  --viz-grid:     #e2e8f0;
+  --viz-hover:    rgba(15, 23, 42, 0.06);
+}
+.dark {
+  --viz-series-1: #3987e5;
+  --viz-series-2: #d95926;
+  --viz-grid:     #1e293b;
+  --viz-hover:    rgba(226, 232, 240, 0.08);
+}

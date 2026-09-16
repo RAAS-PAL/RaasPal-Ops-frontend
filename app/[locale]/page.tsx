@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { Bot, CalendarClock, ChevronRight, FileSearch, Mail, Sparkles, Users } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
+import { BrandTicketHealthCard } from '@/components/BrandTicketHealthCard';
 import { CvteStatusSummary } from '@/components/CvteStatusSummary';
 import { MonthlyDeliveryCard } from '@/components/MonthlyDeliveryCard';
 import { RecentDeliveries } from '@/components/RecentDeliveries';
@@ -70,6 +71,9 @@ export default async function LocaleHomePage() {
               <MonthlyDeliveryCard />
               <RecentDeliveries />
             </div>
+
+            {/* Service health for the delivery-robot brand under review; the full analysis has its own page */}
+            <BrandTicketHealthCard />
 
             {/* Robot monitoring stays visible for operations */}
             <CvteStatusSummary />

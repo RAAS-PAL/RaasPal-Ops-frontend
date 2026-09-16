@@ -123,6 +123,12 @@ import type {
   PmYearResponse,
 } from '@/lib/pm/types';
 import type { MonthlyPerformanceReport } from '@/lib/reports/types';
+import type {
+  BrandSyncStatus,
+  BrandTicket,
+  BrandTicketSummary,
+  TicketScope,
+} from '@/lib/tickets/types';
 
 // Users
 export const userApi = {
@@ -748,3 +754,41 @@ export interface PmSyncStatus {
     errorMessage: string | null;
   }[];
 }
+
+/* ─── Per-brand service tickets (AutoXing today) ──────────────────────────── */
+
+/**
+ * One robot brand's tickets off the monday delivery board, as stored by the
+ * nightly sync. `from`/`to` are ISO dates on the ticket's Open Date; both
+ * omitted means all time.
+ */
+export const brandTicketApi = {
+  summary: (brand: string, from?: string | null, to?: string | null) =>
+    api.get<ApiResponse<BrandTicketSummary>>(`/api/v1/tickets/${brand}/summary`, {
+      params: { ...(from ? { from } : {}), ...(to ? { to } : {}) },
+    }),
+
+  list: (brand: string, from?: string | null, to?: string | null, scope: TicketScope = 'all') =>
+    api.get<ApiResponse<BrandTicket[]>>(`/api/v1/tickets/${brand}`, {
+      params: { ...(from ? { from } : {}), ...(to ? { to } : {}), scope },
+    }),
+
+  syncStatus: (brand: string) =>
+    api.get<ApiResponse<BrandSyncStatus>>(`/api/v1/tickets/${brand}/sync/status`),
+
+  /** One monday call; a few seconds. Not retried — a timeout is "still running". */
+  sync: (brand: string) =>
+    api.post<ApiResponse<BrandSyncStatus>>(`/api/v1/tickets/${brand}/sync`, null, {
+      timeout: 120_000,
+      skipRetry: true,
+    }),
+
+  /** Blob, not a link: the bearer token only travels with axios. */
+  exportExcel: (brand: string, from?: string | null, to?: string | null) =>
+    api.get<Blob>(`/api/v1/tickets/${brand}/export`, {
+      params: { ...(from ? { from } : {}), ...(to ? { to } : {}) },
+      responseType: 'blob',
+      timeout: 120_000,
+      skipRetry: true,
+    }),
+};
