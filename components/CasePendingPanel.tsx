@@ -545,9 +545,12 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
                     <td className="px-3 py-2.5 whitespace-nowrap">{row.waitingFrom ?? '—'}</td>
                   </>
                 ) : (
-                  <td className="max-w-[18rem] px-3 py-2.5">
+                  <td className="max-w-[22rem] px-3 py-2.5">
+                    {/* One dated entry per line, as the RE team's sheet lays it out. Not
+                        clamped: the reviewer is checking every line, and a hidden fourth
+                        entry is the one that would have needed correcting. */}
                     {row.solution ? (
-                      <span className="line-clamp-3" title={row.solution}>
+                      <span className="block whitespace-pre-line" title={row.solution}>
                         {row.solution}
                       </span>
                     ) : (
