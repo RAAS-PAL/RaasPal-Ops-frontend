@@ -898,7 +898,35 @@
           "pooled": "pooled"
         }
       },
-      "nResponses": "{n} responses"
+      "nResponses": "{n} responses",
+      "workbooks": {
+        "upload": "Upload workbook",
+        "uploading": "Uploading…",
+        "uploaded": "{file} is now the current {survey} workbook.",
+        "duplicate": "{file} is already the current workbook — nothing changed.",
+        "uploadFailed": "Could not upload the workbook",
+        "history": "Upload history",
+        "hideHistory": "Hide history",
+        "loading": "Loading history…",
+        "historyFailed": "Could not read the upload history",
+        "empty": "No workbooks uploaded yet.",
+        "current": "Current",
+        "unknownUploader": "uploader since removed",
+        "download": "Download this file",
+        "delete": "Delete this upload",
+        "confirm": "Delete this upload? It is not the current workbook, so the figures will not change.",
+        "confirmCurrent": "Delete the current workbook? The previous upload for this survey becomes current again and CSAT goes back to what it said before.",
+        "confirmDelete": "Delete",
+        "cancel": "Keep",
+        "deleting": "Deleting…",
+        "deleteFailed": "Could not delete the workbook",
+        "survey": {
+          "installation": "Installation",
+          "pm": "PM",
+          "cleaning": "CM Cleaning",
+          "delivery": "CM Delivery"
+        }
+      }
     },
     "kpis": {
       "firstTimeInstall": "1st Time Install",

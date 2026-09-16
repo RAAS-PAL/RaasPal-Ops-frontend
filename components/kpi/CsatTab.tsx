@@ -38,6 +38,7 @@ import { CSAT_OVERALL, CSAT_SURVEYS, type CsatSelection } from '@/lib/kpi/csat';
 import { KPI_COLORS } from '@/lib/kpi/fixtures';
 import { dateLocale, type Period } from '@/lib/kpi/period';
 import { CsatDetailView } from './CsatDetailView';
+import { CsatWorkbookManager } from './CsatWorkbookManager';
 import { KpiHeadlineTile } from './KpiHeadlineTile';
 import { KpiBarChart, type ChartPoint } from './KpiBarChart';
 import { KpiPanel } from './KpiPanel';
@@ -236,6 +237,9 @@ export function CsatTab({ period, selectedSurvey, onSelectSurvey }: Props) {
                 </li>
               ))}
             </ul>
+
+            {/* Replacing a workbook, and the record of every replacement. */}
+            <CsatWorkbookManager />
           </div>
         </div>
 
