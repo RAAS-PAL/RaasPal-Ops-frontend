@@ -5,8 +5,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Bot, ClipboardList, FileText, Loader2, Plus, Trash2 } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
-import { AppSidebar } from '@/components/AppSidebar';
-import { AppTopBar } from '@/components/AppTopBar';
 import { ListSkeleton } from '@/components/ui/skeleton';
 import { StatusBadge, toneForStatus } from '@/components/ui/status-badge';
 import { proposalApi } from '@/lib/api';
@@ -30,7 +28,7 @@ function ProposalCard({
   });
 
   return (
-    <article className="flex flex-col gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4 shadow-sm transition hover:border-[var(--app-brand)] hover:shadow-md hover:shadow-[var(--app-brand-glow)] sm:flex-row sm:items-center sm:justify-between">
+    <article className="flex flex-col gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4 shadow-sm transition hover:border-[var(--app-brand)] sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
           <Bot className="h-5 w-5" />
@@ -95,7 +93,7 @@ function EmptyState({ filtered }: { filtered: boolean }) {
   const t = useTranslations('proposals');
   return (
     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-panel)] py-20 text-center">
-      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--app-brand)] to-[var(--app-brand-dark)] text-white shadow-sm shadow-[var(--app-brand-glow)]">
+      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--app-brand)] text-white shadow-sm">
         <ClipboardList className="h-7 w-7" />
       </span>
       <h3 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
@@ -117,10 +115,15 @@ function EmptyState({ filtered }: { filtered: boolean }) {
   );
 }
 
-export function ProposalsClient() {
+/**
+ * The generated proposals, filtered by the hub's search box.
+ *
+ * <p>Rendered inside the Solutions hub (one page, three tabs) rather than as a page of
+ * its own, which is why the shell and the search state live in the hub.
+ */
+export function ProposalsList({ searchQuery }: { searchQuery: string }) {
   const t = useTranslations('proposals');
   const queryClient = useQueryClient();
-  const [searchQuery, setSearchQuery] = useState('');
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['proposals'],
@@ -142,19 +145,7 @@ export function ProposalsClient() {
     : all;
 
   return (
-    <main className="min-h-dvh bg-[var(--app-bg)] text-[var(--app-text)] transition-colors">
-      <div className="flex min-h-dvh">
-        <AppSidebar />
-        <section className="flex min-w-0 flex-1 flex-col">
-          <AppTopBar
-            eyebrow={t('eyebrow')}
-            title={t('pageTitle')}
-            searchPlaceholder={t('searchPlaceholder')}
-            searchValue={searchQuery}
-            onSearchChange={setSearchQuery}
-          />
-
-          <div className="mx-auto w-full max-w-6xl space-y-4 p-4 sm:p-6">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-[var(--app-muted)]">
                 {isLoading
@@ -165,7 +156,7 @@ export function ProposalsClient() {
               </p>
               <Link
                 className="flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--app-brand-dark)]"
-                href="/generate-solution"
+                href="/solutions?tab=generate"
               >
                 <Plus className="h-4 w-4" />
                 {t('newSolution')}
@@ -197,8 +188,5 @@ export function ProposalsClient() {
               </div>
             )}
           </div>
-        </section>
-      </div>
-    </main>
   );
 }

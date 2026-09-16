@@ -3,14 +3,13 @@
 import {
   ChevronDown,
   LogOut,
-  Settings,
   ShieldCheck,
   UserCircle,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { useAuthStore } from '@/store/auth';
 
 export function UserMenu() {
@@ -20,10 +19,18 @@ export function UserMenu() {
   const { logout, user } = useAuthStore();
   const t = useTranslations('userMenu');
 
+  // Profile navigates; Access role is a readout - the real role from /me, not the
+  // RAASPAL_TEAM placeholder it used to show under every account, admins included.
+  //
+  // A "Settings" entry sat here with nothing behind it. The app's only two per-user
+  // preferences are theme and language, and both already have their own always-visible
+  // control in the top bar, so the page would have duplicated them or been empty. The
+  // capability actually missing is team administration - /api/v1/users is built and
+  // ADMIN-only but has no screen - and that is not a personal preference, so it wants
+  // its own entry rather than this one.
   const menuItems = [
-    { label: t('profile'), detail: t('profileDetail'), icon: UserCircle },
-    { label: t('settings'), detail: t('settingsDetail'), icon: Settings },
-    { label: t('accessRole'), detail: t('teamRole'), icon: ShieldCheck },
+    { label: t('profile'), detail: t('profileDetail'), icon: UserCircle, href: '/profile' },
+    { label: t('accessRole'), detail: user?.role ?? t('teamRole'), icon: ShieldCheck },
   ];
 
   const handleLogout = useCallback(async () => {
@@ -66,7 +73,7 @@ export function UserMenu() {
         onClick={() => setOpen((value) => !value)}
         type="button"
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[var(--app-brand)] to-[var(--app-brand-dark)] text-xs font-bold text-white">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--app-nav-bg)] text-xs font-bold text-[var(--app-nav-text)]">
           {user?.fullName?.slice(0, 2).toUpperCase() ?? 'RE'}
         </span>
         <span className="hidden text-left sm:block">
@@ -88,7 +95,7 @@ export function UserMenu() {
           >
             <div className="border-b border-[var(--app-border)] bg-[var(--app-panel-alt)] p-4">
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[var(--app-brand)] to-[var(--app-brand-dark)] text-sm font-bold text-white">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--app-nav-bg)] text-sm font-bold text-[var(--app-nav-text)]">
                   {user?.fullName?.slice(0, 2).toUpperCase() ?? 'RE'}
                 </span>
                 <div>
@@ -99,22 +106,35 @@ export function UserMenu() {
             </div>
 
             <div className="p-2">
-              {menuItems.map((item) => (
-                <button
-                  key={item.label}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-[var(--app-faint)]"
-                  role="menuitem"
-                  type="button"
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
-                    <item.icon className="h-4 w-4" />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-semibold text-[var(--app-text)]">{item.label}</span>
-                    <span className="block text-xs text-[var(--app-muted)]">{item.detail}</span>
-                  </span>
-                </button>
-              ))}
+              {menuItems.map((item) => {
+                const body = (
+                  <>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
+                      <item.icon className="h-4 w-4" />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-semibold text-[var(--app-text)]">{item.label}</span>
+                      <span className="block text-xs text-[var(--app-muted)]">{item.detail}</span>
+                    </span>
+                  </>
+                );
+                const className = 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-[var(--app-faint)]';
+                return item.href ? (
+                  <Link
+                    key={item.label}
+                    className={className}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    role="menuitem"
+                  >
+                    {body}
+                  </Link>
+                ) : (
+                  <button key={item.label} className={className} role="menuitem" type="button">
+                    {body}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="border-t border-[var(--app-border)] p-2">

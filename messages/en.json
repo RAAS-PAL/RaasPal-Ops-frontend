@@ -107,6 +107,12 @@
     "reportCadence": "Report cadence",
     "contractStartDate": "Contract start date",
     "contractStartDateHint": "The first monthly report starts from this date, so a robot deployed mid-month does not report work done before the customer had it. Leave empty to report whole months.",
+    "contractEndDate": "Contract end date",
+    "contractEndDateHint": "The last monthly report stops at this date, and later months produce no report for this robot. Leave empty while the contract is open.",
+    "contractDates": "Contract period",
+    "contractOpenEnded": "open",
+    "contractEnded": "Contract ended",
+    "contractEndsIn": "Contract ends in {days} days",
     "selectCustomer": "Select a customer…",
     "cancel": "Cancel",
     "serialRequired": "Serial number is required.",
@@ -135,7 +141,7 @@
     "solutions": "Solutions",
     "proposals": "Proposals",
     "reports": "Reports",
-    "robots": "Robots",
+    "robots": "Robot Catalog",
     "cvteStatus": "CVTE C3 Status",
     "tools": "Tools",
     "users": "Users",
@@ -146,7 +152,8 @@
     "kpiReport": "KPI Report",
     "kpiUtilization": "Utilization",
     "kpiRepeatCost": "Repeat Cost",
-    "kpiCsat": "CSAT"
+    "kpiCsat": "CSAT",
+    "pmPlanning": "PM Planning"
   },
   "sidebar": {
     "teamOperations": "Team operations",
@@ -679,6 +686,7 @@
       "preview": "Report Preview",
       "customers": "Customers",
       "robots": "Robots",
+      "contracts": "Contracts",
       "partners": "Partners"
     },
     "automationComingSoon": "Scheduled report automation is coming soon."
@@ -743,23 +751,35 @@
     "searchPlaceholder": "Manage monthly report delivery",
     "groups": {
       "performance": "Robot performance reports",
-      "correctiveMaintenance": "Corrective maintenance"
+      "correctiveMaintenance": "Corrective maintenance",
+      "pendingCases": "Pending cases"
     },
     "tabs": {
       "automation": "Manage automation",
       "company": "Company report",
-      "email": "Email customers",
       "preview": "Report preview",
+      "zeroData": "No data",
       "autoxing": "AutoXing report",
       "cmNew": "New report",
-      "cmHistory": "History"
+      "cmHistory": "History",
+      "caseMk": "MK pending",
+      "caseCleaning": "Cleaning pending",
+      "caseMakro": "Makro pending",
+      "caseAotga": "AOTGA pending"
+    },
+    "brands": {
+      "gausium": "Gausium",
+      "pudu": "Pudu",
+      "autoxing": "AutoXing"
+    },
+    "pudu": {
+      "title": "Pudu performance reports are not built yet",
+      "description": "Nothing collects run data from Pudu robots: the platform has telemetry integrations for Gausium and AutoXing only, so there is no history to report on. It needs Pudu open-API credentials and an adapter, after which these reports work the way Gausium’s do. Pudu delivery robots are tracked today through the monday boards, under Pending cases."
     }
   },
   "userMenu": {
     "profile": "Profile",
     "profileDetail": "View account details",
-    "settings": "Settings",
-    "settingsDetail": "Preferences and workspace",
     "accessRole": "Access role",
     "teamRole": "RAASPAL_TEAM",
     "signOut": "Sign out"
@@ -1182,6 +1202,141 @@
     },
     "placeholderFootnote": {
       "pm": "Cleaning 95.6%  |  Delivery 81.2%"
+    }
+  },
+  "profile": {
+    "eyebrow": "Account",
+    "title": "Profile",
+    "account": {
+      "title": "Account details",
+      "description": "Your name and email are set by an admin. Ask one if either needs changing.",
+      "name": "Full name",
+      "email": "Email",
+      "role": "Access role",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Inactive",
+      "memberSince": "Member since",
+      "updated": "Last updated",
+      "roles": {
+        "ADMIN": "Admin",
+        "RAASPAL_TEAM": "RAASPAL team",
+        "CUSTOMER": "Customer",
+        "INVENTORY_STAFF": "Inventory staff"
+      }
+    },
+    "password": {
+      "title": "Change password",
+      "description": "Enter your current password to set a new one.",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "hint": "At least {min} characters, and different from your current one.",
+      "show": "Show password",
+      "hide": "Hide password",
+      "submit": "Change password",
+      "submitting": "Changing…",
+      "success": "Your password has been changed. Other devices signed in with the old password stay signed in until their session expires.",
+      "errors": {
+        "tooShort": "The new password must be at least {min} characters.",
+        "mismatch": "The new passwords do not match.",
+        "same": "The new password must be different from your current one.",
+        "generic": "Could not change the password. Please try again."
+      }
+    }
+  },
+  "pmPlanning": {
+    "eyebrow": "Preventive maintenance",
+    "title": "PM 52-Week Planning",
+    "searchPlaceholder": "Search site, customer or project…",
+    "yearLabel": "Year",
+    "monthLabel": "Month",
+    "empty": "No PM visits match these filters.",
+    "loadFailed": "Could not load the PM plan. Try again, or run a sync if this is a new environment.",
+    "view": {
+      "year": "52-Week",
+      "month": "Month"
+    },
+    "lookAhead": {
+      "label": "Look ahead",
+      "thisMonth": "This month",
+      "next30": "Next 30 days",
+      "next60": "Next 60 days",
+      "next90": "Next 90 days"
+    },
+    "grid": {
+      "site": "Site",
+      "week": "Week",
+      "load": "Load",
+      "thisWeek": "This week"
+    },
+    "tiles": {
+      "visits": "PM visits",
+      "customers": "Sites",
+      "robots": "Robots",
+      "planned": "Planned",
+      "completed": "Completed",
+      "overdue": "Overdue",
+      "undatedTitle": "{count} PM visits have no planned date",
+      "undatedHelp": "They appear in no week and no month. Set a Plan date on the monday subitem to bring them into the plan."
+    },
+    "table": {
+      "date": "Plan date",
+      "visit": "Visit",
+      "site": "Site",
+      "geography": "Province / Region",
+      "robot": "Robot",
+      "engineer": "Engineer",
+      "status": "Status",
+      "noPlanDate": "No plan date",
+      "daysLate": "{days} days late",
+      "dueSoon": "Due within 7 days"
+    },
+    "status": {
+      "completed": "Completed",
+      "inProgress": "In progress",
+      "planned": "Planned",
+      "unplanned": "Unplanned",
+      "overdue": "Overdue"
+    },
+    "filters": {
+      "all": "All",
+      "serviceLine": "Service line",
+      "region": "Region",
+      "zone": "Zone",
+      "province": "Province",
+      "status": "Status",
+      "engineer": "Engineer",
+      "clear": "Clear filters"
+    },
+    "sync": {
+      "action": "Sync from monday",
+      "running": "Syncing…",
+      "help": "Re-reads both PM boards. Takes a few seconds.",
+      "done": "Synced {contracts} sites and {visits} visits from monday.",
+      "failed": "Sync failed."
+    },
+    "backToMonth": "Back to picking a month",
+    "company": {
+      "label": "Company",
+      "all": "All companies",
+      "excludedCount": "{count} hidden",
+      "searchPlaceholder": "Search company…",
+      "selectAll": "Select all",
+      "clearAll": "None",
+      "selectMatching": "Select matching",
+      "clearMatching": "Hide matching",
+      "showing": "{count} of {total}",
+      "noMatches": "No company matches that."
+    }
+  },
+  "solutionsHub": {
+    "eyebrow": "Solution studio",
+    "title": "Solutions",
+    "tabs": {
+      "generate": "Generate",
+      "solutions": "Solutions",
+      "proposals": "Proposals"
     }
   }
 }

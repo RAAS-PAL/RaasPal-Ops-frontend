@@ -3,19 +3,26 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Bot, ChevronLeft, ChevronRight, LayoutGrid, Plus, Table2 } from 'lucide-react';
+import { Bot, LayoutGrid, Plus, Table2 } from 'lucide-react';
 import { RobotSpecMatrix } from '@/components/RobotSpecMatrix';
 import { Link } from '@/i18n/navigation';
 import { robotApi } from '@/lib/api';
 import { ROBOT_TYPES, TYPE_LABELS, TYPE_STYLES } from '@/lib/robot-types';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
+import { InfiniteScroll } from '@/components/ui/infinite-scroll';
 import { RobotDetailModal } from '@/components/RobotDetailModal';
 import { ListSkeleton } from '@/components/ui/skeleton';
 import { StatusBadge, toneForStatus } from '@/components/ui/status-badge';
 import type { RobotResponse, RobotType } from '@/types/api';
 
-const ITEMS_PER_PAGE = 9;
+/**
+ * Cards drawn before the reader scrolls, and the number added each time they reach the
+ * end. Thirty because these are cards in a grid up to eight wide, not rows: a batch
+ * that does not reach the bottom of the window is revealed and immediately asked for
+ * again, which works but is visible.
+ */
+const PAGE_SIZE = 30;
 
 export type RobotsView = 'catalog' | 'specs';
 
@@ -60,119 +67,82 @@ function PriceBadge({ robot }: { robot: RobotResponse }) {
   return null;
 }
 
-/* ─── Robot row ───────────────────────────────────────────────────────────── */
+/* ─── Robot card ──────────────────────────────────────────────────────────── */
 
-function RobotRow({ robot, onClick }: { robot: RobotResponse; onClick: () => void }) {
+/**
+ * One model as a card, photo first.
+ *
+ * <p>Rows suited the catalogue when it was nineteen text entries. Now every model has a
+ * product photo, and a photo is the fastest way to recognise a robot — nobody reads
+ * "Omnie Roller Brush Version" to work out which machine it is.
+ *
+ * <p>The image tile is white and unpadded because the files are: every photo is
+ * exported as a 720x720 tile, trimmed to the robot and re-centred with the same margin,
+ * so the tiles line up as a grid on their own. The sources could not — aspect ratios ran
+ * 0.42 to 2.02, some transparent and some on white, each with its own blank space — and
+ * no CSS fixes that, only re-exporting them does. A white tile rather than the panel
+ * colour so the photo's own ground and the tile are one surface, in both themes.
+ *
+ * <p>The brand is not repeated on the card: it is the heading the card sits under.
+ */
+function RobotCard({ robot, onClick }: { robot: RobotResponse; onClick: () => void }) {
   const s = robot.spec;
   const specs = [
-    s?.speedMs != null             && `${s.speedMs} m/s`,
+    s?.speedMs != null && `${s.speedMs} m/s`,
     s?.batteryWorkTimeSweepHr != null && `${s.batteryWorkTimeSweepHr} hr`,
-    s?.widthCleaningMm != null     && `${s.widthCleaningMm} mm`,
+    s?.widthCleaningMm != null && `${s.widthCleaningMm} mm`,
   ].filter(Boolean) as string[];
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-[var(--app-faint)]"
+      className="group flex flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] text-left transition hover:-translate-y-0.5"
     >
-      {robot.imageUrl ? (
-        <img
-          src={robot.imageUrl}
-          alt={robot.model}
-          className="h-9 w-9 shrink-0 rounded-lg object-contain bg-[var(--app-faint)]"
-        />
-      ) : (
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
-          <Bot className="h-4 w-4" />
-        </span>
-      )}
-
-      <p className="w-44 shrink-0 truncate text-sm font-semibold text-[var(--app-text)]">{robot.model}</p>
-
-      <div className="flex flex-1 flex-wrap items-center gap-1.5 min-w-0">
-        <TypeBadge type={robot.robotType} />
-        <StatusBadge tone={toneForStatus(robot.testStatus)}>{robot.testStatus}</StatusBadge>
-        <PriceBadge robot={robot} />
+      {/* 3/4 is the exported tile ratio exactly (720x960), so object-contain fills the
+          box with no letterboxing. Each photo was re-rendered to put its robot at 38%
+          of the tile whatever the shape of the machine, which is what makes a wide
+          scrubber and a tall delivery robot read as the same size in the grid. The
+          ratio comes from the fleet: trimmed shapes run 0.35-1.70 and average 0.75,
+          and a tile centred there holds both extremes at equal area without clipping. */}
+      <div className="flex aspect-[3/4] w-full items-center justify-center bg-white">
+        {robot.imageUrl ? (
+          <img
+            src={robot.imageUrl}
+            alt={robot.model}
+            loading="lazy"
+            className="h-full w-full object-contain transition group-hover:scale-[1.03]"
+          />
+        ) : (
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
+            <Bot className="h-4 w-4" />
+          </span>
+        )}
       </div>
 
-      {specs.length > 0 && (
-        <div className="hidden lg:flex items-center gap-4 shrink-0 text-xs text-[var(--app-muted)]">
-          {specs.map((v) => <span key={v}>{v}</span>)}
+      <div className="flex flex-1 flex-col gap-1.5 p-2.5">
+        <p className="truncate text-[13px] font-bold leading-tight text-[var(--app-text)]" title={robot.model}>
+          {robot.model}
+        </p>
+
+        <div className="flex flex-wrap items-center gap-1">
+          <TypeBadge type={robot.robotType} />
+          <StatusBadge tone={toneForStatus(robot.testStatus)}>{robot.testStatus}</StatusBadge>
+          <PriceBadge robot={robot} />
         </div>
-      )}
 
-      <ChevronRight className="ml-2 h-4 w-4 shrink-0 text-[var(--app-muted)] opacity-40" />
-    </div>
+        {specs.length > 0 && (
+          <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-[var(--app-muted)]">
+            {specs.map((v) => (
+              <span key={v}>{v}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    </button>
   );
 }
 
-/* ─── Pagination ──────────────────────────────────────────────────────────── */
-
-function Pagination({
-  currentPage,
-  totalPages,
-  onPageChange,
-}: {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-}) {
-  if (totalPages <= 1) return null;
-
-  const pages: (number | '…')[] = [];
-  if (totalPages <= 7) {
-    for (let i = 1; i <= totalPages; i++) pages.push(i);
-  } else if (currentPage <= 4) {
-    pages.push(1, 2, 3, 4, 5, '…', totalPages);
-  } else if (currentPage >= totalPages - 3) {
-    pages.push(1, '…', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
-  } else {
-    pages.push(1, '…', currentPage - 1, currentPage, currentPage + 1, '…', totalPages);
-  }
-
-  const btn = 'inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm font-semibold transition';
-
-  return (
-    <div className="flex items-center justify-center gap-1 pt-2">
-      <button
-        type="button"
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className={`${btn} border border-[var(--app-border)] text-[var(--app-muted)] hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)] disabled:opacity-30 disabled:cursor-not-allowed`}
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </button>
-
-      {pages.map((p, i) =>
-        p === '…' ? (
-          <span key={`ellipsis-${i}`} className="px-1 text-sm text-[var(--app-muted)]">…</span>
-        ) : (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onPageChange(p as number)}
-            className={`${btn} ${
-              p === currentPage
-                ? 'bg-[var(--app-brand)] text-white'
-                : 'border border-[var(--app-border)] text-[var(--app-muted)] hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)]'
-            }`}
-          >
-            {p}
-          </button>
-        ),
-      )}
-
-      <button
-        type="button"
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className={`${btn} border border-[var(--app-border)] text-[var(--app-muted)] hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)] disabled:opacity-30 disabled:cursor-not-allowed`}
-      >
-        <ChevronRight className="h-4 w-4" />
-      </button>
-    </div>
-  );
-}
 
 /* ─── Filter tabs ─────────────────────────────────────────────────────────── */
 
@@ -182,7 +152,7 @@ const TYPE_KEYS: Array<RobotType | 'ALL'> = ['ALL', ...ROBOT_TYPES];
 
 export function RobotsClient({ initialView = 'catalog' }: { initialView?: RobotsView }) {
   const [activeType, setActiveType] = useState<RobotType | 'ALL'>('ALL');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRobot, setSelectedRobot] = useState<RobotResponse | null>(null);
   const [view, setViewState] = useState<RobotsView>(initialView);
@@ -201,9 +171,16 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
     );
   }
 
+  // The catalogue is edited by hand a few times a week, so it is not worth re-reading
+  // on every focus: the default 60s staleTime plus refetchOnWindowFocus meant clicking
+  // back into the window could start another full fetch, and this request is not cheap.
+  // Fifteen minutes, and only on a real remount.
   const { data, isLoading, isError } = useQuery({
     queryKey: ['robots'],
     queryFn: () => robotApi.getAll(0, 200).then((r) => r.data.data),
+    staleTime: 15 * 60_000,
+    gcTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const all = [...(data?.content ?? [])].sort((a, b) => {
@@ -222,18 +199,21 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
     : all;
 
   const filtered = activeType === 'ALL' ? searched : searched.filter((r) => r.robotType === activeType);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const pageStart = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginated = filtered.slice(pageStart, pageStart + ITEMS_PER_PAGE);
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
 
+  // Both handlers reset the list to its first rows. Keeping a deep position after a
+  // filter or a search would strand the reader among rows they did not ask for — and
+  // resetting here rather than in an effect means it happens with the change, not in
+  // a second render after it.
   function handleTypeChange(type: RobotType | 'ALL') {
     setActiveType(type);
-    setCurrentPage(1);
+    setVisibleCount(PAGE_SIZE);
   }
 
   function handleSearch(q: string) {
     setSearchQuery(q);
-    setCurrentPage(1);
+    setVisibleCount(PAGE_SIZE);
   }
 
   return (
@@ -306,7 +286,7 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
             <p className="text-sm text-[var(--app-muted)]">
               {query
                 ? t('searchResults', { count: filtered.length, query: searchQuery })
-                : t('pageRange', { start: pageStart + 1, end: Math.min(pageStart + ITEMS_PER_PAGE, filtered.length), total: filtered.length })}
+                : t('pageRange', { start: 1, end: visible.length, total: filtered.length })}
             </p>
           )}
           <Link
@@ -340,8 +320,8 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
       )}
 
       {/* Brand groups */}
-      {paginated.length > 0 && (() => {
-        const groups = paginated.reduce<Record<string, RobotResponse[]>>((acc, robot) => {
+      {visible.length > 0 && (() => {
+        const groups = visible.reduce<Record<string, RobotResponse[]>>((acc, robot) => {
           (acc[robot.brand] ??= []).push(robot);
           return acc;
         }, {});
@@ -358,9 +338,9 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
                     {t('modelCount', { count: robots.length })}
                   </span>
                 </div>
-                <div className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] divide-y divide-[var(--app-border)]">
+                <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
                   {robots.map((robot) => (
-                    <RobotRow key={robot.id} robot={robot} onClick={() => setSelectedRobot(robot)} />
+                    <RobotCard key={robot.id} robot={robot} onClick={() => setSelectedRobot(robot)} />
                   ))}
                 </div>
               </div>
@@ -369,11 +349,11 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
         );
       })()}
 
-      {/* Pagination */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
+      {/* More rows as the reader reaches the end of the list */}
+      <InfiniteScroll
+        hasMore={hasMore}
+        onReach={() => setVisibleCount((n) => n + PAGE_SIZE)}
+        label={t('pageRange', { start: 1, end: visible.length, total: filtered.length })}
       />
        </>
       )}

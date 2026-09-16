@@ -1,6 +1,6 @@
 import type { GeneratedProposalResponse } from '@/types/api';
 
-const BRAND_COLOR: [number, number, number] = [22, 185, 209];  // #16b9d1
+const BRAND_COLOR: [number, number, number] = [37, 99, 235];   // #2563eb, the console's brand blue
 const TEXT_DARK:  [number, number, number] = [15,  23,  42];   // slate-900
 const TEXT_MID:   [number, number, number] = [100, 116, 139];  // slate-500
 const WARN_BG:    [number, number, number] = [255, 251, 235];  // amber-50

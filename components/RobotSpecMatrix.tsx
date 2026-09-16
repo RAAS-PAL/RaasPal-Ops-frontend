@@ -62,9 +62,14 @@ function SpecCell({ field, value }: { field: SpecField; value: unknown }) {
 /* ─── Matrix ──────────────────────────────────────────────────────────────── */
 
 export function RobotSpecMatrix() {
+  // Same reasoning as the catalogue list: a big read of data that changes a few times
+  // a week, so it is kept rather than re-fetched when the window regains focus.
   const { data, isLoading, isError } = useQuery({
     queryKey: ['robot-spec-matrix'],
     queryFn: () => robotApi.specMatrix().then((r) => r.data.data),
+    staleTime: 15 * 60_000,
+    gcTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});

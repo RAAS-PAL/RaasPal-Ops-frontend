@@ -36,11 +36,18 @@ export interface AuthResponse {
   user: UserResponse;
 }
 
+/**
+ * Mirrors the backend's Role enum. There is no SPECIALIST - the RE team signs in
+ * as RAASPAL_TEAM, and INVENTORY_STAFF is the RIMS warehouse login, which shares
+ * this backend but may not email customers.
+ */
+export type UserRole = 'ADMIN' | 'RAASPAL_TEAM' | 'CUSTOMER' | 'INVENTORY_STAFF';
+
 export interface UserResponse {
   id: string;
   email: string;
   fullName: string;
-  role: 'ADMIN' | 'SPECIALIST';
+  role: UserRole;
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -50,7 +57,13 @@ export interface CreateUserRequest {
   email: string;
   password: string;
   fullName: string;
-  role: 'ADMIN' | 'SPECIALIST';
+  role: UserRole;
+}
+
+/** Self-service only: the account is always the caller's own, so there is no id. */
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 /*
@@ -453,7 +466,18 @@ export interface DeploymentInfo {
    * customer had it. Null reports whole months.
    */
   contractStartDate: string | null;
+  /**
+   * ISO date the contract ends, inclusive. The last monthly report clips to it, and
+   * a month that begins after it produces no report. Null = no end known.
+   */
+  contractEndDate: string | null;
+  /** NONE (no end date) / ACTIVE / ENDING_SOON (within 30 days) / ENDED, as of today. */
+  contractStatus: ContractStatus;
+  /** Days from today to the end date; negative once ended; null when no end date. */
+  daysToContractEnd: number | null;
 }
+
+export type ContractStatus = 'NONE' | 'ACTIVE' | 'ENDING_SOON' | 'ENDED';
 
 export interface RobotUnitResponse {
   id: string;
@@ -475,6 +499,8 @@ export interface RegisterRobotRequest {
   reportCadence?: ReportCadence | null;
   /** ISO date (YYYY-MM-DD), or null for whole-month reports. */
   contractStartDate?: string | null;
+  /** ISO date (YYYY-MM-DD) the contract ends, inclusive; null = no end known. */
+  contractEndDate?: string | null;
 }
 
 // Edit an existing robot — serial number is immutable, so it is not included.
@@ -487,6 +513,8 @@ export interface UpdateRobotRequest {
   reportCadence?: ReportCadence | null;
   /** ISO date (YYYY-MM-DD), or null for whole-month reports. */
   contractStartDate?: string | null;
+  /** ISO date (YYYY-MM-DD) the contract ends, inclusive; null = no end known. */
+  contractEndDate?: string | null;
 }
 
 /* ─── Partners (distributor/service partners + their API keys) ─────────────── */
@@ -565,6 +593,96 @@ export interface TelemetrySyncStatus {
   lastSummary: TelemetrySyncSummary | null;
 }
 
+/* ─── Robots with no data (the customer success worklist) ─────────────────── */
+
+/** Why a robot logged nothing — the three cases that need different people. */
+export type ZeroDataReason = 'NEVER_SYNCED' | 'SYNC_FAILING' | 'NO_TASKS';
+
+export type FollowupStatus = 'TO_CONTACT' | 'CONTACTED' | 'RESOLVED';
+export type FollowupOutcome =
+  | 'ROBOT_OFFLINE'
+  | 'IN_STORAGE'
+  | 'CONTRACT_ENDED'
+  | 'REGISTRATION_ERROR'
+  | 'SYNC_PROBLEM'
+  | 'OTHER';
+
+/** One in-contract robot that logged no task in the month, with its follow-up. */
+export interface ZeroDataRobot {
+  robotUnitId: string;
+  serialNumber: string;
+  name: string | null;
+  brand: string | null;
+  model: string | null;
+  customerProfileId: string;
+  customerName: string;
+  site: string | null;
+  contractStartDate: string | null;
+  contractEndDate: string | null;
+  contractStatus: ContractStatus;
+  daysToContractEnd: number | null;
+  /** Business-zone date of the last task it ever logged; null if never. */
+  lastDataDate: string | null;
+  daysSinceLastData: number | null;
+  lastSyncAttemptAt: string | null;
+  lastSyncSuccessAt: string | null;
+  /** The last sync failure's message; null after a success. */
+  lastSyncError: string | null;
+  reason: ZeroDataReason;
+  followupStatus: FollowupStatus | null;
+  followupOutcome: FollowupOutcome | null;
+  followupNote: string | null;
+  followupUpdatedBy: string | null;
+  followupUpdatedAt: string | null;
+  /** Already held back from this month's customer report. */
+  excludedFromReport: boolean;
+}
+
+export interface ZeroDataRobotsResponse {
+  month: string;
+  monthLabel: string;
+  /** Active deployments whose contract overlaps the month. */
+  inScope: number;
+  zeroData: number;
+  toContact: number;
+  contacted: number;
+  resolved: number;
+  robots: ZeroDataRobot[];
+}
+
+export interface ZeroDataFollowupRequest {
+  status: FollowupStatus;
+  outcome?: FollowupOutcome | null;
+  note?: string | null;
+}
+
+/* ─── Contracts ending / ended ────────────────────────────────────────────── */
+
+export interface ExpiringContract {
+  robotUnitId: string;
+  serialNumber: string;
+  name: string | null;
+  brand: string | null;
+  model: string | null;
+  customerProfileId: string;
+  customerName: string;
+  site: string | null;
+  contractStartDate: string | null;
+  contractEndDate: string;
+  /** Negative once ended. */
+  daysToEnd: number;
+  status: ContractStatus;
+  /** When the ending-soon alert was emailed; null if not yet. */
+  alertedAt: string | null;
+}
+
+export interface ContractExpiryResponse {
+  asOf: string;
+  windowDays: number;
+  endingSoon: ExpiringContract[];
+  ended: ExpiringContract[];
+}
+
 /** Aggregate outcome of a fleet-wide sync run. */
 export interface TelemetrySyncSummary {
   from: string;
@@ -582,12 +700,22 @@ export interface TelemetrySyncSummary {
 // Automated report delivery history (report_sends)
 export type ReportSendStatus = 'SENT' | 'FAILED' | 'SKIPPED';
 
+/**
+ * BUNDLE is the month's deliverable (Manage automation / Company report). ROBOT_REPORT
+ * is one robot's report sent from the Preview tab — in the history so it is visible,
+ * but never counted as the customer having been delivered to.
+ */
+export type ReportSendKind = 'BUNDLE' | 'ROBOT_REPORT';
+
 export interface ReportSend {
   id: string;
   customerProfileId: string;
   customerName: string;
   reportMonth: string;
   status: ReportSendStatus;
+  kind: ReportSendKind;
+  /** Set for ROBOT_REPORT rows only. */
+  robotSerial: string | null;
   recipientEmail: string | null;
   errorMessage: string | null;
   sentAt: string;
@@ -753,4 +881,77 @@ export interface CustomerBundlePreview {
   /** How many robots the customer would currently see. */
   includedCount: number;
   robots: CustomerBundleRobot[];
+}
+
+// Daily Pending Case Report
+
+/** Mirrors the backend SlaStatus enum. UNKNOWN prints as a blank cell, not a word. */
+export type SlaStatus = 'WITHIN' | 'BREACHED' | 'ON_HOLD' | 'UNKNOWN';
+
+/**
+ * One printed line of a pending-case report.
+ *
+ * Field order matches the Raw_Delivery sheet, so the table and the Excel agree.
+ * `province` and `sourceItemId` are not printed on the sheet: the first explains why an
+ * SLA cell is blank, the second links a row back to the ticket a fix belongs on.
+ */
+export interface CaseReportRow {
+  no: number;
+  project: string | null;
+  branch: string | null;
+  robot: string | null;
+  serialNumber: string | null;
+  problem: string | null;
+  solution: string | null;
+  openDate: string | null;
+  reOnSite: string | null;
+  /** Days since the open date, not counting it: a case opened today reads 0. */
+  days: number | null;
+  sla: SlaStatus;
+  /** The sheet's own wording: 'over SLA', 'Within SLA', 'On Hold', or empty. */
+  slaLabel: string;
+  province: string | null;
+  /** AOTGA only. The board's Spare Parts Name. Null on every other sheet. */
+  requiredPart?: string | null;
+  /** AOTGA only. What the case is waiting on, in the RE team's words. */
+  waiting?: string | null;
+  /** AOTGA only. Whose court the wait is in: AOTGA, the supplier, or RAASPAL. */
+  waitingFrom?: string | null;
+  /** AOTGA only. When the part arrived; null while it is still on its way. */
+  partReceived?: string | null;
+  /** AOTGA only. Days since partReceived, counted like `days`. Null until received. */
+  agingAfterReceived?: number | null;
+  /**
+   * The monday ticket id, or a `manual-…` id for a row a person added by hand
+   * (see `isManualCaseRow`). Rows added by hand can be removed; board rows cannot.
+   */
+  sourceItemId: string | null;
+  /** True once somebody has saved a correction; such a row survives a regeneration. */
+  edited: boolean;
+}
+
+/** Prefix of the ids the backend gives rows added by hand. */
+export const MANUAL_CASE_ROW_PREFIX = 'manual-';
+
+export function isManualCaseRow(row: Pick<CaseReportRow, 'sourceItemId'>): boolean {
+  return row.sourceItemId?.startsWith(MANUAL_CASE_ROW_PREFIX) ?? false;
+}
+
+/**
+ * A row as the edit form sends it, for a correction or a new row. The whole row goes
+ * every time; a null `days` or `sla` asks the backend to recompute them from `openDate`
+ * and `province`.
+ */
+export interface CaseRowEdit {
+  project: string | null;
+  branch: string | null;
+  robot: string | null;
+  serialNumber: string | null;
+  problem: string | null;
+  solution: string | null;
+  openDate: string | null;
+  reOnSite: string | null;
+  days: number | null;
+  sla: SlaStatus | null;
+  province: string | null;
 }

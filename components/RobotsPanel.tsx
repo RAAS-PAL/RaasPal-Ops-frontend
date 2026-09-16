@@ -25,7 +25,9 @@ import {
   Trash2,
 } from 'lucide-react';
 import { customerApi, partnerApi, robotUnitApi, telemetryApi } from '@/lib/api';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { Button } from '@/components/ui/button';
+import { InfiniteScroll } from '@/components/ui/infinite-scroll';
 import type {
   CustomerResponse,
   RegisterRobotRequest,
@@ -84,6 +86,7 @@ const EMPTY_FORM: RegisterRobotRequest = {
   site: '',
   reportCadence: 'MONTHLY',
   contractStartDate: '',
+  contractEndDate: '',
 };
 
 /** Prefill the form from an existing robot (for the edit flow). */
@@ -97,11 +100,14 @@ function toForm(r: RobotUnitResponse): RegisterRobotRequest {
     site: r.deployment?.site ?? '',
     reportCadence: r.deployment?.reportCadence ?? 'MONTHLY',
     contractStartDate: r.deployment?.contractStartDate ?? '',
+    contractEndDate: r.deployment?.contractEndDate ?? '',
   };
 }
 
 export function RobotsPanel() {
   const t = useTranslations('robotsPanel');
+  const tCommon = useTranslations('common');
+  const { confirm, confirmDialog } = useConfirm();
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -304,10 +310,15 @@ export function RobotsPanel() {
           site: form.site,
           reportCadence: form.reportCadence,
           contractStartDate: emptyToNull(form.contractStartDate),
+          contractEndDate: emptyToNull(form.contractEndDate),
         },
       });
     } else {
-      registerMutation.mutate({ ...form, contractStartDate: emptyToNull(form.contractStartDate) });
+      registerMutation.mutate({
+        ...form,
+        contractStartDate: emptyToNull(form.contractStartDate),
+        contractEndDate: emptyToNull(form.contractEndDate),
+      });
     }
   }
 
@@ -388,6 +399,17 @@ export function RobotsPanel() {
               onChange={(e) => field('contractStartDate', e.target.value)}
             />
             <p className="text-xs text-[var(--app-muted)]">{t('contractStartDateHint')}</p>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-[var(--app-muted)]">{t('contractEndDate')}</label>
+            <input
+              type="date"
+              className={inputClass}
+              value={form.contractEndDate ?? ''}
+              min={form.contractStartDate || undefined}
+              onChange={(e) => field('contractEndDate', e.target.value)}
+            />
+            <p className="text-xs text-[var(--app-muted)]">{t('contractEndDateHint')}</p>
           </div>
         </div>
 
@@ -581,9 +603,16 @@ export function RobotsPanel() {
             <Button
               type="button"
               onClick={() => {
-                if (confirm(t('setSelectedMonthlyConfirm', { count: selected.size }))) {
+                void confirm({
+                  title: t('setSelectedMonthlyConfirm', { count: selected.size }),
+                  kind: 'warn',
+                  tone: 'primary',
+                  confirmLabel: tCommon('confirm'),
+                  message: t('setSelectedMonthlyConfirm', { count: selected.size }),
+                }).then((ok) => {
+                  if (!ok) return;
                   setAllCadenceMutation.mutate({ cadence: 'MONTHLY', ids: [...selected] });
-                }
+                });
               }}
               disabled={setAllCadenceMutation.isPending}
               className="bg-[var(--app-brand)] text-white hover:opacity-90 disabled:opacity-50"
@@ -658,6 +687,25 @@ export function RobotsPanel() {
                 {r.deployment?.site && (
                   <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{r.deployment.site}</span>
                 )}
+                {(r.deployment?.contractStartDate || r.deployment?.contractEndDate) && (
+                  <span
+                    className="inline-flex items-center gap-1 tabular-nums"
+                    title={t('contractDates')}
+                  >
+                    <CalendarCheck className="h-3.5 w-3.5" />
+                    {r.deployment.contractStartDate ?? '…'} → {r.deployment.contractEndDate ?? t('contractOpenEnded')}
+                  </span>
+                )}
+                {r.deployment?.contractStatus === 'ENDED' && (
+                  <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-950/30 dark:text-red-300 dark:ring-red-900/40">
+                    {t('contractEnded')}
+                  </span>
+                )}
+                {r.deployment?.contractStatus === 'ENDING_SOON' && (
+                  <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/40">
+                    {t('contractEndsIn', { days: r.deployment.daysToContractEnd ?? 0 })}
+                  </span>
+                )}
               </div>
               </div>
             </div>
@@ -702,9 +750,15 @@ export function RobotsPanel() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (confirm(t('deactivateConfirm', { name: robotDisplayName(r), customer: r.deployment?.customerName ?? '' }))) {
+                    void confirm({
+                      title: t('deactivateAria', { name: robotDisplayName(r) }),
+                      kind: 'warn',
+                      confirmLabel: tCommon('confirm'),
+                      message: t('deactivateConfirm', { name: robotDisplayName(r), customer: r.deployment?.customerName ?? '' }),
+                    }).then((ok) => {
+                      if (!ok) return;
                       deactivateMutation.mutate(r.deployment!.deploymentId);
-                    }
+                    });
                   }}
                   disabled={deactivateMutation.isPending}
                   aria-label={t('deactivateAria', { name: robotDisplayName(r) })}
@@ -732,17 +786,12 @@ export function RobotsPanel() {
         ))}
       </ul>
 
-      {hasMore && (
-        <div className="flex justify-center pt-2">
-          <Button
-            type="button"
-            onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
-            className="border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text)] hover:border-[var(--app-brand)]"
-          >
-            {t('loadMore', { count: filtered.length - visibleCount })}
-          </Button>
-        </div>
-      )}
+      <InfiniteScroll
+        hasMore={hasMore}
+        onReach={() => setVisibleCount((n) => n + PAGE_SIZE)}
+        label={t('loadMore', { count: filtered.length - visibleCount })}
+      />
+      {confirmDialog}
     </div>
   );
 }

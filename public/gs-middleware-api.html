@@ -275,6 +275,7 @@
     </p>
     <div class="meta">
       <span><b>Version</b> v1</span>
+      <span><b>Updated</b> September 2026</span>
       <span><b>Format</b> JSON over HTTPS</span>
       <span><b>Access</b> Read-only</span>
       <span><b>Audience</b> PCS engineering</span>
@@ -297,7 +298,7 @@
         <tbody>
           <tr>
             <td>Base URL</td>
-            <td class="wrap-ok"><code>https://ai-robotrecommendationsystem-backend.onrender.com</code></td>
+            <td class="wrap-ok"><code>https://api.raaspal.com</code></td>
           </tr>
           <tr>
             <td>Token endpoint</td>
@@ -348,7 +349,7 @@ Content-Type: application/json
 }</code></pre>
       </div>
       <div class="scroll">
-<pre><code>curl -X POST "https://ai-robotrecommendationsystem-backend.onrender.com/api/partner/v1/oauth/token" \
+<pre><code>curl -X POST "https://api.raaspal.com/api/partner/v1/oauth/token" \
   -H "Content-Type: application/json" \
   -d '{
     "grant_type": "client_credentials",
@@ -368,7 +369,7 @@ Content-Type: application/x-www-form-urlencoded
 grant_type=client_credentials&amp;client_id=cid_your_client_id&amp;client_secret=pk_your_client_secret</code></pre>
       </div>
       <div class="scroll">
-<pre><code>curl -X POST "https://ai-robotrecommendationsystem-backend.onrender.com/api/partner/v1/oauth/token" \
+<pre><code>curl -X POST "https://api.raaspal.com/api/partner/v1/oauth/token" \
   -d "grant_type=client_credentials" \
   -d "client_id=cid_your_client_id" \
   -d "client_secret=pk_your_client_secret"</code></pre>
@@ -427,7 +428,7 @@ grant_type=client_credentials</code></pre>
     <h3>Using the token</h3>
     <div class="scroll">
 <pre><code>curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..." \
-  "https://ai-robotrecommendationsystem-backend.onrender.com/api/partner/v1/robots"</code></pre>
+  "https://api.raaspal.com/api/partner/v1/robots"</code></pre>
     </div>
 
     <div class="note">

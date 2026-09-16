@@ -69,9 +69,12 @@ api.interceptors.response.use(
 
 import type { KpiCaseMetrics, MondaySyncConfig, KpiCsat, CsatSourceStatus, KpiSyncStatus } from './kpi/api-types';
 import type {
+  CaseReportRow,
+  CaseRowEdit,
   ApiResponse,
   AutoxingDeliveryReport,
   AuthResponse,
+  ChangePasswordRequest,
   CmReportDraft,
   CmReportRequest,
   CmReportResponse,
@@ -108,10 +111,18 @@ import type {
   ReportSend,
   TelemetrySyncResult,
   TelemetrySyncStatus,
+  ZeroDataRobotsResponse,
+  ZeroDataFollowupRequest,
+  ContractExpiryResponse,
   TestStatus,
   TranslationResponse,
   UserResponse,
 } from '@/types/api';
+import type {
+  PmFilterOptions,
+  PmMonthResponse,
+  PmYearResponse,
+} from '@/lib/pm/types';
 import type { MonthlyPerformanceReport } from '@/lib/reports/types';
 
 // Users
@@ -264,6 +275,14 @@ export const authApi = {
   verifyPassword: (password: string) =>
     api.post<ApiResponse<void>>('/api/v1/auth/verify-password', { password }),
 
+  /**
+   * Change your own password. The backend checks the current one and refuses a new
+   * one shorter than 8 characters or equal to the old; each comes back as a 400 whose
+   * message is meant for the screen. Existing sessions elsewhere are not revoked.
+   */
+  changePassword: (body: ChangePasswordRequest) =>
+    api.post<ApiResponse<void>>('/api/v1/auth/change-password', body),
+
   /*
    * Self-service registration was removed along with the /register page. This is an
    * internal platform: accounts are created by an admin through POST /api/v1/users,
@@ -286,10 +305,16 @@ export const fileApi = {
 
 // Requirements
 export const requirementApi = {
+  /**
+   * Reads a survey (Excel, PDF or image) with a model call, so it gets a longer
+   * timeout and skips the automatic retry — at the default 60s a large PDF timed out
+   * and the retry paid for a second extraction of the same file.
+   */
   extractFromFile: (fileId: string, robotType: RobotType) =>
     api.post<ApiResponse<RequirementResponse>>(
       `/api/v1/requirements/extract-from-file/${fileId}`,
       { robotType },
+      { timeout: 240_000, skipRetry: true },
     ),
 };
 
@@ -299,6 +324,13 @@ export const recommendationApi = {
     api.post<ApiResponse<RecommendationResponse>>(
       `/api/v1/recommendations/generate/${requirementId}`,
       body ?? {},
+      // Three fully written options over the whole catalogue is a minutes-long model
+      // call, not a request. At the default 60s it timed out and the automatic retry
+      // fired a SECOND generation while the first was still running server-side —
+      // double the cost, two recommendations, and an error either way. The timeout is
+      // deliberately longer than the backend's own Anthropic read timeout, so the
+      // server fails first and can say why.
+      { timeout: 360_000, skipRetry: true },
     ),
 
   getAll: (page = 0, size = 20) =>
@@ -310,8 +342,12 @@ export const recommendationApi = {
 
 // Proposals
 export const proposalApi = {
+  /** A full proposal document from the largest model — minutes, and never retried. */
   generate: (body: GenerateProposalRequest) =>
-    api.post<ApiResponse<GeneratedProposalResponse>>('/api/v1/proposals/generate', body),
+    api.post<ApiResponse<GeneratedProposalResponse>>('/api/v1/proposals/generate', body, {
+      timeout: 360_000,
+      skipRetry: true,
+    }),
 
   getAll: (page = 0, size = 20) =>
     api.get<ApiResponse<PagedResponse<GeneratedProposalResponse>>>('/api/v1/proposals', { params: { page, size, sort: 'createdAt,desc' } }),
@@ -328,8 +364,12 @@ export const proposalApi = {
 
 // Translation
 export const translateApi = {
+  /** Also a model call: a batch of strings can outrun the default timeout. */
   toThai: (texts: string[]) =>
-    api.post<ApiResponse<TranslationResponse>>('/api/v1/translate/thai', { texts }),
+    api.post<ApiResponse<TranslationResponse>>('/api/v1/translate/thai', { texts }, {
+      timeout: 120_000,
+      skipRetry: true,
+    }),
 };
 
 // CVTE C3 status (kept separate from robotApi — see [[CvteDevice]] on the backend)
@@ -481,6 +521,39 @@ export const telemetryApi = {
   /** Progress of the running sync, or the outcome of the last finished one. */
   syncStatus: () =>
     api.get<ApiResponse<TelemetrySyncStatus>>('/api/v1/telemetry/sync-status'),
+
+  /**
+   * Every in-contract robot that logged no task in `month` ("YYYY-MM"). Computed on
+   * request, nothing stored. Omit the month for last month.
+   */
+  zeroData: (month?: string) =>
+    api.get<ApiResponse<ZeroDataRobotsResponse>>('/api/v1/telemetry/zero-data', {
+      params: { month: month || undefined },
+    }),
+
+  /** Record what was done about one zero-data entry. Returns the refreshed list. */
+  saveZeroDataFollowup: (robotUnitId: string, month: string, body: ZeroDataFollowupRequest) =>
+    api.put<ApiResponse<ZeroDataRobotsResponse>>(
+      `/api/v1/telemetry/zero-data/${robotUnitId}/followup`,
+      body,
+      { params: { month } },
+    ),
+
+  /** Hold the robot back from its customer's report for the month. Returns the refreshed list. */
+  excludeZeroDataRobot: (robotUnitId: string, month: string) =>
+    api.post<ApiResponse<ZeroDataRobotsResponse>>(
+      `/api/v1/telemetry/zero-data/${robotUnitId}/exclude`,
+      null,
+      { params: { month } },
+    ),
+};
+
+// Contracts — ending within a window, and already ended.
+export const contractsApi = {
+  expiring: (withinDays = 30) =>
+    api.get<ApiResponse<ContractExpiryResponse>>('/api/v1/robot-units/contracts/expiring', {
+      params: { withinDays },
+    }),
 };
 
 /**
@@ -626,3 +699,128 @@ export const kpiApi = {
   /** Board and column mapping, and whether a monday token is configured. Never returns the token. */
   config: () => api.get<ApiResponse<MondaySyncConfig>>('/api/v1/kpi/monday/config'),
 };
+
+// Daily Pending Case Report
+/** The pending-case sheets the backend can generate, as they appear in its URLs. */
+export type CaseReportSlug = 'mk' | 'cleaning' | 'makro' | 'aotga';
+
+export const caseReportApi = {
+  /**
+   * One pending-case sheet: `mk` (MK, Yayoi and Bonus Suki delivery cases),
+   * `cleaning` (every open cleaning case except Makro's and the airports') or
+   * `makro` (Makro's cleaning cases).
+   *
+   * The first call for a date reads monday live (slow, hence the timeout) and
+   * freezes the result; later calls return the stored rows. `refresh` re-reads
+   * the board into the stored draft, keeping any rows a person has edited or added.
+   */
+  rows: (report: CaseReportSlug, asOf?: string, refresh = false) =>
+    api.get<ApiResponse<CaseReportRow[]>>(`/api/v1/case-reports/${report}`, {
+      params: { ...(asOf ? { asOf } : {}), ...(refresh ? { refresh: true } : {}) },
+      timeout: 120_000,
+      skipRetry: true,
+    }),
+
+  /** Overwrite one row of the stored draft for a date. Refused once it has been sent. */
+  editRow: (report: CaseReportSlug, asOf: string, sourceItemId: string, body: CaseRowEdit) =>
+    api.put<ApiResponse<CaseReportRow>>(
+      `/api/v1/case-reports/${report}/rows/${encodeURIComponent(sourceItemId)}`,
+      body,
+      { params: { asOf } },
+    ),
+
+  /** Append a row the board does not have. It is kept through regeneration. */
+  addRow: (report: CaseReportSlug, asOf: string, body: CaseRowEdit) =>
+    api.post<ApiResponse<CaseReportRow>>(`/api/v1/case-reports/${report}/rows`, body, {
+      params: { asOf },
+    }),
+
+  /** Remove a row that was added by hand. Board rows are refused. */
+  removeRow: (report: CaseReportSlug, asOf: string, sourceItemId: string) =>
+    api.delete<ApiResponse<void>>(
+      `/api/v1/case-reports/${report}/rows/${encodeURIComponent(sourceItemId)}`,
+      { params: { asOf } },
+    ),
+
+  /**
+   * The sheet for a date as an .xlsx - the same rows the screen shows, corrections
+   * included. Fetched through axios rather than a plain link so the bearer token goes
+   * with it; the caller turns the blob into a download. A date that has not been
+   * generated yet is generated on the way, which is why the timeout matches `rows`.
+   */
+  exportExcel: (report: CaseReportSlug, asOf: string) =>
+    api.get<Blob>(`/api/v1/case-reports/${report}/export`, {
+      params: { asOf },
+      responseType: 'blob',
+      timeout: 120_000,
+      skipRetry: true,
+    }),
+};
+
+/* ─── PM 52-week planning ─────────────────────────────────────────────────── */
+
+/**
+ * The PM planner. Read-only: monday stays the one place PM is scheduled, and
+ * these endpoints are the view of it monday cannot give.
+ */
+export const pmApi = {
+  /** The 52-week (or 53-week) grid for one ISO year. */
+  year: (year: number, filters: Record<string, string> = {}) =>
+    api.get<ApiResponse<PmYearResponse>>('/api/v1/pm/year', { params: { year, ...filters } }),
+
+  /** Visits in a calendar month. */
+  month: (month: string, filters: Record<string, string> = {}, includeUndated = false) =>
+    api.get<ApiResponse<PmMonthResponse>>('/api/v1/pm/month', {
+      params: { month, includeUndated: includeUndated || undefined, ...filters },
+    }),
+
+  /**
+   * Visits between two dates — what the look-ahead chips and a week drill-down
+   * use, neither of which is a calendar month.
+   */
+  range: (from: string, to: string, filters: Record<string, string> = {}, includeUndated = false) =>
+    api.get<ApiResponse<PmMonthResponse>>('/api/v1/pm/month', {
+      params: { from, to, includeUndated: includeUndated || undefined, ...filters },
+    }),
+
+  filters: () => api.get<ApiResponse<PmFilterOptions>>('/api/v1/pm/filters'),
+
+  /**
+   * Pulls both monday PM boards now. Reads a few thousand rows over the monday
+   * API, so it gets a longer timeout and skips the automatic retry — a retry
+   * would start a second full sync while the first is still running.
+   */
+  sync: () =>
+    api.post<ApiResponse<PmSyncSummary>>('/api/v1/pm/monday/sync', null, {
+      timeout: 180_000,
+      skipRetry: true,
+    }),
+
+  syncStatus: () => api.get<ApiResponse<PmSyncStatus>>('/api/v1/pm/monday/sync/status'),
+};
+
+export interface PmSyncSummary {
+  boards: number;
+  contractsWritten: number;
+  visitsWritten: number;
+  failures: number;
+  messages: string[];
+}
+
+export interface PmSyncStatus {
+  running: boolean;
+  runs: {
+    id: string;
+    sourceBoardId: string | null;
+    serviceLine: string | null;
+    status: string;
+    triggeredBy: string | null;
+    startedAt: string;
+    finishedAt: string | null;
+    contractsRead: number | null;
+    visitsRead: number | null;
+    contractsWritten: number | null;
+    visitsWritten: number | null;
+    errorMessage: string | null;
+  }[];
+}

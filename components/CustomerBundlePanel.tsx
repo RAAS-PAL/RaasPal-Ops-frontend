@@ -29,10 +29,12 @@ import {
   Send,
 } from 'lucide-react';
 import { customerApi, customerBundleApi, reportApi } from '@/lib/api';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { previousMonth } from '@/lib/report-month';
 import { MonthlyReportView } from '@/components/report/MonthlyReportView';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListSkeleton } from '@/components/ui/skeleton';
+import { InfiniteScroll } from '@/components/ui/infinite-scroll';
 import type { CustomerBundleRobot, CustomerResponse } from '@/types/api';
 
 const PAGE_SIZE = 10;
@@ -94,6 +96,7 @@ function RobotRow({
 }
 
 export function CustomerBundlePanel() {
+  const { confirm, confirmDialog } = useConfirm();
   const queryClient = useQueryClient();
 
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -237,15 +240,11 @@ export function CustomerBundlePanel() {
           </div>
         )}
 
-        {filteredCustomers.length > visibleCount && (
-          <button
-            type="button"
-            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-            className="mx-auto flex h-9 items-center rounded-lg border border-[var(--app-border)] px-4 text-sm font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
-          >
-            Load more ({filteredCustomers.length - visibleCount} more)
-          </button>
-        )}
+        <InfiniteScroll
+          hasMore={filteredCustomers.length > visibleCount}
+          onReach={() => setVisibleCount((c) => c + PAGE_SIZE)}
+          label={`Showing ${visibleCount} of ${filteredCustomers.length}`}
+        />
       </div>
     );
   }
@@ -397,7 +396,20 @@ export function CustomerBundlePanel() {
                 <p className="text-sm font-semibold text-[var(--app-text)]">Send to the customer</p>
                 <button
                   type="button"
-                  onClick={() => sendMutation.mutate()}
+                  onClick={() =>
+                    void confirm({
+                      title: 'Send this report to the customer?',
+                      kind: 'send',
+                      confirmLabel: 'Send to customer',
+                      message: (
+                        <>
+                          <strong>{customers.find((c) => c.id === customerId)?.companyName ?? 'This customer'}</strong>{' '}
+                          receives the {month} report by email, covering {includedRobots.length} of{' '}
+                          {robots.length} robots. It cannot be recalled once sent.
+                        </>
+                      ),
+                    }).then((ok) => ok && sendMutation.mutate())
+                  }
                   disabled={sendMutation.isPending || includedRobots.length === 0 || dirty}
                   className="ml-auto inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--app-brand)] px-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                 >
@@ -458,6 +470,7 @@ export function CustomerBundlePanel() {
             />
           </div>
         ))}
+      {confirmDialog}
     </div>
   );
 }

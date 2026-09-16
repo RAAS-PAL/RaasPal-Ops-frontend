@@ -14,6 +14,7 @@ import { formatThaiDate } from '@/lib/thai-date';
 import { CmReportPanel } from '@/components/CmReportPanel';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListSkeleton } from '@/components/ui/skeleton';
+import { InfiniteScroll } from '@/components/ui/infinite-scroll';
 import type { CmReportResponse } from '@/types/api';
 
 const PAGE_SIZE = 10;
@@ -155,15 +156,11 @@ export function CmReportHistoryPanel() {
         </div>
       )}
 
-      {reports.length > visibleCount && (
-        <button
-          type="button"
-          onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-          className="mx-auto flex h-9 items-center rounded-lg border border-[var(--app-border)] px-4 text-sm font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
-        >
-          Load more ({reports.length - visibleCount} more)
-        </button>
-      )}
+      <InfiniteScroll
+        hasMore={reports.length > visibleCount}
+        onReach={() => setVisibleCount((c) => c + PAGE_SIZE)}
+        label={`Showing ${visibleCount} of ${reports.length}`}
+      />
     </div>
   );
 }
