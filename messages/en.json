@@ -886,7 +886,8 @@
       "totalCmCases": "Total CM Cases",
       "firstTimeFix": "First Time Fix",
       "sla": "SLA / Over SLA",
-      "csat": "CSAT Top Box"
+      "csat": "CSAT Top Box",
+      "repeatedWork": "Repeated Work"
     },
     "panels": {
       "firstTimeInstall": "First Time Installation",
@@ -894,7 +895,8 @@
       "totalCmCases": "Total CM Case",
       "firstTimeFix": "First Time Fix",
       "sla": "SLA / Over SLA",
-      "csat": "CSAT Top Box"
+      "csat": "CSAT Top Box",
+      "repeatedWork": "Repeated Work"
     },
     "segments": {
       "cleaning": "Cleaning",
@@ -1100,7 +1102,8 @@
       "num": {
         "installFirstTime": "installs with no CM in the window",
         "fixedFirstTime": "CMs with no repeat in the window",
-        "slaWithin": "cases checked within SLA"
+        "slaWithin": "cases checked within SLA",
+        "repeated": "cases that came back"
       },
       "den": {
         "installs": "installs",
@@ -1146,7 +1149,8 @@
         "firstTimeInstall": "An installation scores 1 when no corrective-maintenance case names the same serial within {days} days after the installation's TimeLine end date; 0 when one does.",
         "firstTimeFix": "A CM case scores 1 when no later CM names the same serial within {days} days of it being reported; 0 when one does.",
         "sla": "The case was checked within the board's configured SLA days of being reported: RE Action date minus Open Date. Exactly the limit counts as within. No action date recorded means unknown, not a breach. Neither board has a close date, so this is time-to-first-action, not time-to-close.",
-        "totalCmCases": "Installations are counted in the month their TimeLine ends; CM cases in the month they were reported. Each board may name a category column (Job Type, Type of case) and the values that count as a KPI case; rows outside that list are synced and archived but not counted here."
+        "totalCmCases": "Installations are counted in the month their TimeLine ends; CM cases in the month they were reported. Each board may name a category column (Job Type, Type of case) and the values that count as a KPI case; rows outside that list are synced and archived but not counted here.",
+        "repeatedWork": "A CM case counts as repeated when a later CM names the same serial within {days} days of it being reported. The exact complement of First Time Fix, over the same cases: the two always add to 100%."
       },
       "apiNotes": {
         "bucketing": "Installations are counted in the month their TimeLine ends; CM cases in the month they were reported.",

@@ -25,6 +25,7 @@ const VALID_KPIS: readonly string[] = [
   'pmComplete',
   'totalCmCases',
   'firstTimeFix',
+  'repeatedWork',
   'sla',
 ];
 const VALID_SURVEYS: readonly string[] = ['overall', 'installation', 'pm', 'cleaning', 'delivery'];

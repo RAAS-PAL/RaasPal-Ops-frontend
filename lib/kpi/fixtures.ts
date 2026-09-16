@@ -26,6 +26,9 @@ export const KPI_COLORS = {
   ftf: '#5B93F5',
   sla: '#2FA36B',
   csat: '#DC2F2F',
+  // Warm, and deliberately not the CSAT red: repeated work is a cost to watch,
+  // not an alarm, and the two never appear on the same page.
+  repeatedWork: '#B45309',
 } as const;
 
 /** Series colours shared across the panels. */

@@ -35,6 +35,14 @@ function monthLabel(month: string, locale: string): string {
 const pct = (value: number | null): string => (value === null ? '—' : `${value.toFixed(1)}%`);
 const count = (value: number): string => value.toLocaleString();
 
+/**
+ * Repeated work is the complement of First Time Fix, so it is derived rather
+ * than fetched: the backend publishes no repeat rate, only `repeat` counts and
+ * `firstTimeFixRate`. Deriving keeps the two panels arithmetically consistent -
+ * they can never disagree about the same cases.
+ */
+const inverseRate = (rate: number | null): number | null => (rate === null ? null : 100 - rate);
+
 /** A month series, reading one number out of each month's segment. */
 function series(
   months: KpiMonth[],
@@ -81,6 +89,13 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string, t: Translate)
       value: pct(all.cm.firstTimeFixRate),
       detail: t('live.headlineCases', { done: all.cm.firstTimeFix, total: all.cm.total }),
       color: KPI_COLORS.ftf,
+    },
+    {
+      id: 'repeatedWork',
+      labelKey: 'kpis.repeatedWork',
+      value: pct(inverseRate(all.cm.firstTimeFixRate)),
+      detail: t('live.headlineCases', { done: all.cm.repeat, total: all.cm.total }),
+      color: KPI_COLORS.repeatedWork,
     },
     {
       id: 'sla',
@@ -282,6 +297,61 @@ export function toLiveReport(data: KpiCaseMetrics, locale: string, t: Translate)
           labelKey: 'legend.over',
           value: all.cm.slaWithinRate === null ? '—' : pct(Number((100 - all.cm.slaWithinRate).toFixed(1))),
           detail: count(all.cm.slaOver),
+        },
+      ],
+    },
+    {
+      id: 'repeatedWork',
+      // 6, not 2: the deck numbers five KPIs and this is not one of them. It
+      // sits after them rather than renumbering the slide.
+      index: 6,
+      titleKey: 'panels.repeatedWork',
+      accent: KPI_COLORS.repeatedWork,
+      chart: {
+        mode: 'grouped',
+        unit: 'percent',
+        showValueLabels: true,
+        series: [
+          {
+            key: 'cleaning',
+            labelKey: 'segments.cleaning',
+            color: CLEANING,
+            points: series(months, locale, (m) => m.cleaning, (sg) => inverseRate(sg.cm.firstTimeFixRate)),
+          },
+          {
+            key: 'delivery',
+            labelKey: 'segments.delivery',
+            color: DELIVERY,
+            points: series(months, locale, (m) => m.delivery, (sg) => inverseRate(sg.cm.firstTimeFixRate)),
+          },
+        ],
+        ...(all.cm.firstTimeFixRate !== null && {
+          average: {
+            value: 100 - all.cm.firstTimeFixRate,
+            labelKey: 'chart.avg',
+            display: t('chart.avgValue', { value: pct(inverseRate(all.cm.firstTimeFixRate)) }),
+          },
+        }),
+        footnote: t('live.footnoteRepeatWindow', { days: data.repeatWindowDays }),
+      },
+      sideStats: [
+        {
+          labelKey: 'stats.overall',
+          value: pct(inverseRate(all.cm.firstTimeFixRate)),
+          // `repeat` is the backend's own count, not total - firstTimeFix, so
+          // the detail line matches what it scored rather than a subtraction.
+          detail: `${all.cm.repeat}/${all.cm.total}`,
+          emphasis: true,
+        },
+        {
+          labelKey: 'segments.cleaning',
+          value: pct(inverseRate(cleaning.cm.firstTimeFixRate)),
+          detail: `${cleaning.cm.repeat}/${cleaning.cm.total}`,
+        },
+        {
+          labelKey: 'segments.delivery',
+          value: pct(inverseRate(delivery.cm.firstTimeFixRate)),
+          detail: `${delivery.cm.repeat}/${delivery.cm.total}`,
         },
       ],
     },

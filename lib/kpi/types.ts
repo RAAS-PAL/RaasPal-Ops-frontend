@@ -75,7 +75,13 @@ export type KpiId =
   | 'pmComplete'
   | 'totalCmCases'
   | 'firstTimeFix'
-  | 'sla';
+  | 'sla'
+  /**
+   * First Time Fix read from the other side: the same cases over the same
+   * denominator, so its rate is always 100 - FTF. It is a panel but not a deck
+   * tile - the slide has five KPIs and this is a sixth view of one of them.
+   */
+  | 'repeatedWork';
 
 /** The coloured summary tiles across the top. */
 export type KpiHeadline = {

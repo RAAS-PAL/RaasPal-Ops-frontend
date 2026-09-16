@@ -86,6 +86,13 @@ const extractors: Record<Exclude<KpiId, 'pmComplete'>, Extract> = {
   }),
   totalCmCases: (s) => ({ numerator: s.cm.total, denominator: null, rate: null }),
   firstTimeFix: (s) => ({ numerator: s.cm.firstTimeFix, denominator: s.cm.total, rate: s.cm.firstTimeFixRate }),
+  // Same cases, same denominator, complementary rate - so the two panels can
+  // never disagree. `repeat` is the backend's own count, not a subtraction.
+  repeatedWork: (s) => ({
+    numerator: s.cm.repeat,
+    denominator: s.cm.total,
+    rate: s.cm.firstTimeFixRate === null ? null : 100 - s.cm.firstTimeFixRate,
+  }),
   sla: (s) => ({
     numerator: s.cm.slaWithin,
     denominator: s.cm.slaWithin + s.cm.slaOver,
@@ -253,6 +260,34 @@ export function kpiDetail(
               { key: 'detail.row.passVerified', value: cm.firstTimeFix - cm.withoutSerial, level: 1 },
               { key: 'detail.row.passNoSerial', value: cm.withoutSerial, level: 1, tone: 'muted' },
               { key: 'detail.row.ftfFail', value: cm.repeat, level: 0, tone: 'failure' },
+            ],
+          },
+          byLine(cm.total, 'detail.den.cmCases', cleaning.cm.total, delivery.cm.total),
+        ],
+        notes: notes('bucketing', 'matching', 'category'),
+      };
+    }
+    case 'repeatedWork': {
+      const cm = all.cm;
+      return {
+        ...base,
+        formula: { text: t('detail.formulaText.repeatedWork', { days: data.repeatWindowDays }) },
+        arithmetic: {
+          operator: 'divide',
+          left: { value: cm.repeat, key: 'detail.num.repeated' },
+          right: { value: cm.total, key: 'detail.den.cmCases' },
+          result: pct(totals.rate),
+        },
+        windows: [{ key: 'detail.window.repeat', days: data.repeatWindowDays }],
+        breakdowns: [
+          {
+            titleKey: 'detail.bd.scoring',
+            total: { value: cm.total, unitKey: 'detail.den.cmCases' },
+            // Failure first here: this panel is about the cases that came back.
+            rows: [
+              { key: 'detail.row.ftfFail', value: cm.repeat, level: 0, tone: 'failure' },
+              { key: 'detail.row.ftfPass', value: cm.firstTimeFix, level: 0, tone: 'success' },
+              { key: 'detail.row.passNoSerial', value: cm.withoutSerial, level: 1, tone: 'muted' },
             ],
           },
           byLine(cm.total, 'detail.den.cmCases', cleaning.cm.total, delivery.cm.total),
