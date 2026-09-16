@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Building2, CalendarClock, CalendarX2, ClipboardList, FileSearch, Gauge, History, Wrench } from 'lucide-react';
+import { Building2, CalendarClock, CalendarX2, ClipboardList, FileSearch, Gauge, History, PauseCircle, Wrench } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { ReportAutomationPanel } from '@/components/ReportAutomationPanel';
@@ -28,6 +28,8 @@ const REPORT_TABS = [
   'case-cleaning',
   'case-makro',
   'case-aotga',
+  'case-delivery',
+  'case-on-hold',
 ] as const;
 
 export type ReportTab = (typeof REPORT_TABS)[number];
@@ -53,6 +55,8 @@ const TAB_GROUP: Record<ReportTab, 'performance' | 'cm' | 'case'> = {
   'case-cleaning': 'case',
   'case-makro': 'case',
   'case-aotga': 'case',
+  'case-delivery': 'case',
+  'case-on-hold': 'case',
 };
 
 type ReportGroup = 'performance' | 'cm' | 'case';
@@ -143,6 +147,8 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
       { id: 'case-cleaning', label: t('tabs.caseCleaning'), icon: <ClipboardList className="h-4 w-4" /> },
       { id: 'case-makro', label: t('tabs.caseMakro'), icon: <ClipboardList className="h-4 w-4" /> },
       { id: 'case-aotga', label: t('tabs.caseAotga'), icon: <ClipboardList className="h-4 w-4" /> },
+      { id: 'case-delivery', label: t('tabs.caseDelivery'), icon: <ClipboardList className="h-4 w-4" /> },
+      { id: 'case-on-hold', label: t('tabs.caseOnHold'), icon: <PauseCircle className="h-4 w-4" /> },
     ],
   };
 
@@ -247,6 +253,8 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
             {tab === 'case-cleaning' && <CasePendingPanel report={CASE_REPORTS.cleaning} />}
             {tab === 'case-makro' && <CasePendingPanel report={CASE_REPORTS.makro} />}
             {tab === 'case-aotga' && <CasePendingPanel report={CASE_REPORTS.aotga} />}
+            {tab === 'case-delivery' && <CasePendingPanel report={CASE_REPORTS.delivery} />}
+            {tab === 'case-on-hold' && <CasePendingPanel report={CASE_REPORTS['on-hold']} />}
           </div>
         </section>
       </div>

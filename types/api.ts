@@ -911,6 +911,12 @@ export interface CaseReportRow {
   /** The sheet's own wording: 'over SLA', 'Within SLA', 'On Hold', or empty. */
   slaLabel: string;
   province: string | null;
+  /**
+   * On Hold only: which board the ticket came from. That sheet is the one that reads
+   * two boards, so this drives its Cleaning/Delivery filter and the ticket link. Null on
+   * every single-board sheet, and on rows frozen before the field existed.
+   */
+  board?: CaseBoard | null;
   /** AOTGA only. The board's Spare Parts Name. Null on every other sheet. */
   requiredPart?: string | null;
   /** AOTGA only. What the case is waiting on, in the RE team's words. */
@@ -932,6 +938,8 @@ export interface CaseReportRow {
 
 /** Prefix of the ids the backend gives rows added by hand. */
 export const MANUAL_CASE_ROW_PREFIX = 'manual-';
+
+export type CaseBoard = 'CLEANING' | 'DELIVERY';
 
 export function isManualCaseRow(row: Pick<CaseReportRow, 'sourceItemId'>): boolean {
   return row.sourceItemId?.startsWith(MANUAL_CASE_ROW_PREFIX) ?? false;

@@ -17,7 +17,7 @@ import { caseReportApi } from '@/lib/api';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import type { CaseReportSlug } from '@/lib/api';
 import { isManualCaseRow } from '@/types/api';
-import type { CaseReportRow, CaseRowEdit, SlaStatus } from '@/types/api';
+import type { CaseBoard, CaseReportRow, CaseRowEdit, SlaStatus } from '@/types/api';
 import { CaseRowEditDialog } from './CaseRowEditDialog';
 
 /**
@@ -92,8 +92,17 @@ function SlaCell({ row }: { row: CaseReportRow }) {
  */
 export interface CaseReportSpec {
   slug: CaseReportSlug;
-  /** The monday board the rows come from, for the per-row ticket link. */
+  /**
+   * The monday board the rows come from, for the per-row ticket link. On Hold reads
+   * both boards, so its rows carry their own `board` and this is only the fallback.
+   */
   boardId: string;
+  /**
+   * On Hold only: the sheet mixes two boards, so it prints a Board column and offers a
+   * Cleaning / Delivery filter. One sheet with a filter rather than two blocks, as the RE
+   * team asked — the reader wants "what is waiting longest" across both.
+   */
+  boardFilter?: boolean;
   /** Which of the two site columns this sheet prints; the other is hidden. */
   columns: ('project' | 'branch')[];
   /**
@@ -122,7 +131,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     boardId: '3451717331',
     columns: ['project'],
     layout: 'sla',
-    hint: 'Every open cleaning case except Makro’s and the airports’, which have their own sheets. Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
+    hint: 'Every open cleaning case except Makro’s and the airports’, which have their own sheets, and except held cases (see On Hold). Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
     newRow: { project: '', robot: 'M50' },
   },
   makro: {
@@ -130,7 +139,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     boardId: '3451717331',
     columns: ['branch'],
     layout: 'sla',
-    hint: 'Makro’s cleaning cases. Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
+    hint: 'Makro’s cleaning cases, minus held cases (see On Hold). Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
     newRow: { project: 'Makro', robot: 'Omnie' },
   },
   aotga: {
@@ -141,7 +150,32 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     hint: 'The airports’ open cleaning cases, tracked by spare-part turnaround rather than SLA. Days and Aging After Received both count from the day after (opened or received today = 0). The 3-day SLA is computed but the sheet does not print it.',
     newRow: { project: 'AOTGA-', robot: 'M75' },
   },
+  delivery: {
+    slug: 'delivery',
+    boardId: '1647612496',
+    columns: ['project', 'branch'],
+    layout: 'sla',
+    hint: 'Every open delivery case that is not MK’s, minus held cases (see On Hold). Days counts from the day after the case opened (opened today = 0); the SLA is 3 days inside greater Bangkok, 5 elsewhere.',
+    newRow: { project: '', robot: 'Pudu 1' },
+  },
+  'on-hold': {
+    slug: 'on-hold',
+    boardId: '3451717331',
+    boardFilter: true,
+    columns: ['project', 'branch'],
+    layout: 'sla',
+    hint: 'Every held case on the cleaning and delivery boards, except the airports’. A held case has no SLA: the clock is not RAASPAL’s to run. MK’s held cases are also still on the MK sheet, by request.',
+    newRow: { project: '', robot: '' },
+  },
 };
+
+/** Cleaning and delivery are different monday boards; the ticket link needs the right one. */
+const BOARD_IDS: Record<CaseBoard, string> = {
+  CLEANING: '3451717331',
+  DELIVERY: '1647612496',
+};
+
+const BOARD_LABEL: Record<CaseBoard, string> = { CLEANING: 'Cleaning', DELIVERY: 'Delivery' };
 
 /** "A, B, C" or one per line on the board -> ["A", "B", "C"]. A lone serial is itself. */
 function serialLines(serialNumber: string): string[] {
@@ -173,6 +207,8 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
   // The row being corrected, 'new' for one being added, null when the dialog is closed.
   const [editing, setEditing] = useState<CaseReportRow | 'new' | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
+  // On Hold only. 'all' is the default: the sheet's point is both boards at once.
+  const [boardFilter, setBoardFilter] = useState<CaseBoard | 'all'>('all');
   const queryClient = useQueryClient();
   const queryKey = ['case-report', report.slug, asOf];
 
@@ -245,7 +281,11 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
   });
   const showProject = report.columns.includes('project');
   const showBranch = report.columns.includes('branch');
+  const showBoard = report.boardFilter === true;
   const parts = report.layout === 'parts';
+  // The filter narrows what is shown, not what is stored: the totals and the download
+  // stay whole-sheet, so "12 cases" means the report, not the current view.
+  const visible = showBoard && boardFilter !== 'all' ? rows.filter((r) => r.board === boardFilter) : rows;
   const breached = rows.filter((r) => r.sla === 'BREACHED').length;
   const onHold = rows.filter((r) => r.sla === 'ON_HOLD').length;
   const unknown = rows.filter((r) => r.sla === 'UNKNOWN').length;
@@ -291,6 +331,41 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
           {regenerate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           {regenerate.isPending ? 'Regenerating…' : 'Regenerate from monday'}
         </button>
+
+        {showBoard && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">
+              Board
+            </span>
+            <div
+              role="radiogroup"
+              aria-label="Filter by board"
+              className="inline-flex overflow-hidden rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] text-sm"
+            >
+              {(['all', 'CLEANING', 'DELIVERY'] as const).map((option) => {
+                const count = option === 'all' ? rows.length : rows.filter((r) => r.board === option).length;
+                const active = boardFilter === option;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setBoardFilter(option)}
+                    className={`px-3 py-2 font-semibold transition ${
+                      active
+                        ? 'bg-[var(--app-brand)] text-white'
+                        : 'text-[var(--app-text)] hover:bg-[var(--app-faint)]'
+                    }`}
+                  >
+                    {option === 'all' ? 'All' : BOARD_LABEL[option]}
+                    {rows.length > 0 && <span className="ml-1.5 tabular-nums opacity-70">{count}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <button
           type="button"
@@ -377,6 +452,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
           <thead className="border-b border-[var(--app-border)] text-xs uppercase tracking-wide text-[var(--app-muted)]">
             <tr>
               <th className="px-3 py-2.5 font-semibold">No</th>
+              {showBoard && <th className="px-3 py-2.5 font-semibold">Board</th>}
               {showProject && <th className="px-3 py-2.5 font-semibold">Project</th>}
               {showBranch && <th className="px-3 py-2.5 font-semibold">Branch</th>}
               <th className="px-3 py-2.5 font-semibold">Robot</th>
@@ -408,7 +484,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--app-border)]">
-            {rows.map((row) => (
+            {visible.map((row) => (
               <tr key={row.sourceItemId ?? row.no} className="align-top">
                 <td className="px-3 py-2.5 tabular-nums text-[var(--app-muted)]">
                   {row.no}
@@ -427,6 +503,11 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
                     </span>
                   )}
                 </td>
+                {showBoard && (
+                  <td className="px-3 py-2.5 whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">
+                    {row.board ? BOARD_LABEL[row.board] : '—'}
+                  </td>
+                )}
                 {showProject && (
                   <td className="px-3 py-2.5 font-medium">{row.project ?? '—'}</td>
                 )}
@@ -487,7 +568,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
                     <td className="px-3 py-2.5">
                       <div className="flex items-center justify-end gap-2 font-semibold tabular-nums">
                         {row.agingAfterReceived ?? '—'}
-                        <TicketLink row={row} boardId={report.boardId} />
+                        <TicketLink row={row} boardId={row.board ? BOARD_IDS[row.board] : report.boardId} />
                       </div>
                     </td>
                   </>
@@ -495,7 +576,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
                       <SlaCell row={row} />
-                      <TicketLink row={row} boardId={report.boardId} />
+                      <TicketLink row={row} boardId={row.board ? BOARD_IDS[row.board] : report.boardId} />
                     </div>
                   </td>
                 )}
@@ -520,8 +601,15 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
 
             {rows.length === 0 && !isFetching && !isError && (
               <tr>
-                <td colSpan={(parts ? 12 : 10) + report.columns.length} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
+                <td colSpan={(parts ? 12 : 10) + report.columns.length + (showBoard ? 1 : 0)} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
                   No cases generated yet. Pick a date and press Generate.
+                </td>
+              </tr>
+            )}
+            {rows.length > 0 && visible.length === 0 && (
+              <tr>
+                <td colSpan={(parts ? 12 : 10) + report.columns.length + 1} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
+                  No {boardFilter === 'all' ? '' : BOARD_LABEL[boardFilter].toLowerCase() + ' '}cases on hold for this date.
                 </td>
               </tr>
             )}

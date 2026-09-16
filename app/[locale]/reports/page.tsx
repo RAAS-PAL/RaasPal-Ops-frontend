@@ -14,6 +14,8 @@ const VALID_TABS: readonly string[] = [
   'case-cleaning',
   'case-makro',
   'case-aotga',
+  'case-delivery',
+  'case-on-hold',
 ];
 
 export default async function ReportsPage({

@@ -632,7 +632,7 @@ export const customerBundleApi = {
 
 // Daily Pending Case Report
 /** The pending-case sheets the backend can generate, as they appear in its URLs. */
-export type CaseReportSlug = 'mk' | 'cleaning' | 'makro' | 'aotga';
+export type CaseReportSlug = 'mk' | 'cleaning' | 'makro' | 'aotga' | 'delivery' | 'on-hold';
 
 export const caseReportApi = {
   /**

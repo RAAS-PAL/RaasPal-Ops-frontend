@@ -776,7 +776,9 @@
       "caseMk": "MK เคสค้าง",
       "caseCleaning": "Cleaning เคสค้าง",
       "caseMakro": "Makro เคสค้าง",
-      "caseAotga": "AOTGA เคสค้าง"
+      "caseAotga": "AOTGA เคสค้าง",
+      "caseDelivery": "Delivery เคสค้าง",
+      "caseOnHold": "เคสพักไว้ (On Hold)"
     },
     "brands": {
       "gausium": "Gausium",
