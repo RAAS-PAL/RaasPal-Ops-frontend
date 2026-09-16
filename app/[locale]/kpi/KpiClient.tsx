@@ -23,6 +23,7 @@ import { UtilizationTab } from '@/components/kpi/UtilizationTab';
 import { RepeatCostTab } from '@/components/kpi/RepeatCostTab';
 import { CsatTab } from '@/components/kpi/CsatTab';
 import { ExportXlsxButton } from '@/components/kpi/ExportXlsxButton';
+import { MondaySyncButton } from '@/components/kpi/MondaySyncButton';
 import { PeriodSelector } from '@/components/kpi/PeriodSelector';
 import { NoPeriodData } from '@/components/kpi/NoPeriodData';
 import {
@@ -136,6 +137,7 @@ export function KpiClient({
               <PeriodSelector preset={preset} year={year} period={period} onChange={changePeriod} />
               {/* Only the two areas with real figures; Utilization and Repeat Cost
                   are deck constants and have nothing of their own to export. */}
+              {section === 'report' && <MondaySyncButton />}
               {!gated && (section === 'report' || section === 'csat') && (
                 <ExportXlsxButton kind={section} period={period} />
               )}

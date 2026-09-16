@@ -163,3 +163,37 @@ export type CsatSourceStatus = {
   warnings: string[];
   loadedAt: string;
 };
+
+/** One board's outcome within a sync run. */
+export type KpiSyncBoardResult = {
+  boardId: string;
+  serviceLine: string | null;
+  ticketType: string | null;
+  status: 'SUCCEEDED' | 'FAILED' | string;
+  groupsRead: number;
+  itemsRead: number;
+  inserted: number;
+  updated: number;
+  unchanged: number;
+  markedAbsent: number;
+  error: string | null;
+};
+
+/** One whole run: when it ran, and what each board did. */
+export type KpiSyncSummary = {
+  trigger: string;
+  startedAt: string;
+  finishedAt: string | null;
+  boards: KpiSyncBoardResult[];
+};
+
+/**
+ * `configured` is false when the backend has no monday token or no boards, in
+ * which case a sync cannot be started at all and the button says so rather than
+ * failing on press.
+ */
+export type KpiSyncStatus = {
+  running: boolean;
+  configured: boolean;
+  lastSummary: KpiSyncSummary | null;
+};

@@ -67,7 +67,7 @@ api.interceptors.response.use(
 
 /* ─── Typed helpers ───────────────────────────────────────────────────────── */
 
-import type { KpiCaseMetrics, MondaySyncConfig, KpiCsat, CsatSourceStatus } from './kpi/api-types';
+import type { KpiCaseMetrics, MondaySyncConfig, KpiCsat, CsatSourceStatus, KpiSyncStatus } from './kpi/api-types';
 import type {
   ApiResponse,
   AutoxingDeliveryReport,
@@ -601,6 +601,21 @@ export const kpiApi = {
 
   exportCsat: (from: string, to: string) =>
     api.get<Blob>('/api/v1/kpi/csat/export', { params: { from, to }, responseType: 'blob' }),
+
+  /**
+   * Starts a monday sync and returns immediately - the backend answers 202 and
+   * runs the boards on its own thread, so this resolves long before any ticket
+   * is written. Poll `mondaySyncStatus` until `running` goes false.
+   *
+   * Throws rather than reporting failure in the body: a missing token is a 400
+   * and a second press while one is in flight is refused outright.
+   */
+  startMondaySync: () =>
+    api.post<ApiResponse<KpiSyncStatus>>('/api/v1/kpi/monday/sync'),
+
+  /** Whether a run is in progress, and the outcome of the last finished one. */
+  mondaySyncStatus: () =>
+    api.get<ApiResponse<KpiSyncStatus>>('/api/v1/kpi/monday/sync/status'),
 
   /** The workbooks the backend can see right now, and how far they run. */
   csatSource: () => api.get<ApiResponse<CsatSourceStatus>>('/api/v1/kpi/csat/source'),

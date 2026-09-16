@@ -1161,6 +1161,15 @@
       "failed": "Could not build the file",
       "hint": "One sheet per chart, months down and series across — ready for Insert Chart in Excel, and editable once pasted into a slide."
     },
+    "sync": {
+      "label": "Sync monday",
+      "busy": "Syncing…",
+      "hint": "Pulls the Cleaning, Delivery and Installation boards into the ticket table every figure here is computed from. Runs on the server, so it keeps going if you leave this page.",
+      "done": "Read {read} tickets from monday — {written} new or changed.",
+      "doneUnknown": "Sync finished, but the server reported no summary.",
+      "failed": "Sync failed.",
+      "stillRunning": "Still running after several minutes — check the sync history on the server."
+    },
     "units": {
       "cases": "cases"
     },
