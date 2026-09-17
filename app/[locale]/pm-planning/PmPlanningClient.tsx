@@ -75,7 +75,36 @@ export function PmPlanningClient({
     return () => clearTimeout(timer);
   }, [search]);
 
-  const query = useMemo(() => toQuery(filters), [filters]);
+  /* ─── Data ──────────────────────────────────────────────────────────────── */
+
+  const filterOptions = useQuery({
+    queryKey: ['pm-filter-options'],
+    queryFn: () => pmApi.filters().then((response) => response.data.data),
+    staleTime: 10 * 60_000,
+  });
+
+  // A page opened from a `company=PCS` URL arrives with an include list. The filter
+  // UI only knows exclusions, so once the company options are here the include list
+  // is read as one - every other chain unticked. Derived rather than written back
+  // into state: the bar's next onChange spreads these resolved filters, which is
+  // what clears the include list. Until the options arrive, toQuery sends the list
+  // as it came, so the first request is already correct.
+  const companyNames = useMemo(
+    () => filterOptions.data?.companies.map((company) => company.name),
+    [filterOptions.data],
+  );
+  const resolvedFilters = useMemo<PmFilters>(() => {
+    if (!companyNames || filters.includedCompanies.length === 0) return filters;
+    const shown = new Set(filters.includedCompanies);
+    return {
+      ...filters,
+      excludedCompanies: companyNames.filter((name) => !shown.has(name)),
+      includedCompanies: [],
+    };
+  }, [filters, companyNames]);
+
+  // Whichever company list is shorter goes on the wire and into the URL; see toQuery.
+  const query = useMemo(() => toQuery(resolvedFilters, companyNames), [resolvedFilters, companyNames]);
 
   /* ─── URL sync ──────────────────────────────────────────────────────────── */
 
@@ -95,14 +124,6 @@ export function PmPlanningClient({
     // navigating, and pushing would bury the previous page under every tweak.
     window.history.replaceState(null, '', `?${params.toString()}`);
   }, [view, year, period, query]);
-
-  /* ─── Data ──────────────────────────────────────────────────────────────── */
-
-  const filterOptions = useQuery({
-    queryKey: ['pm-filter-options'],
-    queryFn: () => pmApi.filters().then((response) => response.data.data),
-    staleTime: 10 * 60_000,
-  });
 
   const yearQuery = useQuery({
     queryKey: ['pm-year', year, query],
@@ -299,7 +320,7 @@ export function PmPlanningClient({
               </p>
             )}
 
-            <PmFilterBar filters={filters} options={filterOptions.data} onChange={setFilters} />
+            <PmFilterBar filters={resolvedFilters} options={filterOptions.data} onChange={setFilters} />
 
             {summary && <PmSummaryTiles summary={summary} />}
 

@@ -133,6 +133,13 @@ export interface PmFilters {
    * state out of the URL entirely.
    */
   excludedCompanies: string[];
+  /**
+   * Chains to show, and only those. Read from a `company=` URL - the form the page
+   * writes when the ticked list is the shorter one - and folded into
+   * `excludedCompanies` as soon as the company options arrive, so the filter UI
+   * only ever works with one model. Empty except for that moment.
+   */
+  includedCompanies: string[];
 }
 
 export const EMPTY_PM_FILTERS: PmFilters = {
@@ -144,4 +151,5 @@ export const EMPTY_PM_FILTERS: PmFilters = {
   owner: '',
   q: '',
   excludedCompanies: [],
+  includedCompanies: [],
 };

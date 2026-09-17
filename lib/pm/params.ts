@@ -44,6 +44,7 @@ export function resolveFilters(params: Record<string, string | undefined>): PmFi
     owner: clean(params.owner),
     q: clean(params.q),
     excludedCompanies: splitList(params.excludeCompany),
+    includedCompanies: splitList(params.company),
   };
 }
 
@@ -66,23 +67,45 @@ function splitList(value: string | undefined): string[] {
 export function hasAnyFilter(filters: PmFilters): boolean {
   return (
     filters.excludedCompanies.length > 0 ||
+    filters.includedCompanies.length > 0 ||
     (Object.keys(EMPTY_PM_FILTERS) as (keyof PmFilters)[]).some(
-      (key) => key !== 'excludedCompanies' && filters[key] !== '',
+      (key) => key !== 'excludedCompanies' && key !== 'includedCompanies' && filters[key] !== '',
     )
   );
 }
 
-/** Drops empty values so the request never sends `region=`. */
-export function toQuery(filters: PmFilters): Record<string, string> {
+/**
+ * Drops empty values so the request never sends `region=`.
+ *
+ * The company filter travels as whichever list is shorter. The state is an exclusion
+ * set, and "hide a few chains" sends it as is; but "show only PCS" is 148 exclusions,
+ * 8 KB of URL, and a request both nginx and Tomcat refused. Given the full company
+ * list, that case is sent as `company=PCS` instead. Without the list (before the
+ * options have loaded) the exclusion form is all that can be sent.
+ */
+export function toQuery(filters: PmFilters, allCompanies?: readonly string[]): Record<string, string> {
   const out: Record<string, string> = {};
   (Object.keys(filters) as (keyof PmFilters)[]).forEach((key) => {
-    if (key === 'excludedCompanies') return;
+    if (key === 'excludedCompanies' || key === 'includedCompanies') return;
     const value = filters[key];
     if (typeof value === 'string' && value) out[key] = value;
   });
-  if (filters.excludedCompanies.length > 0) {
-    out.excludeCompany = filters.excludedCompanies.join(',');
+  if (filters.includedCompanies.length > 0) {
+    // Straight from the URL, before the options arrived to turn it into an exclusion.
+    out.company = filters.includedCompanies.join(',');
+    return out;
   }
+  const excluded = filters.excludedCompanies;
+  if (excluded.length === 0) return out;
+  if (allCompanies && allCompanies.length > 0) {
+    const hidden = new Set(excluded);
+    const included = allCompanies.filter((name) => !hidden.has(name));
+    if (included.length < excluded.length) {
+      out.company = included.join(',');
+      return out;
+    }
+  }
+  out.excludeCompany = excluded.join(',');
   return out;
 }
 
