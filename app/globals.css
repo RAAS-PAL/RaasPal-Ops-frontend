@@ -256,6 +256,25 @@ html {
 ::-webkit-scrollbar-thumb:hover   { background: var(--app-text); }
 ::-webkit-scrollbar-corner        { background: var(--app-faint); }
 
+/* A quiet scrollbar for small scrollers inside a table cell (the Solution column),
+   where the 12px inset bar above reads as a control the reviewer is meant to use.
+   Thin, no track, a faint thumb that only darkens under the pointer. */
+.scroll-quiet {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--app-muted) 35%, transparent) transparent;
+}
+.scroll-quiet:hover {
+  scrollbar-color: color-mix(in srgb, var(--app-muted) 70%, transparent) transparent;
+}
+.scroll-quiet::-webkit-scrollbar        { width: 6px; height: 6px; }
+.scroll-quiet::-webkit-scrollbar-track  { background: transparent; }
+.scroll-quiet::-webkit-scrollbar-thumb  {
+  background: color-mix(in srgb, var(--app-muted) 35%, transparent);
+  border: 0;
+  border-radius: 3px;
+}
+.scroll-quiet:hover::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--app-muted) 70%, transparent); }
+
 /* ─── Selection ───────────────────────────────────────────────────────────── */
 
 /* Ink stays the page's text colour: --accent is later redefined to the

@@ -621,7 +621,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
                         entries) does not stretch the row and push the sheet off screen. */}
                     {row.solution ? (
                       <span
-                        className="block max-h-56 overflow-y-auto whitespace-pre-line pr-2 [scrollbar-width:thin]"
+                        className="scroll-quiet block max-h-56 overflow-y-auto whitespace-pre-line pr-2"
                         title={row.solution}
                       >
                         {row.solution}
