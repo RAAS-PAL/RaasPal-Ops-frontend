@@ -24,9 +24,20 @@ const GRID = 'var(--viz-grid)';
 
 const tick = { fill: INK_MUTED, fontSize: 11 } as const;
 
-function monthLabel(month: string, locale: string): string {
+/**
+ * "Sep" - just the month. The year is added ("Sep 26") only when the axis spans more
+ * than one year, where a bare "Jan" could be either of two Januaries. On the usual
+ * this-year view the year is the same on every tick, and "Sep 26" reads as a date.
+ */
+function monthLabel(month: string, locale: string, withYear: boolean): string {
   const [y, m] = month.split('-').map(Number);
-  return new Intl.DateTimeFormat(locale, { month: 'short', year: '2-digit' }).format(new Date(Date.UTC(y, m - 1, 1)));
+  const format: Intl.DateTimeFormatOptions = withYear ? { month: 'short', year: '2-digit' } : { month: 'short' };
+  return new Intl.DateTimeFormat(locale, format).format(new Date(Date.UTC(y, m - 1, 1)));
+}
+
+/** Whether the months on an axis fall in more than one calendar year. */
+function spansYears(points: { month: string }[]): boolean {
+  return new Set(points.map((p) => p.month.slice(0, 4))).size > 1;
 }
 
 function TooltipBox({ title, rows }: { title: string; rows: { label: string; value: number; swatch?: string }[] }) {
@@ -54,7 +65,8 @@ export function MonthlyVolumeChart({ points }: { points: MonthPoint[] }) {
   const locale = useLocale();
   if (points.length === 0) return <PanelEmpty>{t('empty')}</PanelEmpty>;
 
-  const data = points.map((p) => ({ ...p, label: monthLabel(p.month, locale) }));
+  const withYear = spansYears(points);
+  const data = points.map((p) => ({ ...p, label: monthLabel(p.month, locale, withYear) }));
   const dense = data.length > 14;
 
   return (
