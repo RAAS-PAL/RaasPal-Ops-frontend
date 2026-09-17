@@ -1,15 +1,22 @@
 'use client';
 
 import {
+  Banknote,
+  BarChart3,
   Bot,
   CalendarClock,
   CalendarRange,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
+  Smile,
   Sparkles,
   Ticket,
+  TrendingUp,
+  Users,
   Wrench,
+  type LucideIcon,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -17,9 +24,46 @@ import { useState } from 'react';
 import { Link, usePathname } from '@/i18n/navigation';
 import { useAuthStore } from '@/store/auth';
 
-export const navigationItems = [
+export type NavChild = {
+  labelKey: string;
+  href: string;
+  icon: LucideIcon;
+  /** Named but not built yet — the page says so, and so does this. */
+  comingSoon?: boolean;
+};
+
+export type NavItem = {
+  title: string;
+  labelKey: string;
+  href: string;
+  icon: LucideIcon;
+  /** Highlights the group for any path beneath it, not just `href`. */
+  sectionRoot?: string;
+  children?: NavChild[];
+  /** Other roots that light this entry up — for a page that absorbed them. */
+  alsoMatches?: string[];
+};
+
+export const navigationItems: NavItem[] = [
   { title: 'Team Dashboard', labelKey: 'teamDashboard', href: '/', icon: LayoutDashboard },
   { title: 'Reports', labelKey: 'reports', href: '/reports', icon: CalendarClock },
+  {
+    // Each area of the KPI deck is its own route. The group points at the report,
+    // the deck's front page, so clicking the parent still lands somewhere real.
+    title: 'KPI',
+    labelKey: 'kpi',
+    href: '/kpi/report',
+    sectionRoot: '/kpi',
+    icon: TrendingUp,
+    children: [
+      { labelKey: 'kpiReport', href: '/kpi/report', icon: BarChart3 },
+      // Still reachable: the page explains what is missing, which is more use
+      // than an entry that silently does nothing.
+      { labelKey: 'kpiUtilization', href: '/kpi/utilization', icon: Users, comingSoon: true },
+      { labelKey: 'kpiRepeatCost', href: '/kpi/repeat-cost', icon: Banknote, comingSoon: true },
+      { labelKey: 'kpiCsat', href: '/kpi/csat', icon: Smile },
+    ],
+  },
   // One entry for the whole solution workflow (generate → solutions → proposals);
   // the page has tabs. The generation steps and proposal pages keep their own
   // routes, so those paths light this entry up too.
@@ -38,6 +82,12 @@ export function AppSidebar() {
   const t = useTranslations('nav');
   const sidebarT = useTranslations('sidebar');
   const user = useAuthStore((s) => s.user);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+
+  // next-intl's usePathname has the locale stripped already, so these compare
+  // against the plain hrefs above.
+  const isActive = (href: string) =>
+    href === '/' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     // print:hidden — see AppTopBar. Navigation never belongs in a printed document,
@@ -89,30 +139,79 @@ export function AppSidebar() {
 
       <nav className="space-y-1">
         {navigationItems.map((item) => {
-          const matches = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
-          const active = item.href === '/'
-            ? pathname === item.href
-            : matches(item.href) || (('alsoMatches' in item ? item.alsoMatches : []) as string[]).some(matches);
+          const children = item.children ?? [];
+          const active =
+            isActive(item.sectionRoot ?? item.href)
+            || children.some((c) => isActive(c.href))
+            || (item.alsoMatches ?? []).some(isActive);
+          // A group opens itself while you are inside it; the chevron then lets
+          // you override that either way. Collapsed to icons there is no room for
+          // a submenu, so the parent is simply a link to the group's first page.
+          const expanded = !collapsed && children.length > 0 && (openGroups[item.labelKey] ?? active);
 
           return (
-          <Link
-            key={item.labelKey}
-            aria-label={t(item.labelKey)}
-            aria-current={active ? 'page' : undefined}
-            title={collapsed ? t(item.labelKey) : undefined}
-            className={`group relative flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold transition ${
-              collapsed ? 'justify-center' : ''
-            } ${
-              active
-                ? 'bg-[var(--app-nav-active)] text-white'
-                : 'text-[var(--app-nav-muted)] hover:bg-[var(--app-nav-panel)] hover:text-[var(--app-nav-text)]'
-            }`}
-            href={item.href}
-          >
-            <item.icon className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>{t(item.labelKey)}</span>}
-          </Link>
-        )})}
+            <div key={item.labelKey}>
+              <div className="flex items-center gap-1">
+                <Link
+                  aria-current={active ? 'page' : undefined}
+                  aria-label={t(item.labelKey)}
+                  title={collapsed ? t(item.labelKey) : undefined}
+                  className={`group relative flex h-11 min-w-0 flex-1 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition ${
+                    collapsed ? 'justify-center' : ''
+                  } ${
+                    active
+                      ? 'bg-[var(--app-nav-active)] text-white'
+                      : 'text-[var(--app-nav-muted)] hover:bg-[var(--app-nav-panel)] hover:text-[var(--app-nav-text)]'
+                  }`}
+                  href={item.href}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
+                </Link>
+
+                {!collapsed && children.length > 0 && (
+                  <button
+                    aria-expanded={expanded}
+                    aria-label={t(item.labelKey)}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-nav-muted)] transition hover:bg-[var(--app-nav-panel)] hover:text-[var(--app-nav-text)]"
+                    onClick={() => setOpenGroups((groups) => ({ ...groups, [item.labelKey]: !expanded }))}
+                    type="button"
+                  >
+                    <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? '' : '-rotate-90'}`} />
+                  </button>
+                )}
+              </div>
+
+              {expanded && (
+                <div className="ml-5 mt-1 space-y-0.5 border-l border-[var(--app-nav-border)] pl-3">
+                  {children.map((child) => {
+                    const childActive = isActive(child.href);
+                    return (
+                      <Link
+                        key={child.labelKey}
+                        aria-current={childActive ? 'page' : undefined}
+                        className={`flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium transition ${
+                          childActive
+                            ? 'bg-[var(--app-nav-active)] text-white'
+                            : 'text-[var(--app-nav-muted)] hover:bg-[var(--app-nav-panel)] hover:text-[var(--app-nav-text)]'
+                        }`}
+                        href={child.href}
+                      >
+                        <child.icon className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{t(child.labelKey)}</span>
+                        {child.comingSoon && (
+                          <span className="ml-auto shrink-0 rounded bg-[var(--app-nav-panel)] px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--app-nav-muted)]">
+                            {t('soon')}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
 
       <div className={`mt-auto rounded-xl border border-[var(--app-nav-border)] bg-[var(--app-nav-panel)] p-4 ${collapsed ? 'px-2' : ''}`}>

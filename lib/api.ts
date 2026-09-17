@@ -68,6 +68,15 @@ api.interceptors.response.use(
 /* ─── Typed helpers ───────────────────────────────────────────────────────── */
 
 import type {
+  KpiCaseMetrics,
+  MondaySyncConfig,
+  KpiCsat,
+  CsatSourceStatus,
+  KpiSyncStatus,
+  CsatWorkbookHistoryEntry,
+  CsatWorkbookUploadResult,
+} from './kpi/api-types';
+import type {
   CaseReportRow,
   CaseRowEdit,
   ApiResponse,
@@ -628,6 +637,121 @@ export const customerBundleApi = {
       { excludedRobotUnitIds },
       { params: { customerProfileId, month } },
     ),
+};
+
+/**
+ * RE Team KPI dashboard.
+ *
+ * Backed by the monday.com ticket mirror: `cmCases` returns Total CM Cases,
+ * First Time Fix, SLA and 1st Time Install per month and per robot type. The
+ * remaining deck KPIs (PM Complete, CSAT) have no source yet and are not part
+ * of this response.
+ *
+ * Internal only — the backend restricts every /api/v1/kpi route to ADMIN and
+ * RAASPAL_TEAM, so a signed-in inventory account gets a 403 here.
+ */
+export const kpiApi = {
+  /**
+   * Metrics for an inclusive month range, both 'YYYY-MM'.
+   *
+   * The backend reads past the end of the range by its longest follow-up window
+   * so a ticket in the final month can still see the repeat that disqualifies
+   * it; that is why a range can legitimately return numbers that change once
+   * later months are synced.
+   */
+  cmCases: (from: string, to: string) =>
+    api.get<ApiResponse<KpiCaseMetrics>>('/api/v1/kpi/cm-cases', { params: { from, to } }),
+
+  /**
+   * CSAT for an inclusive month range, from the RE team's survey workbooks.
+   * Not live: the backend re-reads the workbooks when they change, roughly
+   * monthly, and `asOf` says how far the figures run. A 400 means the
+   * workbook folder is not configured or holds nothing readable; its message
+   * says which.
+   */
+  csat: (from: string, to: string) =>
+    api.get<ApiResponse<KpiCsat>>('/api/v1/kpi/csat', { params: { from, to } }),
+
+  /**
+   * The same figures as an .xlsx, one sheet per chart the deck draws.
+   *
+   * The console's charts are HTML, so they reach a slide only as a picture —
+   * useless to anyone who then has to fix a number or recolour a series. These
+   * hand over the numbers instead, shaped months-down/series-across so Excel's
+   * Insert Chart reproduces the panel and the result stays editable.
+   *
+   * A blob response, so an error body arrives as a Blob rather than parsed
+   * JSON; the caller reads the message out of it.
+   */
+  exportReport: (from: string, to: string) =>
+    api.get<Blob>('/api/v1/kpi/cm-cases/export', { params: { from, to }, responseType: 'blob' }),
+
+  exportCsat: (from: string, to: string) =>
+    api.get<Blob>('/api/v1/kpi/csat/export', { params: { from, to }, responseType: 'blob' }),
+
+  /**
+   * Starts a monday sync and returns immediately - the backend answers 202 and
+   * runs the boards on its own thread, so this resolves long before any ticket
+   * is written. Poll `mondaySyncStatus` until `running` goes false.
+   *
+   * Throws rather than reporting failure in the body: a missing token is a 400
+   * and a second press while one is in flight is refused outright.
+   */
+  startMondaySync: () =>
+    api.post<ApiResponse<KpiSyncStatus>>('/api/v1/kpi/monday/sync'),
+
+  /** Whether a run is in progress, and the outcome of the last finished one. */
+  mondaySyncStatus: () =>
+    api.get<ApiResponse<KpiSyncStatus>>('/api/v1/kpi/monday/sync/status'),
+
+  /** The workbooks the backend can see right now, and how far they run. */
+  csatSource: () => api.get<ApiResponse<CsatSourceStatus>>('/api/v1/kpi/csat/source'),
+
+  /** Re-reads the workbooks now, for "I just replaced them, why hasn't it changed?". */
+  reloadCsat: () => api.post<ApiResponse<CsatSourceStatus>>('/api/v1/kpi/csat/reload'),
+
+  /** Board and column mapping, and whether a monday token is configured. Never returns the token. */
+  config: () => api.get<ApiResponse<MondaySyncConfig>>('/api/v1/kpi/monday/config'),
+
+  /**
+   * Every workbook upload, newest first, with the current one per survey marked.
+   * This is the history behind the CSAT figures.
+   */
+  csatWorkbooks: () =>
+    api.get<ApiResponse<CsatWorkbookHistoryEntry[]>>('/api/v1/kpi/csat/workbooks'),
+
+  /**
+   * Uploads one survey workbook, making it the current one for its survey.
+   *
+   * The server parses it before storing, so a file whose survey cannot be told
+   * comes back as a 400 with the reason rather than being accepted and then
+   * silently ignored. A longer timeout and no retry: parsing is real work, and
+   * a retry would upload the same file twice.
+   */
+  uploadCsatWorkbook: (file: File, note?: string) => {
+    const body = new FormData();
+    body.append('file', file);
+    if (note) body.append('note', note);
+    return api.post<ApiResponse<CsatWorkbookUploadResult>>('/api/v1/kpi/csat/workbooks', body, {
+      // Undefined, not 'multipart/form-data': the instance default is
+      // application/json, and only clearing it lets the browser write the
+      // header with the boundary the server needs to split the parts.
+      headers: { 'Content-Type': undefined },
+      timeout: 120_000,
+      skipRetry: true,
+    });
+  },
+
+  /**
+   * Removes one upload. Deleting the current workbook for a survey is how a
+   * wrong upload is undone — the one before it becomes current again.
+   */
+  deleteCsatWorkbook: (id: string) =>
+    api.delete<ApiResponse<CsatWorkbookHistoryEntry>>(`/api/v1/kpi/csat/workbooks/${id}`),
+
+  /** The stored file itself, as it was uploaded. */
+  downloadCsatWorkbook: (id: string) =>
+    api.get<Blob>(`/api/v1/kpi/csat/workbooks/${id}/download`, { responseType: 'blob' }),
 };
 
 // Daily Pending Case Report
