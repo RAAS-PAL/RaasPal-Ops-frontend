@@ -101,12 +101,21 @@ export function CsatTab({ period, selectedSurvey, onSelectSurvey }: Props) {
 
   if (query.isError || !query.data) {
     return (
-      <div className="flex items-start gap-3 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-4 py-5 text-sm">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#DC2F2F]" />
-        <div>
-          <p className="font-medium text-[var(--app-text)]">{t('live.errorTitle')}</p>
-          <p className="mt-1 text-xs text-[var(--app-muted)]">{errorMessage(query.error, t('live.errorBody'))}</p>
+      <div className="space-y-4">
+        <div className="flex items-start gap-3 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-4 py-5 text-sm">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#DC2F2F]" />
+          <div>
+            <p className="font-medium text-[var(--app-text)]">{t('live.errorTitle')}</p>
+            <p className="mt-1 text-xs text-[var(--app-muted)]">{errorMessage(query.error, t('live.errorBody'))}</p>
+          </div>
         </div>
+        {/* The commonest error is "no workbooks uploaded yet", and its message says to
+            upload them here - so the uploader has to be here, not only on the page that
+            renders once an upload exists. A fresh environment is otherwise a dead end:
+            the page that asks for the files is the page that hides the control. The
+            manager invalidates the CSAT query on success, so a first upload loads the
+            page by itself. */}
+        <CsatWorkbookManager />
       </div>
     );
   }
