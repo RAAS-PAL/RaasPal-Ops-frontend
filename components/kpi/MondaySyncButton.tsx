@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Pulls the Cleaning, Delivery and Installation boards into `case_ticket`.
+ * Pulls the Cleaning, Delivery and Installation boards into `kpi_case_ticket`.
  *
  * Every figure on the report tab is computed from that table, so a fresh
  * environment shows zeros until this has run at least once. The nightly
@@ -12,6 +12,14 @@
  * The backend answers 202 and syncs on its own thread, so the POST resolving
  * proves only that the run started. The button polls until `running` goes
  * false, then reports what the run actually wrote and refreshes the charts.
+ *
+ * <p>It watches a run it did not start, too. A second press is refused with 409
+ * while one is in flight, and treating that as an error was the whole problem:
+ * the page sat on "0 tickets, synced never" showing a red refusal, while a
+ * perfectly good run finished behind it and nothing refreshed. A 409 now means
+ * attach to that run rather than give up. The same poll starts on mount, so a
+ * reload mid-run, a second tab, or the scheduler's own run all end with the
+ * figures appearing by themselves.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -22,8 +30,13 @@ import type { KpiSyncSummary } from '@/lib/kpi/api-types';
 
 /** Slow enough not to hammer the endpoint, quick enough to feel live. */
 const POLL_MS = 3000;
-/** ~4,000 tickets over three boards takes about a minute; this is the giving-up point. */
-const MAX_POLLS = 100;
+/**
+ * The giving-up point, 12 minutes. Measured: 9,008 tickets over the three
+ * boards takes about four. The old ceiling was five, which a slow monday or a
+ * bigger year would cross - and crossing it reports a failure over a run that
+ * is still going, which is worse than waiting.
+ */
+const MAX_POLLS = 240;
 
 function describe(summary: KpiSyncSummary | null, t: (k: string, v?: never) => string): string {
   if (!summary) return t('sync.doneUnknown');
@@ -41,6 +54,12 @@ function describe(summary: KpiSyncSummary | null, t: (k: string, v?: never) => s
   return t('sync.done', { written, read } as never);
 }
 
+const statusOf = (error: unknown): number | undefined =>
+  (error as { response?: { status?: number } } | null)?.response?.status;
+
+const messageOf = (error: unknown): string | undefined =>
+  (error as { response?: { data?: { message?: string } } } | null)?.response?.data?.message;
+
 export function MondaySyncButton() {
   const t = useTranslations('kpi');
   const queryClient = useQueryClient();
@@ -49,16 +68,17 @@ export function MondaySyncButton() {
   const [failed, setFailed] = useState(false);
   // Polling outlives the click, so a navigation away must be able to stop it.
   const cancelled = useRef(false);
+  // One loop at a time: the mount check and a click must not both poll.
+  const polling = useRef(false);
 
   useEffect(() => () => { cancelled.current = true; }, []);
 
-  const run = useCallback(async () => {
+  /** Watches the run in flight to its end, then refreshes what it fed. */
+  const pollUntilDone = useCallback(async () => {
+    if (polling.current) return;
+    polling.current = true;
     setBusy(true);
-    setMessage(null);
-    setFailed(false);
     try {
-      await kpiApi.startMondaySync();
-
       for (let i = 0; i < MAX_POLLS; i += 1) {
         if (cancelled.current) return;
         await new Promise((resolve) => setTimeout(resolve, POLL_MS));
@@ -75,16 +95,54 @@ export function MondaySyncButton() {
       }
       setFailed(true);
       setMessage(t('sync.stillRunning'));
-    } catch (e) {
-      // A 400 carries the backend's own reason (no token, no boards); a 500
-      // from a double press says a run is already going. Both beat "failed".
-      const body = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setFailed(true);
-      setMessage(body ?? (e instanceof Error ? e.message : t('sync.failed')));
     } finally {
+      polling.current = false;
       setBusy(false);
     }
   }, [queryClient, t]);
+
+  const run = useCallback(async () => {
+    setMessage(null);
+    setFailed(false);
+    setBusy(true);
+    try {
+      await kpiApi.startMondaySync();
+    } catch (e) {
+      if (statusOf(e) === 409) {
+        // Already running - somebody's run, possibly this page's own from
+        // before a reload. Watch it instead of reporting a failure over it.
+        setMessage(t('sync.attached'));
+        await pollUntilDone();
+        return;
+      }
+      // A 400 carries the backend's own reason: no token, no boards configured.
+      setFailed(true);
+      setMessage(messageOf(e) ?? (e instanceof Error ? e.message : t('sync.failed')));
+      setBusy(false);
+      return;
+    }
+    await pollUntilDone();
+  }, [pollUntilDone, t]);
+
+  // A run may already be going when this mounts: the scheduler's, another tab's,
+  // or this page's own across a reload. Without this the figures stay stale
+  // until someone thinks to refresh.
+  useEffect(() => {
+    let dropped = false;
+    void (async () => {
+      try {
+        const { data } = await kpiApi.mondaySyncStatus();
+        if (dropped || cancelled.current || !data.data.running) return;
+        setMessage(t('sync.attached'));
+        await pollUntilDone();
+      } catch {
+        // Nothing to say: the page has its own error handling for a backend
+        // that cannot be reached, and a failed status check is not the
+        // button's news to report.
+      }
+    })();
+    return () => { dropped = true; };
+  }, [pollUntilDone, t]);
 
   return (
     <div className="flex flex-col items-end gap-1">

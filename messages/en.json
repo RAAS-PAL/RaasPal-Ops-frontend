@@ -1221,7 +1221,8 @@
       "done": "Read {read} tickets from monday — {written} new or changed.",
       "doneUnknown": "Sync finished, but the server reported no summary.",
       "failed": "Sync failed.",
-      "stillRunning": "Still running after several minutes — check the sync history on the server."
+      "stillRunning": "Still running after several minutes — check the sync history on the server.",
+      "attached": "A sync was already running — watching it."
     },
     "units": {
       "cases": "cases"
