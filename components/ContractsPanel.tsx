@@ -17,6 +17,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronDown,
   ExternalLink,
   Eye,
   FileSignature,
@@ -24,10 +25,10 @@ import {
   Loader2,
   Mail,
   Paperclip,
-  Pencil,
-  PhoneCall,
+  Plus,
   RefreshCw,
   Search,
+  StickyNote,
   Trash2,
   X,
 } from 'lucide-react';
@@ -388,10 +389,10 @@ function FollowupBadge({ status }: { status: ContractRenewalStatus }) {
 }
 
 /**
- * Record what the CS team did about a renewal. The same "also the other robots"
- * question as the PDF, for the same reason: one customer, one contract, one call.
+ * The note behind a follow-up, on its own. The status is a dropdown in the row
+ * and saves on change; the note is the one thing that needs a box to type in.
  */
-function FollowupDialog({
+function NoteDialog({
   row,
   siblings,
   onClose,
@@ -402,15 +403,14 @@ function FollowupDialog({
   onClose: () => void;
   onDone: (message: string) => void;
 }) {
-  const [status, setStatus] = useState<ContractRenewalStatus>(row.followup.status);
   const [note, setNote] = useState(row.followup.note ?? '');
   const [applyToAll, setApplyToAll] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const save = useMutation({
-    mutationFn: () => contractsApi.updateFollowup(row.robotUnitId, { status, note, applyToSameContract: applyToAll }),
-    onSuccess: (r) => onDone(r.data.message ?? 'Follow-up recorded'),
-    onError: (e) => setError(errorMessage(e, 'Could not save the follow-up.')),
+    mutationFn: () => contractsApi.updateFollowup(row.robotUnitId, { status: row.followup.status, note, applyToSameContract: applyToAll }),
+    onSuccess: (r) => onDone(r.data.message ?? 'Note saved'),
+    onError: (e) => setError(errorMessage(e, 'Could not save the note.')),
   });
 
   useEffect(() => {
@@ -419,16 +419,14 @@ function FollowupDialog({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const clearing = status === 'NOT_CONTACTED';
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="followup-title">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="note-title">
       <div className="w-full max-w-md rounded-2xl border border-[var(--app-border)] bg-[var(--app-panel)] shadow-xl">
         <div className="flex items-start justify-between gap-3 border-b border-[var(--app-border)] px-5 py-4">
           <div>
-            <p id="followup-title" className="text-sm font-semibold text-[var(--app-text)]">Renewal follow-up</p>
+            <p id="note-title" className="text-sm font-semibold text-[var(--app-text)]">Follow-up note</p>
             <p className="mt-0.5 text-xs text-[var(--app-muted)]">
-              {row.customerName} · {row.serialNumber} · {row.contractStartDate ?? '…'} → {row.contractEndDate ?? '…'}
+              {row.customerName} · {row.serialNumber} · <FollowupBadge status={row.followup.status} />
             </p>
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-1 text-[var(--app-muted)] hover:bg-[var(--app-faint)]">
@@ -437,41 +435,14 @@ function FollowupDialog({
         </div>
 
         <div className="space-y-4 px-5 py-4">
-          <div role="radiogroup" aria-label="Status" className="space-y-1.5">
-            {FOLLOWUP_ORDER.map((s) => {
-              const f = FOLLOWUP[s];
-              const active = status === s;
-              return (
-                <label
-                  key={s}
-                  className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 transition ${
-                    active ? 'border-[var(--app-brand)] bg-[var(--app-brand-soft)]/40' : 'border-[var(--app-border)] hover:bg-[var(--app-faint)]'
-                  }`}
-                >
-                  <input type="radio" name="followup-status" value={s} checked={active} onChange={() => setStatus(s)} className="mt-1 h-4 w-4" />
-                  <span className="min-w-0">
-                    <span className="flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
-                      <span className={`h-2 w-2 rounded-full ${f.dot}`} />
-                      {f.label}
-                    </span>
-                    <span className="block text-xs text-[var(--app-muted)]">{f.hint}</span>
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-
-          <label className="block text-sm text-[var(--app-text)]">
-            <span className="text-xs font-semibold text-[var(--app-muted)]">Note</span>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value.slice(0, 2000))}
-              disabled={clearing}
-              rows={3}
-              placeholder={clearing ? 'Cleared with the status' : 'Who you spoke to, what they said, when to call back…'}
-              className="mt-1 w-full resize-y rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 py-2 text-sm outline-none focus:border-[var(--app-brand)] disabled:opacity-50"
-            />
-          </label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value.slice(0, 2000))}
+            rows={4}
+            autoFocus
+            placeholder="Who you spoke to, what they said, when to call back…"
+            className="w-full resize-y rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 py-2 text-sm outline-none focus:border-[var(--app-brand)]"
+          />
 
           <label className="flex cursor-pointer items-start gap-2.5 text-sm text-[var(--app-text)]">
             <input
@@ -483,13 +454,12 @@ function FollowupDialog({
             <span>
               {siblings.length > 0 ? (
                 <>
-                  Also record this on the {siblings.length} other robot{siblings.length === 1 ? '' : 's'} of {row.customerName} on the same
-                  contract dates
+                  Also on the {siblings.length} other robot{siblings.length === 1 ? '' : 's'} of {row.customerName} on the same contract dates
                   <span className="block text-xs text-[var(--app-muted)]">{siblings.map((s) => s.serialNumber).join(', ')}</span>
                 </>
               ) : (
                 <>
-                  Also record this on any other robot of {row.customerName} on the same contract dates
+                  Also on any other robot of {row.customerName} on the same contract dates
                   <span className="block text-xs text-[var(--app-muted)]">None are on screen; the server checks every deployment.</span>
                 </>
               )}
@@ -514,8 +484,8 @@ function FollowupDialog({
             disabled={save.isPending}
             className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
-            {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <PhoneCall className="h-4 w-4" />}
-            {save.isPending ? 'Saving…' : 'Save'}
+            {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <StickyNote className="h-4 w-4" />}
+            {save.isPending ? 'Saving…' : 'Save note'}
           </button>
         </div>
       </div>
@@ -523,34 +493,78 @@ function FollowupDialog({
   );
 }
 
-/** The follow-up as a cell: badge, the note under it, who set it, and a pencil. */
-function FollowupCell({ row, onEdit }: { row: ExpiringContract; onEdit: () => void }) {
+/**
+ * The follow-up as a cell: the status is a dropdown that saves the moment it is
+ * changed - one click for the common case, a call just made - and covers the
+ * customer's other robots on the same contract dates, as one call does. The note
+ * sits under it and opens its own small box.
+ */
+function FollowupCell({
+  row,
+  onNote,
+  onSaved,
+  onError,
+}: {
+  row: ExpiringContract;
+  onNote: () => void;
+  onSaved: (message: string) => void;
+  onError: (message: string) => void;
+}) {
   const f = row.followup;
+  const style = FOLLOWUP[f.status] ?? FOLLOWUP.NOT_CONTACTED;
   const when = f.updatedAt ? new Date(f.updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : null;
+
+  const change = useMutation({
+    mutationFn: (status: ContractRenewalStatus) =>
+      contractsApi.updateFollowup(row.robotUnitId, { status, note: f.note, applyToSameContract: true }),
+    onSuccess: (r) => onSaved(r.data.message ?? 'Follow-up recorded'),
+    onError: (e) => onError(errorMessage(e, `Could not update the follow-up for ${row.serialNumber}.`)),
+  });
+
   return (
-    <div className="flex min-w-[11rem] items-start gap-1.5">
-      <div className="min-w-0 flex-1">
-        <FollowupBadge status={f.status} />
-        {f.note && (
-          <p className="mt-1 line-clamp-2 max-w-[16rem] whitespace-pre-line text-xs text-[var(--app-text)]" title={f.note}>
-            {f.note}
-          </p>
-        )}
-        {(f.updatedBy || when) && (
-          <p className="mt-0.5 text-[11px] text-[var(--app-muted)]" title={f.updatedAt ? new Date(f.updatedAt).toLocaleString() : undefined}>
-            {[f.updatedBy, when].filter(Boolean).join(' · ')}
-          </p>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={onEdit}
-        title="Update the follow-up"
-        aria-label={`Update the follow-up for ${row.serialNumber}`}
-        className="rounded-md p-1 text-[var(--app-muted)] transition hover:bg-[var(--app-faint)] hover:text-[var(--app-brand-dark)]"
-      >
-        <Pencil className="h-3.5 w-3.5" />
-      </button>
+    <div className="min-w-[11rem]">
+      <span className="relative inline-flex items-center">
+        <select
+          value={f.status}
+          disabled={change.isPending}
+          onChange={(e) => change.mutate(e.target.value as ContractRenewalStatus)}
+          aria-label={`Follow-up for ${row.serialNumber}`}
+          title={style.hint}
+          className={`h-6 cursor-pointer appearance-none rounded-full pl-2.5 pr-6 text-xs font-semibold ring-1 ring-inset outline-none transition focus:ring-2 focus:ring-[var(--app-brand)] disabled:cursor-wait disabled:opacity-60 ${style.className}`}
+        >
+          {FOLLOWUP_ORDER.map((s) => (
+            <option key={s} value={s}>
+              {FOLLOWUP[s].label}
+            </option>
+          ))}
+        </select>
+        <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2">
+          {change.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <ChevronDown className="h-3 w-3 opacity-70" />}
+        </span>
+      </span>
+      {f.note ? (
+        <button
+          type="button"
+          onClick={onNote}
+          title={`${f.note}\n\nClick to edit`}
+          className="mt-1 block max-w-[16rem] text-left text-xs text-[var(--app-text)] hover:text-[var(--app-brand-dark)]"
+        >
+          <span className="line-clamp-2 whitespace-pre-line">{f.note}</span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={onNote}
+          className="mt-1 inline-flex items-center gap-1 text-[11px] text-[var(--app-muted)] transition hover:text-[var(--app-brand-dark)]"
+        >
+          <Plus className="h-3 w-3" /> note
+        </button>
+      )}
+      {(f.updatedBy || when) && (
+        <p className="mt-0.5 text-[11px] text-[var(--app-muted)]" title={f.updatedAt ? new Date(f.updatedAt).toLocaleString() : undefined}>
+          {[f.updatedBy, when].filter(Boolean).join(' · ')}
+        </p>
+      )}
     </div>
   );
 }
@@ -587,13 +601,15 @@ function Table({
   rows,
   onAttach,
   onRemove,
-  onFollowup,
+  onNote,
+  onSaved,
   onError,
 }: {
   rows: ExpiringContract[];
   onAttach: (row: ExpiringContract) => void;
   onRemove: (row: ExpiringContract) => void;
-  onFollowup: (row: ExpiringContract) => void;
+  onNote: (row: ExpiringContract) => void;
+  onSaved: (message: string) => void;
   onError: (message: string) => void;
 }) {
   return (
@@ -638,7 +654,7 @@ function Table({
                 ) : null}
               </td>
               <td className="px-3 py-2.5">
-                <FollowupCell row={c} onEdit={() => onFollowup(c)} />
+                <FollowupCell row={c} onNote={() => onNote(c)} onSaved={onSaved} onError={onError} />
               </td>
               <td className="px-3 py-2.5">
                 <DocumentCell row={c} onAttach={() => onAttach(c)} onRemove={() => onRemove(c)} onError={onError} />
@@ -680,7 +696,7 @@ export function ContractsPanel() {
   const [search, setSearch] = useState('');
   const [followupFilter, setFollowupFilter] = useState<FollowupFilter>('any');
   const [attaching, setAttaching] = useState<ExpiringContract | null>(null);
-  const [followingUp, setFollowingUp] = useState<ExpiringContract | null>(null);
+  const [noting, setNoting] = useState<ExpiringContract | null>(null);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const queryClient = useQueryClient();
   const { confirm, confirmDialog } = useConfirm();
@@ -895,7 +911,11 @@ export function ContractsPanel() {
             rows={rows}
             onAttach={setAttaching}
             onRemove={askRemove}
-            onFollowup={setFollowingUp}
+            onNote={setNoting}
+            onSaved={async (text) => {
+              setNotice({ kind: 'ok', text });
+              await refresh();
+            }}
             onError={(text) => setNotice({ kind: 'error', text })}
           />
         )
@@ -914,8 +934,8 @@ export function ContractsPanel() {
 
       <p className="text-xs leading-5 text-[var(--app-muted)]">
         Each contract is emailed to the customer success address once as it enters the 30-day window; changing the end date re-arms that alert
-        and puts the follow-up back to <i>Not contacted</i> for the new term. The Contract PDF is the signed document, kept in private storage;
-        one upload, like one follow-up, can cover every robot of the customer on the same contract dates.
+        and puts the follow-up back to <i>Not contacted</i> for the new term. Changing a follow-up applies to every robot of the customer on the
+        same contract dates — one call, one contract. The Contract PDF is the signed document, kept in private storage; one upload covers them the same way.
       </p>
 
       {attaching && (
@@ -931,13 +951,13 @@ export function ContractsPanel() {
           }}
         />
       )}
-      {followingUp && (
-        <FollowupDialog
-          row={followingUp}
-          siblings={sameContract(followingUp, allRows)}
-          onClose={() => setFollowingUp(null)}
+      {noting && (
+        <NoteDialog
+          row={noting}
+          siblings={sameContract(noting, allRows)}
+          onClose={() => setNoting(null)}
           onDone={async (message) => {
-            setFollowingUp(null);
+            setNoting(null);
             setNotice({ kind: 'ok', text: message });
             await refresh();
           }}
