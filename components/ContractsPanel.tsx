@@ -7,6 +7,10 @@
  * A renewal should be visible a month out, not discovered when the robot stops
  * reporting. The backend also emails each contract once as it enters the window
  * (the morning ops alert); the Ending soon chip is that same list, always current.
+ *
+ * The Follow-up column is the CS team's side of it: have they called the customer,
+ * and what did the customer say. It belongs to the current term - recording the
+ * renewal (a new end date on the robot) puts it back to "not contacted".
  */
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +24,8 @@ import {
   Loader2,
   Mail,
   Paperclip,
+  Pencil,
+  PhoneCall,
   RefreshCw,
   Search,
   Trash2,
@@ -28,7 +34,7 @@ import {
 import { Link } from '@/i18n/navigation';
 import { contractsApi } from '@/lib/api';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import type { ExpiringContract } from '@/types/api';
+import type { ContractRenewalStatus, ExpiringContract } from '@/types/api';
 
 function errorMessage(e: unknown, fallback: string): string {
   const detail =
@@ -342,7 +348,215 @@ function DocumentCell({
   );
 }
 
+const FOLLOWUP: Record<ContractRenewalStatus, { label: string; hint: string; className: string; dot: string }> = {
+  NOT_CONTACTED: {
+    label: 'Not contacted',
+    hint: 'Nobody has called the customer about this term yet.',
+    className: 'bg-transparent text-[var(--app-muted)] ring-[var(--app-border)] ring-dashed',
+    dot: 'bg-[var(--app-muted)]',
+  },
+  CONTACTED: {
+    label: 'Contacted',
+    hint: 'The customer has been called; waiting on their decision.',
+    className: 'bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:ring-sky-900',
+    dot: 'bg-sky-500',
+  },
+  WILL_RENEW: {
+    label: 'Will renew',
+    hint: 'The customer said yes. Extend the end date on the robot once the new contract is signed.',
+    className: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900',
+    dot: 'bg-emerald-500',
+  },
+  WILL_NOT_RENEW: {
+    label: 'Will not renew',
+    hint: 'The customer said no. The robot comes back when the contract ends.',
+    className: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-900',
+    dot: 'bg-red-500',
+  },
+};
+
+const FOLLOWUP_ORDER: ContractRenewalStatus[] = ['NOT_CONTACTED', 'CONTACTED', 'WILL_RENEW', 'WILL_NOT_RENEW'];
+
+function FollowupBadge({ status }: { status: ContractRenewalStatus }) {
+  const f = FOLLOWUP[status] ?? FOLLOWUP.NOT_CONTACTED;
+  return (
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${f.className}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${f.dot}`} />
+      {f.label}
+    </span>
+  );
+}
+
+/**
+ * Record what the CS team did about a renewal. The same "also the other robots"
+ * question as the PDF, for the same reason: one customer, one contract, one call.
+ */
+function FollowupDialog({
+  row,
+  siblings,
+  onClose,
+  onDone,
+}: {
+  row: ExpiringContract;
+  siblings: ExpiringContract[];
+  onClose: () => void;
+  onDone: (message: string) => void;
+}) {
+  const [status, setStatus] = useState<ContractRenewalStatus>(row.followup.status);
+  const [note, setNote] = useState(row.followup.note ?? '');
+  const [applyToAll, setApplyToAll] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const save = useMutation({
+    mutationFn: () => contractsApi.updateFollowup(row.robotUnitId, { status, note, applyToSameContract: applyToAll }),
+    onSuccess: (r) => onDone(r.data.message ?? 'Follow-up recorded'),
+    onError: (e) => setError(errorMessage(e, 'Could not save the follow-up.')),
+  });
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const clearing = status === 'NOT_CONTACTED';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="followup-title">
+      <div className="w-full max-w-md rounded-2xl border border-[var(--app-border)] bg-[var(--app-panel)] shadow-xl">
+        <div className="flex items-start justify-between gap-3 border-b border-[var(--app-border)] px-5 py-4">
+          <div>
+            <p id="followup-title" className="text-sm font-semibold text-[var(--app-text)]">Renewal follow-up</p>
+            <p className="mt-0.5 text-xs text-[var(--app-muted)]">
+              {row.customerName} · {row.serialNumber} · {row.contractStartDate ?? '…'} → {row.contractEndDate ?? '…'}
+            </p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-1 text-[var(--app-muted)] hover:bg-[var(--app-faint)]">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-4 px-5 py-4">
+          <div role="radiogroup" aria-label="Status" className="space-y-1.5">
+            {FOLLOWUP_ORDER.map((s) => {
+              const f = FOLLOWUP[s];
+              const active = status === s;
+              return (
+                <label
+                  key={s}
+                  className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 transition ${
+                    active ? 'border-[var(--app-brand)] bg-[var(--app-brand-soft)]/40' : 'border-[var(--app-border)] hover:bg-[var(--app-faint)]'
+                  }`}
+                >
+                  <input type="radio" name="followup-status" value={s} checked={active} onChange={() => setStatus(s)} className="mt-1 h-4 w-4" />
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
+                      <span className={`h-2 w-2 rounded-full ${f.dot}`} />
+                      {f.label}
+                    </span>
+                    <span className="block text-xs text-[var(--app-muted)]">{f.hint}</span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+
+          <label className="block text-sm text-[var(--app-text)]">
+            <span className="text-xs font-semibold text-[var(--app-muted)]">Note</span>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value.slice(0, 2000))}
+              disabled={clearing}
+              rows={3}
+              placeholder={clearing ? 'Cleared with the status' : 'Who you spoke to, what they said, when to call back…'}
+              className="mt-1 w-full resize-y rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 py-2 text-sm outline-none focus:border-[var(--app-brand)] disabled:opacity-50"
+            />
+          </label>
+
+          <label className="flex cursor-pointer items-start gap-2.5 text-sm text-[var(--app-text)]">
+            <input
+              type="checkbox"
+              checked={applyToAll}
+              onChange={(e) => setApplyToAll(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-[var(--app-border)]"
+            />
+            <span>
+              {siblings.length > 0 ? (
+                <>
+                  Also record this on the {siblings.length} other robot{siblings.length === 1 ? '' : 's'} of {row.customerName} on the same
+                  contract dates
+                  <span className="block text-xs text-[var(--app-muted)]">{siblings.map((s) => s.serialNumber).join(', ')}</span>
+                </>
+              ) : (
+                <>
+                  Also record this on any other robot of {row.customerName} on the same contract dates
+                  <span className="block text-xs text-[var(--app-muted)]">None are on screen; the server checks every deployment.</span>
+                </>
+              )}
+            </span>
+          </label>
+
+          {error && (
+            <p className="flex items-start gap-2 text-xs text-red-600">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-[var(--app-border)] px-5 py-3">
+          <button type="button" onClick={onClose} disabled={save.isPending} className="rounded-lg px-3 py-2 text-sm font-semibold text-[var(--app-muted)] hover:bg-[var(--app-faint)]">
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => save.mutate()}
+            disabled={save.isPending}
+            className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+          >
+            {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <PhoneCall className="h-4 w-4" />}
+            {save.isPending ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** The follow-up as a cell: badge, the note under it, who set it, and a pencil. */
+function FollowupCell({ row, onEdit }: { row: ExpiringContract; onEdit: () => void }) {
+  const f = row.followup;
+  const when = f.updatedAt ? new Date(f.updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : null;
+  return (
+    <div className="flex min-w-[11rem] items-start gap-1.5">
+      <div className="min-w-0 flex-1">
+        <FollowupBadge status={f.status} />
+        {f.note && (
+          <p className="mt-1 line-clamp-2 max-w-[16rem] whitespace-pre-line text-xs text-[var(--app-text)]" title={f.note}>
+            {f.note}
+          </p>
+        )}
+        {(f.updatedBy || when) && (
+          <p className="mt-0.5 text-[11px] text-[var(--app-muted)]" title={f.updatedAt ? new Date(f.updatedAt).toLocaleString() : undefined}>
+            {[f.updatedBy, when].filter(Boolean).join(' · ')}
+          </p>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={onEdit}
+        title="Update the follow-up"
+        aria-label={`Update the follow-up for ${row.serialNumber}`}
+        className="rounded-md p-1 text-[var(--app-muted)] transition hover:bg-[var(--app-faint)] hover:text-[var(--app-brand-dark)]"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
 type StatusFilter = 'all' | 'soon' | 'ended' | 'none';
+type FollowupFilter = 'any' | ContractRenewalStatus;
 
 const STATUS_BADGE: Record<ExpiringContract['status'], { label: string; className: string }> = {
   ENDED: { label: 'Ended', className: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-900' },
@@ -373,11 +587,13 @@ function Table({
   rows,
   onAttach,
   onRemove,
+  onFollowup,
   onError,
 }: {
   rows: ExpiringContract[];
   onAttach: (row: ExpiringContract) => void;
   onRemove: (row: ExpiringContract) => void;
+  onFollowup: (row: ExpiringContract) => void;
   onError: (message: string) => void;
 }) {
   return (
@@ -391,7 +607,7 @@ function Table({
             <th className="px-3 py-2.5 font-semibold">Contract</th>
             <th className="px-3 py-2.5 text-right font-semibold">Ends in</th>
             <th className="px-3 py-2.5 font-semibold">Status</th>
-            <th className="px-3 py-2.5 font-semibold">Alert</th>
+            <th className="px-3 py-2.5 font-semibold">Follow-up</th>
             <th className="px-3 py-2.5 font-semibold">Contract PDF</th>
             <th className="px-3 py-2.5"><span className="sr-only">Open</span></th>
           </tr>
@@ -413,13 +629,16 @@ function Table({
               </td>
               <td className="px-3 py-2.5">
                 <StatusBadge status={c.status} />
-              </td>
-              <td className="px-3 py-2.5 text-xs text-[var(--app-muted)]">
                 {c.alertedAt ? (
-                  <span className="inline-flex items-center gap-1" title={new Date(c.alertedAt).toLocaleString()}>
-                    <Mail className="h-3.5 w-3.5" /> sent
-                  </span>
-                ) : c.status === 'ENDING_SOON' ? 'pending' : '—'}
+                  <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-[var(--app-muted)]" title={`Alert emailed ${new Date(c.alertedAt).toLocaleString()}`}>
+                    <Mail className="h-3 w-3" /> alert sent
+                  </p>
+                ) : c.status === 'ENDING_SOON' ? (
+                  <p className="mt-1 text-[11px] text-[var(--app-muted)]">alert pending</p>
+                ) : null}
+              </td>
+              <td className="px-3 py-2.5">
+                <FollowupCell row={c} onEdit={() => onFollowup(c)} />
               </td>
               <td className="px-3 py-2.5">
                 <DocumentCell row={c} onAttach={() => onAttach(c)} onRemove={() => onRemove(c)} onError={onError} />
@@ -459,7 +678,9 @@ export function ContractsPanel() {
   const [windowDays, setWindowDays] = useState(30);
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
+  const [followupFilter, setFollowupFilter] = useState<FollowupFilter>('any');
   const [attaching, setAttaching] = useState<ExpiringContract | null>(null);
+  const [followingUp, setFollowingUp] = useState<ExpiringContract | null>(null);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const queryClient = useQueryClient();
   const { confirm, confirmDialog } = useConfirm();
@@ -476,7 +697,12 @@ export function ContractsPanel() {
     soon: allRows.filter((c) => c.status === 'ENDING_SOON').length,
     ended: allRows.filter((c) => c.status === 'ENDED').length,
     none: allRows.filter((c) => c.status === 'NONE').length,
+    // The call list: ending soon and nobody has picked up the phone yet.
+    soonNotContacted: allRows.filter((c) => c.status === 'ENDING_SOON' && c.followup.status === 'NOT_CONTACTED').length,
   };
+  const followupCounts = Object.fromEntries(
+    FOLLOWUP_ORDER.map((s) => [s, allRows.filter((c) => c.followup.status === s).length]),
+  ) as Record<ContractRenewalStatus, number>;
 
   const needle = search.trim().toLowerCase();
   const visible = allRows
@@ -486,6 +712,7 @@ export function ContractsPanel() {
       if (filter === 'none') return c.status === 'NONE';
       return true;
     })
+    .filter((c) => followupFilter === 'any' || c.followup.status === followupFilter)
     .filter(
       (c) =>
         !needle ||
@@ -580,6 +807,23 @@ export function ContractsPanel() {
           </select>
         </label>
 
+        <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
+          Follow-up
+          <select
+            value={followupFilter}
+            onChange={(e) => setFollowupFilter(e.target.value as FollowupFilter)}
+            className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm font-normal text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
+          >
+            <option value="any">Any</option>
+            {FOLLOWUP_ORDER.map((s) => (
+              <option key={s} value={s}>
+                {FOLLOWUP[s].label}
+                {data ? ` (${followupCounts[s]})` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
           Search
           <span className="relative">
@@ -605,8 +849,14 @@ export function ContractsPanel() {
         </button>
         {data && (
           <p className="ml-auto text-xs text-[var(--app-muted)]">
-            As of {data.asOf} · <b className="text-[var(--app-text)]">{counts.soon}</b> ending within {data.windowDays} days ·{' '}
-            <b className="text-[var(--app-text)]">{counts.ended}</b> ended · showing {rows.length} of {counts.all}
+            As of {data.asOf} · <b className="text-[var(--app-text)]">{counts.soon}</b> ending within {data.windowDays} days
+            {counts.soon > 0 && (
+              <>
+                {' '}(<b className={counts.soonNotContacted > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-[var(--app-text)]'}>{counts.soonNotContacted}</b> not
+                contacted yet)
+              </>
+            )}{' '}
+            · <b className="text-[var(--app-text)]">{counts.ended}</b> ended · showing {rows.length} of {counts.all}
           </p>
         )}
       </div>
@@ -640,7 +890,15 @@ export function ContractsPanel() {
           No contracts end in the next {data.windowDays} days.
         </p>
       ) : (
-        data && <Table rows={rows} onAttach={setAttaching} onRemove={askRemove} onError={(text) => setNotice({ kind: 'error', text })} />
+        data && (
+          <Table
+            rows={rows}
+            onAttach={setAttaching}
+            onRemove={askRemove}
+            onFollowup={setFollowingUp}
+            onError={(text) => setNotice({ kind: 'error', text })}
+          />
+        )
       )}
 
       {filter === 'ended' && counts.ended > 0 && (
@@ -655,8 +913,9 @@ export function ContractsPanel() {
       )}
 
       <p className="text-xs leading-5 text-[var(--app-muted)]">
-        Each contract is emailed to the customer success address once as it enters the 30-day window; changing the end date re-arms that alert.
-        The Contract PDF is the signed document, kept in private storage; one upload can cover every robot of the customer on the same contract dates.
+        Each contract is emailed to the customer success address once as it enters the 30-day window; changing the end date re-arms that alert
+        and puts the follow-up back to <i>Not contacted</i> for the new term. The Contract PDF is the signed document, kept in private storage;
+        one upload, like one follow-up, can cover every robot of the customer on the same contract dates.
       </p>
 
       {attaching && (
@@ -667,6 +926,18 @@ export function ContractsPanel() {
           onClose={() => setAttaching(null)}
           onDone={async (message) => {
             setAttaching(null);
+            setNotice({ kind: 'ok', text: message });
+            await refresh();
+          }}
+        />
+      )}
+      {followingUp && (
+        <FollowupDialog
+          row={followingUp}
+          siblings={sameContract(followingUp, allRows)}
+          onClose={() => setFollowingUp(null)}
+          onDone={async (message) => {
+            setFollowingUp(null);
             setNotice({ kind: 'ok', text: message });
             await refresh();
           }}
