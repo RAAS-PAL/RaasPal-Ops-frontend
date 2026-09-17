@@ -19,9 +19,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { ReKpiReportTab } from '@/components/kpi/ReKpiReportTab';
-import { UtilizationTab } from '@/components/kpi/UtilizationTab';
-import { RepeatCostTab } from '@/components/kpi/RepeatCostTab';
 import { CsatTab } from '@/components/kpi/CsatTab';
+import { KpiComingSoon } from '@/components/kpi/KpiComingSoon';
 import { ExportXlsxButton } from '@/components/kpi/ExportXlsxButton';
 import { MondaySyncButton } from '@/components/kpi/MondaySyncButton';
 import { PeriodSelector } from '@/components/kpi/PeriodSelector';
@@ -48,6 +47,19 @@ export type KpiSection = 'report' | 'utilization' | 'repeat-cost' | 'csat';
  * would be lying if they showed those figures under a heading that named a
  * different range.
  */
+/**
+ * Areas that are named but not built. Their figures were deck fixtures with no
+ * backend source and no agreed formula, and drawn as charts they were
+ * indistinguishable from the report's computed numbers. The whole screen says
+ * so now; see KpiComingSoon.
+ */
+const COMING_SOON: Record<KpiSection, boolean> = {
+  report: false,
+  utilization: true,
+  'repeat-cost': true,
+  csat: false,
+};
+
 const FIXTURE_ONLY: Record<KpiSection, boolean> = {
   report: false,
   utilization: true,
@@ -116,6 +128,7 @@ export function KpiClient({
 
   const resetToDeckPeriod = () => changePeriod({ preset: 'h1', year: 2026, period: DECK_PERIOD });
 
+  const comingSoon = COMING_SOON[section];
   const rangeUsable = isValidPeriod(period);
   const gated = FIXTURE_ONLY[section]
     ? !(rangeUsable && hasPlaceholderData(period))
@@ -134,17 +147,21 @@ export function KpiClient({
 
           <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4 sm:p-6">
             <div className="flex flex-wrap items-end justify-end gap-3 border-b border-[var(--app-border)] pb-2 print:hidden">
-              <PeriodSelector preset={preset} year={year} period={period} onChange={changePeriod} />
+              {!comingSoon && (
+                <PeriodSelector preset={preset} year={year} period={period} onChange={changePeriod} />
+              )}
               {/* Only the two areas with real figures; Utilization and Repeat Cost
                   are deck constants and have nothing of their own to export. */}
               {section === 'report' && <MondaySyncButton />}
-              {!gated && (section === 'report' || section === 'csat') && (
+              {!gated && !comingSoon && (section === 'report' || section === 'csat') && (
                 <ExportXlsxButton kind={section} period={period} />
               )}
             </div>
 
-            {/* Resolved period, so the figures below are never unattributed. */}
-            {rangeUsable && (
+            {/* Resolved period, so the figures below are never unattributed.
+                Nothing below is attributable on a coming-soon screen, and a
+                date range over an empty panel only invites the question. */}
+            {rangeUsable && !comingSoon && (
               <p className="text-xs text-[var(--app-muted)]">
                 {t('period.showing')}{' '}
                 <span className="font-semibold text-[var(--app-text)]">
@@ -153,7 +170,13 @@ export function KpiClient({
               </p>
             )}
 
-            {gated ? (
+            {comingSoon ? (
+              <KpiComingSoon
+                body={t(`comingSoon.${section === 'repeat-cost' ? 'repeatCost' : section}.body`)}
+                needs={t(`comingSoon.${section === 'repeat-cost' ? 'repeatCost' : section}.needs`)}
+                title={t('comingSoon.title')}
+              />
+            ) : gated ? (
               <NoPeriodData
                 title={rangeUsable ? t('period.noDataTitle') : t('period.invalidTitle')}
                 body={rangeUsable ? t('period.noDataBody') : t('period.invalidBody')}
@@ -165,8 +188,6 @@ export function KpiClient({
                 {section === 'report' && (
                   <ReKpiReportTab period={period} selectedKpi={selectedKpi} onSelectKpi={selectKpi} />
                 )}
-                {section === 'utilization' && <UtilizationTab />}
-                {section === 'repeat-cost' && <RepeatCostTab />}
                 {section === 'csat' && (
                   <CsatTab period={period} selectedSurvey={selectedSurvey} onSelectSurvey={selectSurvey} />
                 )}

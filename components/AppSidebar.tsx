@@ -23,7 +23,13 @@ import { useState } from 'react';
 import { Link, usePathname } from '@/i18n/navigation';
 import { useAuthStore } from '@/store/auth';
 
-export type NavChild = { labelKey: string; href: string; icon: LucideIcon };
+export type NavChild = {
+  labelKey: string;
+  href: string;
+  icon: LucideIcon;
+  /** Named but not built yet — the page says so, and so does this. */
+  comingSoon?: boolean;
+};
 
 export type NavItem = {
   title: string;
@@ -50,8 +56,10 @@ export const navigationItems: NavItem[] = [
     icon: TrendingUp,
     children: [
       { labelKey: 'kpiReport', href: '/kpi/report', icon: BarChart3 },
-      { labelKey: 'kpiUtilization', href: '/kpi/utilization', icon: Users },
-      { labelKey: 'kpiRepeatCost', href: '/kpi/repeat-cost', icon: Banknote },
+      // Still reachable: the page explains what is missing, which is more use
+      // than an entry that silently does nothing.
+      { labelKey: 'kpiUtilization', href: '/kpi/utilization', icon: Users, comingSoon: true },
+      { labelKey: 'kpiRepeatCost', href: '/kpi/repeat-cost', icon: Banknote, comingSoon: true },
       { labelKey: 'kpiCsat', href: '/kpi/csat', icon: Smile },
     ],
   },
@@ -189,6 +197,11 @@ export function AppSidebar() {
                       >
                         <child.icon className="h-3.5 w-3.5 shrink-0" />
                         <span className="truncate">{t(child.labelKey)}</span>
+                        {child.comingSoon && (
+                          <span className="ml-auto shrink-0 rounded bg-[var(--app-nav-panel)] px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--app-nav-muted)]">
+                            {t('soon')}
+                          </span>
+                        )}
                       </Link>
                     );
                   })}

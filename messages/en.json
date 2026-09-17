@@ -153,7 +153,8 @@
     "kpiUtilization": "Utilization",
     "kpiRepeatCost": "Repeat Cost",
     "kpiCsat": "CSAT",
-    "pmPlanning": "PM Planning"
+    "pmPlanning": "PM Planning",
+    "soon": "Soon"
   },
   "sidebar": {
     "teamOperations": "Team operations",
@@ -1230,6 +1231,17 @@
     },
     "placeholderFootnote": {
       "pm": "Cleaning 95.6%  |  Delivery 81.2%"
+    },
+    "comingSoon": {
+      "title": "Coming soon",
+      "utilization": {
+        "body": "Utilization and productivity are not computed yet. The figures shown here before were copied from the Jan–Jun 2026 deck — fixtures, not measurements — and beside the report's real numbers there was no way to tell the difference.",
+        "needs": "Needs the RE_Productivity sheet as a source, and an agreed man-day factor per job type, before anything here can be counted rather than quoted."
+      },
+      "repeatCost": {
+        "body": "The cost of repeat work is not computed yet. What stood here came from the Jan–Jun 2026 deck rather than from the ticket data, so it could not move when the tickets did.",
+        "needs": "Needs a cost per visit the team agrees on, joined to the repeat cases the report already identifies."
+      }
     }
   },
   "profile": {
