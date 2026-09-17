@@ -12,12 +12,14 @@ import {
   Plus,
   RefreshCw,
   Sparkles,
+  Trash2,
+  Undo2,
 } from 'lucide-react';
 import { caseReportApi } from '@/lib/api';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import type { CaseReportSlug } from '@/lib/api';
 import { isManualCaseRow } from '@/types/api';
-import type { CaseReportRow, CaseRowEdit, SlaStatus } from '@/types/api';
+import type { CaseBoard, CaseReportRow, CaseRowEdit, SlaStatus } from '@/types/api';
 import { CaseRowEditDialog } from './CaseRowEditDialog';
 
 /**
@@ -92,8 +94,17 @@ function SlaCell({ row }: { row: CaseReportRow }) {
  */
 export interface CaseReportSpec {
   slug: CaseReportSlug;
-  /** The monday board the rows come from, for the per-row ticket link. */
+  /**
+   * The monday board the rows come from, for the per-row ticket link. On Hold reads
+   * both boards, so its rows carry their own `board` and this is only the fallback.
+   */
   boardId: string;
+  /**
+   * On Hold only: the sheet mixes two boards, so it prints a Board column and offers a
+   * Cleaning / Delivery filter. One sheet with a filter rather than two blocks, as the RE
+   * team asked — the reader wants "what is waiting longest" across both.
+   */
+  boardFilter?: boolean;
   /** Which of the two site columns this sheet prints; the other is hidden. */
   columns: ('project' | 'branch')[];
   /**
@@ -122,7 +133,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     boardId: '3451717331',
     columns: ['project'],
     layout: 'sla',
-    hint: 'Every open cleaning case except Makro’s and the airports’, which have their own sheets. Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
+    hint: 'Every open cleaning case except Makro’s and the airports’, which have their own sheets, and except held cases (see On Hold). Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
     newRow: { project: '', robot: 'M50' },
   },
   makro: {
@@ -130,7 +141,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     boardId: '3451717331',
     columns: ['branch'],
     layout: 'sla',
-    hint: 'Makro’s cleaning cases. Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
+    hint: 'Makro’s cleaning cases, minus held cases (see On Hold). Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
     newRow: { project: 'Makro', robot: 'Omnie' },
   },
   aotga: {
@@ -141,7 +152,32 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     hint: 'The airports’ open cleaning cases, tracked by spare-part turnaround rather than SLA. Days and Aging After Received both count from the day after (opened or received today = 0). The 3-day SLA is computed but the sheet does not print it.',
     newRow: { project: 'AOTGA-', robot: 'M75' },
   },
+  delivery: {
+    slug: 'delivery',
+    boardId: '1647612496',
+    columns: ['project', 'branch'],
+    layout: 'sla',
+    hint: 'Every open delivery case that is not MK’s, minus held cases (see On Hold). Days counts from the day after the case opened (opened today = 0); the SLA is 3 days inside greater Bangkok, 5 elsewhere.',
+    newRow: { project: '', robot: 'Pudu 1' },
+  },
+  'on-hold': {
+    slug: 'on-hold',
+    boardId: '3451717331',
+    boardFilter: true,
+    columns: ['project', 'branch'],
+    layout: 'sla',
+    hint: 'Every held case on the cleaning and delivery boards, except the airports’. A held case has no SLA: the clock is not RAASPAL’s to run. MK’s held cases are also still on the MK sheet, by request.',
+    newRow: { project: '', robot: '' },
+  },
 };
+
+/** Cleaning and delivery are different monday boards; the ticket link needs the right one. */
+const BOARD_IDS: Record<CaseBoard, string> = {
+  CLEANING: '3451717331',
+  DELIVERY: '1647612496',
+};
+
+const BOARD_LABEL: Record<CaseBoard, string> = { CLEANING: 'Cleaning', DELIVERY: 'Delivery' };
 
 /** "A, B, C" or one per line on the board -> ["A", "B", "C"]. A lone serial is itself. */
 function serialLines(serialNumber: string): string[] {
@@ -173,6 +209,10 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
   // The row being corrected, 'new' for one being added, null when the dialog is closed.
   const [editing, setEditing] = useState<CaseReportRow | 'new' | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
+  // On Hold only. 'all' is the default: the sheet's point is both boards at once.
+  const [boardFilter, setBoardFilter] = useState<CaseBoard | 'all'>('all');
+  // Removed rows are hidden by default; the chip toggles them into view for restoring.
+  const [showRemoved, setShowRemoved] = useState(false);
   const queryClient = useQueryClient();
   const queryKey = ['case-report', report.slug, asOf];
 
@@ -181,6 +221,11 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
     queryFn: async () => (await caseReportApi.rows(report.slug, asOf)).data.data ?? [],
     staleTime: 0,
     refetchOnWindowFocus: false,
+    // The first call for a date generates the sheet: minutes of monday and model calls.
+    // A timeout is "still working", not a blip, and the query layer's default three
+    // retries fired three more generations of the same sheet. The server now joins a
+    // duplicate onto the running one, but the client should not send it at all.
+    retry: false,
   });
 
   // Re-read the board into the stored draft. Edited rows come through untouched, which
@@ -212,19 +257,47 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
     onError: (e) => setEditError(errorMessage(e, 'Could not save the row.')),
   });
 
+  // Mirror the backend's numbering: 1..n over the rows on the sheet, 0 for a removed one.
+  const renumber = (list: CaseReportRow[]) => {
+    let next = 1;
+    return list.map((r) => ({ ...r, no: r.removed ? 0 : next++ }));
+  };
+
   const remove = useMutation({
     mutationFn: (sourceItemId: string) => caseReportApi.removeRow(report.slug, asOf, sourceItemId),
     onSuccess: (_, sourceItemId) => {
-      // Renumber locally the way the backend did, so No stays contiguous without a refetch.
+      // A row added by hand is gone; a board row stays, hidden, so it can be restored.
       queryClient.setQueryData<CaseReportRow[]>(queryKey, (current) =>
-        (current ?? [])
-          .filter((r) => r.sourceItemId !== sourceItemId)
-          .map((r, i) => ({ ...r, no: i + 1 })),
+        renumber(
+          (current ?? [])
+            .filter((r) => !(r.sourceItemId === sourceItemId && isManualCaseRow(r)))
+            .map((r) => (r.sourceItemId === sourceItemId ? { ...r, removed: true } : r)),
+        ),
       );
       closeDialog();
     },
     onError: (e) => setEditError(errorMessage(e, 'Could not remove the row.')),
   });
+
+  const restore = useMutation({
+    mutationFn: (sourceItemId: string) => caseReportApi.restoreRow(report.slug, asOf, sourceItemId),
+    onSuccess: (_, sourceItemId) => {
+      queryClient.setQueryData<CaseReportRow[]>(queryKey, (current) =>
+        renumber((current ?? []).map((r) => (r.sourceItemId === sourceItemId ? { ...r, removed: false } : r))),
+      );
+    },
+    onError: (e) => setEditError(errorMessage(e, 'Could not restore the row.')),
+  });
+
+  const askRemove = (row: CaseReportRow) =>
+    void confirm({
+      title: 'Remove this row?',
+      kind: 'delete',
+      confirmLabel: 'Remove row',
+      message: isManualCaseRow(row)
+        ? `Row ${row.no} is taken off this date's report. It was added by hand, so nothing on monday changes.`
+        : `Row ${row.no} is taken off this date's report and stays off if the report is regenerated. The monday ticket is not changed, and you can put the row back from the "removed" chip.`,
+    }).then((ok) => ok && remove.mutate(row.sourceItemId!));
 
   const busy = isFetching || regenerate.isPending;
 
@@ -245,12 +318,21 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
   });
   const showProject = report.columns.includes('project');
   const showBranch = report.columns.includes('branch');
+  const showBoard = report.boardFilter === true;
   const parts = report.layout === 'parts';
-  const breached = rows.filter((r) => r.sla === 'BREACHED').length;
-  const onHold = rows.filter((r) => r.sla === 'ON_HOLD').length;
-  const unknown = rows.filter((r) => r.sla === 'UNKNOWN').length;
-  const edited = rows.filter((r) => r.edited && !isManualCaseRow(r)).length;
-  const added = rows.filter(isManualCaseRow).length;
+  // What is stored includes rows a person removed; the sheet is the rest. Every total
+  // below is of the sheet, so "12 cases" is what the customer would get.
+  const sheet = rows.filter((r) => !r.removed);
+  const removedRows = rows.filter((r) => r.removed);
+  // The filter narrows what is shown, not what is stored: the totals and the download
+  // stay whole-sheet, so "12 cases" means the report, not the current view.
+  const onBoard = showBoard && boardFilter !== 'all' ? sheet.filter((r) => r.board === boardFilter) : sheet;
+  const visible = showRemoved ? [...onBoard, ...removedRows] : onBoard;
+  const breached = sheet.filter((r) => r.sla === 'BREACHED').length;
+  const onHold = sheet.filter((r) => r.sla === 'ON_HOLD').length;
+  const unknown = sheet.filter((r) => r.sla === 'UNKNOWN').length;
+  const edited = sheet.filter((r) => r.edited && !isManualCaseRow(r)).length;
+  const added = sheet.filter(isManualCaseRow).length;
 
   return (
     <div className="space-y-4">
@@ -291,6 +373,41 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
           {regenerate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           {regenerate.isPending ? 'Regenerating…' : 'Regenerate from monday'}
         </button>
+
+        {showBoard && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">
+              Board
+            </span>
+            <div
+              role="radiogroup"
+              aria-label="Filter by board"
+              className="inline-flex overflow-hidden rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] text-sm"
+            >
+              {(['all', 'CLEANING', 'DELIVERY'] as const).map((option) => {
+                const count = option === 'all' ? sheet.length : sheet.filter((r) => r.board === option).length;
+                const active = boardFilter === option;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setBoardFilter(option)}
+                    className={`px-3 py-2 font-semibold transition ${
+                      active
+                        ? 'bg-[var(--app-brand)] text-white'
+                        : 'text-[var(--app-text)] hover:bg-[var(--app-faint)]'
+                    }`}
+                  >
+                    {option === 'all' ? 'All' : BOARD_LABEL[option]}
+                    {sheet.length > 0 && <span className="ml-1.5 tabular-nums opacity-70">{count}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <button
           type="button"
@@ -340,8 +457,23 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
       {rows.length > 0 && (
         <div className="flex flex-wrap gap-2 text-sm">
           <span className="rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-3 py-1.5">
-            {rows.length} case{rows.length === 1 ? '' : 's'}
+            {sheet.length} case{sheet.length === 1 ? '' : 's'}
           </span>
+          {removedRows.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowRemoved((v) => !v)}
+              aria-pressed={showRemoved}
+              title={showRemoved ? 'Hide the removed rows' : 'Show the removed rows, to put one back'}
+              className={`rounded-lg border px-3 py-1.5 transition ${
+                showRemoved
+                  ? 'border-[var(--app-brand)] bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]'
+                  : 'border-[var(--app-border)] text-[var(--app-muted)] hover:bg-[var(--app-faint)]'
+              }`}
+            >
+              {removedRows.length} removed by hand
+            </button>
+          )}
           {breached > 0 && (
             <span className="rounded-lg bg-red-50 px-3 py-1.5 font-semibold text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-900">
               {breached} over SLA
@@ -377,6 +509,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
           <thead className="border-b border-[var(--app-border)] text-xs uppercase tracking-wide text-[var(--app-muted)]">
             <tr>
               <th className="px-3 py-2.5 font-semibold">No</th>
+              {showBoard && <th className="px-3 py-2.5 font-semibold">Board</th>}
               {showProject && <th className="px-3 py-2.5 font-semibold">Project</th>}
               {showBranch && <th className="px-3 py-2.5 font-semibold">Branch</th>}
               <th className="px-3 py-2.5 font-semibold">Robot</th>
@@ -408,10 +541,22 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--app-border)]">
-            {rows.map((row) => (
-              <tr key={row.sourceItemId ?? row.no} className="align-top">
+            {visible.map((row) => (
+              <tr
+                key={row.sourceItemId ?? row.no}
+                className={`align-top ${row.removed ? 'bg-[var(--app-faint)] text-[var(--app-muted)] opacity-70' : ''}`}
+              >
                 <td className="px-3 py-2.5 tabular-nums text-[var(--app-muted)]">
-                  {row.no}
+                  {row.removed ? (
+                    <span
+                      title="Removed from this date's report by hand. Not on the Excel; stays off if regenerated."
+                      className="inline-block rounded bg-[var(--app-bg)] px-1 text-[10px] font-semibold uppercase ring-1 ring-inset ring-[var(--app-border)]"
+                    >
+                      removed
+                    </span>
+                  ) : (
+                    row.no
+                  )}
                   {row.edited && (
                     // A corrected row looks like any other, so say so: the reader comparing
                     // against the board needs to know this cell is a person's word, not monday's.
@@ -427,6 +572,11 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
                     </span>
                   )}
                 </td>
+                {showBoard && (
+                  <td className="px-3 py-2.5 whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">
+                    {row.board ? BOARD_LABEL[row.board] : '—'}
+                  </td>
+                )}
                 {showProject && (
                   <td className="px-3 py-2.5 font-medium">{row.project ?? '—'}</td>
                 )}
@@ -464,9 +614,16 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
                     <td className="px-3 py-2.5 whitespace-nowrap">{row.waitingFrom ?? '—'}</td>
                   </>
                 ) : (
-                  <td className="max-w-[18rem] px-3 py-2.5">
+                  <td className="max-w-[22rem] px-3 py-2.5">
+                    {/* One dated entry per line, as the RE team's sheet lays it out. Not
+                        clamped - every entry is there to be checked - but capped at about
+                        eight lines with a scrollbar, so a case held for a year (a dozen
+                        entries) does not stretch the row and push the sheet off screen. */}
                     {row.solution ? (
-                      <span className="line-clamp-3" title={row.solution}>
+                      <span
+                        className="scroll-quiet block max-h-56 overflow-y-auto whitespace-pre-line pr-2"
+                        title={row.solution}
+                      >
                         {row.solution}
                       </span>
                     ) : (
@@ -487,7 +644,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
                     <td className="px-3 py-2.5">
                       <div className="flex items-center justify-end gap-2 font-semibold tabular-nums">
                         {row.agingAfterReceived ?? '—'}
-                        <TicketLink row={row} boardId={report.boardId} />
+                        <TicketLink row={row} boardId={row.board ? BOARD_IDS[row.board] : report.boardId} />
                       </div>
                     </td>
                   </>
@@ -495,12 +652,26 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
                       <SlaCell row={row} />
-                      <TicketLink row={row} boardId={report.boardId} />
+                      <TicketLink row={row} boardId={row.board ? BOARD_IDS[row.board] : report.boardId} />
                     </div>
                   </td>
                 )}
                 <td className="px-2 py-2.5">
-                  {row.sourceItemId && (
+                  {row.sourceItemId && row.removed && (
+                    <button
+                      type="button"
+                      onClick={() => restore.mutate(row.sourceItemId!)}
+                      disabled={restore.isPending}
+                      title="Put this row back on the report"
+                      aria-label={`Restore row for ticket ${row.sourceItemId}`}
+                      className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-[var(--app-brand-dark)] transition hover:bg-[var(--app-brand-soft)] disabled:opacity-60"
+                    >
+                      <Undo2 className="h-3.5 w-3.5" />
+                      Restore
+                    </button>
+                  )}
+                  {row.sourceItemId && !row.removed && (
+                    <span className="inline-flex items-center">
                     <button
                       type="button"
                       onClick={() => {
@@ -513,6 +684,17 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => askRemove(row)}
+                      disabled={remove.isPending}
+                      title="Remove this row from the report"
+                      aria-label={`Remove row ${row.no}`}
+                      className="rounded-lg p-1.5 text-[var(--app-muted)] transition hover:bg-red-50 hover:text-red-700 disabled:opacity-60 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                    </span>
                   )}
                 </td>
               </tr>
@@ -520,8 +702,15 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
 
             {rows.length === 0 && !isFetching && !isError && (
               <tr>
-                <td colSpan={(parts ? 12 : 10) + report.columns.length} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
+                <td colSpan={(parts ? 12 : 10) + report.columns.length + (showBoard ? 1 : 0)} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
                   No cases generated yet. Pick a date and press Generate.
+                </td>
+              </tr>
+            )}
+            {rows.length > 0 && visible.length === 0 && (
+              <tr>
+                <td colSpan={(parts ? 12 : 10) + report.columns.length + 1} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
+                  No {boardFilter === 'all' ? '' : BOARD_LABEL[boardFilter].toLowerCase() + ' '}cases on hold for this date.
                 </td>
               </tr>
             )}
@@ -543,17 +732,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
           saving={save.isPending || remove.isPending}
           error={editError}
           onSave={(edit) => save.mutate(edit)}
-          onRemove={
-            editing !== 'new' && editing.sourceItemId
-              ? () =>
-                  void confirm({
-                    title: 'Remove this row?',
-                    kind: 'delete',
-                    confirmLabel: 'Remove row',
-                    message: `Row ${editing.no} is taken off this date's report. It was added by hand, so nothing on monday changes.`,
-                  }).then((ok) => ok && remove.mutate(editing.sourceItemId!))
-              : undefined
-          }
+          onRemove={editing !== 'new' && editing.sourceItemId ? () => askRemove(editing) : undefined}
           onClose={() => {
             if (!save.isPending && !remove.isPending) closeDialog();
           }}

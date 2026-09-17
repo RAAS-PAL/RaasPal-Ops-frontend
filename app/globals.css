@@ -256,11 +256,51 @@ html {
 ::-webkit-scrollbar-thumb:hover   { background: var(--app-text); }
 ::-webkit-scrollbar-corner        { background: var(--app-faint); }
 
+/* A quiet scrollbar for small scrollers inside a table cell (the Solution column),
+   where the 12px inset bar above reads as a control the reviewer is meant to use.
+   A 6px rounded thumb on no track, faint until the pointer is over the cell, and no
+   arrow buttons.
+
+   Chrome and Firefox are styled separately on purpose. Since Chrome 121 an element
+   that sets the standard scrollbar-width / scrollbar-color has its ::-webkit-scrollbar
+   rules IGNORED and gets Chrome's classic bar, arrows and all - which is exactly the
+   look this is here to avoid. And scrollbar-color is INHERITED, so the html rule
+   above reaches every element: the reset to auto here is what lets Chrome see the
+   webkit rules at all. The standard properties are then applied only where the
+   webkit pseudo-elements do not exist, i.e. Firefox. */
+.scroll-quiet {
+  scrollbar-width: auto;
+  scrollbar-color: auto;
+}
+.scroll-quiet::-webkit-scrollbar        { width: 6px; height: 6px; }
+.scroll-quiet::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+.scroll-quiet::-webkit-scrollbar-track  { background: transparent; }
+.scroll-quiet::-webkit-scrollbar-corner { background: transparent; }
+.scroll-quiet::-webkit-scrollbar-thumb  {
+  background: color-mix(in srgb, var(--app-muted) 30%, transparent);
+  border: 0;
+  border-radius: 9999px;
+}
+.scroll-quiet:hover::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--app-muted) 65%, transparent); }
+
+@supports not selector(::-webkit-scrollbar) {
+  .scroll-quiet {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--app-muted) 30%, transparent) transparent;
+  }
+  .scroll-quiet:hover {
+    scrollbar-color: color-mix(in srgb, var(--app-muted) 65%, transparent) transparent;
+  }
+}
+
 /* ─── Selection ───────────────────────────────────────────────────────────── */
 
+/* Ink stays the page's text colour: --accent is later redefined to the
+   pale brand chip for shadcn, so `color: var(--accent)` painted selected
+   text pale-blue on a pale-blue highlight and it disappeared. */
 ::selection {
-  background-color: var(--accent-faint);
-  color: var(--accent);
+  background-color: var(--app-brand-soft);
+  color: var(--app-text);
 }
 
 /* ─── Focus ring ──────────────────────────────────────────────────────────── */
@@ -406,4 +446,21 @@ html {
   * {
     overflow: visible !important;
   }
+}
+
+/* ─── Chart tokens (service-ticket analytics) ───────────────────────────────
+   Two categorical slots, validated for CVD separation and 3:1 contrast against
+   --app-panel in both modes (dataviz validator, 2026-09-16). Series colours
+   are for marks only; text and labels wear the --app-* ink tokens. */
+:root {
+  --viz-series-1: #2a78d6;   /* slot 1 blue   - done / single-series bars */
+  --viz-series-2: #eb6834;   /* slot 2 orange - still open                */
+  --viz-grid:     #e2e8f0;
+  --viz-hover:    rgba(15, 23, 42, 0.06);
+}
+.dark {
+  --viz-series-1: #3987e5;
+  --viz-series-2: #d95926;
+  --viz-grid:     #1e293b;
+  --viz-hover:    rgba(226, 232, 240, 0.08);
 }

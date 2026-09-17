@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { AlertTriangle, Loader2, Trash2, X } from 'lucide-react';
-import { isManualCaseRow } from '@/types/api';
 import type { CaseReportRow, CaseRowEdit, SlaStatus } from '@/types/api';
 
 /**
@@ -120,7 +119,9 @@ export function CaseRowEditDialog({ row, newRow, saving, error, onSave, onRemove
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
   const adding = row === null;
-  const removable = row !== null && isManualCaseRow(row) && onRemove !== undefined;
+  // Any stored row can come off the report; the panel decides what that means for
+  // a board row versus one added by hand, and says so in its confirmation.
+  const removable = row !== null && onRemove !== undefined;
 
   return (
     <>

@@ -154,7 +154,8 @@
     "kpiRepeatCost": "ต้นทุนงานซ้ำ",
     "kpiCsat": "CSAT",
     "pmPlanning": "แผน PM",
-    "soon": "เร็ว ๆ นี้"
+    "soon": "เร็ว ๆ นี้",
+    "tickets": "ตั๋วงานบริการ"
   },
   "sidebar": {
     "teamOperations": "การทำงานของทีม",
@@ -321,6 +322,21 @@
       "totalCount": "{count} เครื่องที่ติดตาม",
       "empty": "ยังไม่มีอุปกรณ์ CVTE ที่ซิงค์ — ไปที่สถานะ CVTE C3 เพื่อเพิ่มอุปกรณ์",
       "failedToLoad": "โหลดสถานะอุปกรณ์ไม่สำเร็จ"
+    },
+    "tickets": {
+      "title": "สุขภาพงานบริการ {brand}",
+      "subtitle": "ตั๋วจากบอร์ด Delivery",
+      "syncedAt": "ซิงค์บอร์ดล่าสุด {at}",
+      "viewAnalysis": "ดูการวิเคราะห์",
+      "failedToLoad": "โหลดข้อมูลตั๋วไม่สำเร็จ",
+      "open": "ค้างอยู่",
+      "thisMonth": "เดือนนี้",
+      "sla": "SLA 7 วัน",
+      "repeat": "อัตราซ้ำ",
+      "sparkline": "ตั๋วต่อเดือน 12 เดือนล่าสุด",
+      "noData": "ยังไม่มีตั๋วที่ซิงค์",
+      "oldestOpen": "เคสค้างนานสุด {n} วัน",
+      "repeatRobots": "หุ่นยนต์เสียซ้ำ {n} ตัว"
     }
   },
   "generateSolution": {
@@ -766,7 +782,9 @@
       "caseMk": "MK เคสค้าง",
       "caseCleaning": "Cleaning เคสค้าง",
       "caseMakro": "Makro เคสค้าง",
-      "caseAotga": "AOTGA เคสค้าง"
+      "caseAotga": "AOTGA เคสค้าง",
+      "caseDelivery": "Delivery เคสค้าง",
+      "caseOnHold": "เคสพักไว้ (On Hold)"
     },
     "brands": {
       "gausium": "Gausium",
@@ -1378,6 +1396,101 @@
       "generate": "สร้างโซลูชัน",
       "solutions": "โซลูชันทั้งหมด",
       "proposals": "ข้อเสนอ"
+    }
+  },
+  "tickets": {
+    "eyebrow": "วิเคราะห์งานบริการ",
+    "title": "ตั๋วงานบริการ {brand}",
+    "range": {
+      "month": "เดือนนี้",
+      "quarter": "3 เดือน",
+      "year": "ปีนี้",
+      "all": "ทั้งหมด"
+    },
+    "scope": {
+      "open": "ค้างอยู่",
+      "all": "ทั้งหมด"
+    },
+    "syncedAt": "ซิงค์บอร์ดล่าสุด {at}",
+    "neverSynced": "ยังไม่เคยซิงค์",
+    "refresh": "ดึงข้อมูลจาก monday",
+    "exportExcel": "ส่งออก Excel",
+    "syncFailed": "ดึงข้อมูลจาก monday ไม่สำเร็จ กรุณาตรวจสอบ API token แล้วลองใหม่",
+    "exportFailed": "ส่งออก Excel ไม่สำเร็จ กรุณาลองใหม่",
+    "loadFailed": "โหลดข้อมูลวิเคราะห์ตั๋วไม่สำเร็จ",
+    "firstSyncHint": "ยังไม่มีข้อมูลตั๋ว กด \"ดึงข้อมูลจาก monday\" เพื่อดึงตั๋วของแบรนด์นี้ หลังจากนั้นระบบจะซิงค์ให้ทุกคืน",
+    "unknownBrand": "ไม่พบแบรนด์ \"{brand}\"",
+    "unknownBrandHint": "ตั้งค่าแบรนด์ได้ที่ backend ใน app.tickets.brands",
+    "kpi": {
+      "openNow": "ค้างอยู่ตอนนี้",
+      "openNowHint": "ไม่มีงานค้าง",
+      "oldestOpen": "ค้างนานสุด {n} วัน",
+      "thisMonth": "เดือนนี้",
+      "vsLastMonth": "เดือนก่อน: {n}",
+      "timeToAction": "เวลาถึง RE ดำเนินการ",
+      "timeToActionDef": "ค่ามัธยฐานของจำนวนวันจาก Open Date ถึง RE Action",
+      "daysValue": "{n} วัน",
+      "sample": "วัดจาก {n} ตั๋ว",
+      "sla": "ภายใน SLA 7 วัน",
+      "repeat": "ซ้ำภายใน 14 วัน",
+      "robots": "หุ่นยนต์ที่มีเคส",
+      "robotsHint": "{tickets} ตั๋ว · {sites} สาขา"
+    },
+    "charts": {
+      "empty": "ไม่มีข้อมูลในช่วงนี้",
+      "opened": "เปิด",
+      "done": "ปิดแล้ว",
+      "stillOpen": "ยังค้าง",
+      "tickets": "ตั๋ว",
+      "other": "อื่นๆ"
+    },
+    "breakdowns": {
+      "empty": "ไม่มีข้อมูลในช่วงนี้",
+      "noOpen": "ไม่มีตั๋วค้าง",
+      "noRepeats": "ไม่มีหุ่นยนต์ที่มีตั๋วมากกว่าหนึ่งใบในช่วงนี้",
+      "days": "{range} วัน",
+      "openTail": "ค้าง {n}"
+    },
+    "panels": {
+      "monthly": "ตั๋วต่อเดือน",
+      "monthlyHint": "จำนวนที่เปิดในแต่ละเดือน แยกตามสถานะปิด/ค้าง ณ วันนี้",
+      "rootCause": "สาเหตุ",
+      "rootCauseHint": "ตามที่ทีม RE บันทึกไว้ในบอร์ด",
+      "aging": "ตั๋วค้างตามอายุ",
+      "agingHint": "จำนวนวันนับจาก Open Date เฉพาะตั๋วที่ค้าง",
+      "sites": "สาขาที่มีเคสมากสุด",
+      "sitesHint": "โครงการที่มีตั๋วมากที่สุดในช่วงนี้",
+      "robots": "หุ่นยนต์ที่เสียซ้ำ",
+      "robotsHint": "S/N ที่มีตั๋วมากกว่าหนึ่งใบในช่วงนี้",
+      "tickets": "ตั๋ว ({n})",
+      "ticketsHint": "คลิกแถวเพื่ออ่านคอมเมนต์"
+    },
+    "table": {
+      "empty": "ไม่พบตั๋ว",
+      "ticket": "ตั๋ว",
+      "site": "สาขา",
+      "robot": "หุ่นยนต์",
+      "rootCause": "สาเหตุ",
+      "status": "สถานะ",
+      "re": "RE",
+      "opened": "เปิดเมื่อ",
+      "age": "อายุ / ใช้เวลา",
+      "comments": "คอมเมนต์",
+      "group": "กลุ่มในบอร์ด",
+      "caseType": "ประเภท",
+      "level": "ระดับ",
+      "channel": "ช่องทาง",
+      "province": "จังหวัด",
+      "warranty": "ประกัน",
+      "reAction": "RE ดำเนินการ",
+      "solution": "วิธีแก้ไข",
+      "openInMonday": "เปิดใน monday",
+      "thread": "คอมเมนต์ ({n})",
+      "noComments": "ไม่มีคอมเมนต์ในตั๋วนี้",
+      "reply": "ตอบกลับ",
+      "daysShort": "{n} วัน",
+      "ageOpen": "จำนวนวันนับจาก Open Date",
+      "ageDone": "จำนวนวันจาก Open Date ถึง RE Action"
     }
   }
 }

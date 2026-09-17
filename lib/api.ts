@@ -132,6 +132,12 @@ import type {
   PmYearResponse,
 } from '@/lib/pm/types';
 import type { MonthlyPerformanceReport } from '@/lib/reports/types';
+import type {
+  BrandSyncStatus,
+  BrandTicket,
+  BrandTicketSummary,
+  TicketScope,
+} from '@/lib/tickets/types';
 
 // Users
 export const userApi = {
@@ -750,7 +756,7 @@ export const kpiApi = {
 
 // Daily Pending Case Report
 /** The pending-case sheets the backend can generate, as they appear in its URLs. */
-export type CaseReportSlug = 'mk' | 'cleaning' | 'makro' | 'aotga';
+export type CaseReportSlug = 'mk' | 'cleaning' | 'makro' | 'aotga' | 'delivery' | 'on-hold';
 
 export const caseReportApi = {
   /**
@@ -765,7 +771,9 @@ export const caseReportApi = {
   rows: (report: CaseReportSlug, asOf?: string, refresh = false) =>
     api.get<ApiResponse<CaseReportRow[]>>(`/api/v1/case-reports/${report}`, {
       params: { ...(asOf ? { asOf } : {}), ...(refresh ? { refresh: true } : {}) },
-      timeout: 120_000,
+      // Model calls now run concurrently server-side, so a sheet is well under a
+      // minute; the ceiling is for a large sheet on a slow day, not the norm.
+      timeout: 300_000,
       skipRetry: true,
     }),
 
@@ -783,10 +791,21 @@ export const caseReportApi = {
       params: { asOf },
     }),
 
-  /** Remove a row that was added by hand. Board rows are refused. */
+  /**
+   * Take a row off this date's report. A board row is kept hidden (a regeneration will
+   * not bring it back; see restoreRow); a row added by hand is deleted. monday is untouched.
+   */
   removeRow: (report: CaseReportSlug, asOf: string, sourceItemId: string) =>
     api.delete<ApiResponse<void>>(
       `/api/v1/case-reports/${report}/rows/${encodeURIComponent(sourceItemId)}`,
+      { params: { asOf } },
+    ),
+
+  /** Put a removed board row back on the sheet. */
+  restoreRow: (report: CaseReportSlug, asOf: string, sourceItemId: string) =>
+    api.post<ApiResponse<CaseReportRow>>(
+      `/api/v1/case-reports/${report}/rows/${encodeURIComponent(sourceItemId)}/restore`,
+      null,
       { params: { asOf } },
     ),
 
@@ -872,3 +891,41 @@ export interface PmSyncStatus {
     errorMessage: string | null;
   }[];
 }
+
+/* ─── Per-brand service tickets (AutoXing today) ──────────────────────────── */
+
+/**
+ * One robot brand's tickets off the monday delivery board, as stored by the
+ * nightly sync. `from`/`to` are ISO dates on the ticket's Open Date; both
+ * omitted means all time.
+ */
+export const brandTicketApi = {
+  summary: (brand: string, from?: string | null, to?: string | null) =>
+    api.get<ApiResponse<BrandTicketSummary>>(`/api/v1/tickets/${brand}/summary`, {
+      params: { ...(from ? { from } : {}), ...(to ? { to } : {}) },
+    }),
+
+  list: (brand: string, from?: string | null, to?: string | null, scope: TicketScope = 'all') =>
+    api.get<ApiResponse<BrandTicket[]>>(`/api/v1/tickets/${brand}`, {
+      params: { ...(from ? { from } : {}), ...(to ? { to } : {}), scope },
+    }),
+
+  syncStatus: (brand: string) =>
+    api.get<ApiResponse<BrandSyncStatus>>(`/api/v1/tickets/${brand}/sync/status`),
+
+  /** One monday call; a few seconds. Not retried — a timeout is "still running". */
+  sync: (brand: string) =>
+    api.post<ApiResponse<BrandSyncStatus>>(`/api/v1/tickets/${brand}/sync`, null, {
+      timeout: 120_000,
+      skipRetry: true,
+    }),
+
+  /** Blob, not a link: the bearer token only travels with axios. */
+  exportExcel: (brand: string, from?: string | null, to?: string | null) =>
+    api.get<Blob>(`/api/v1/tickets/${brand}/export`, {
+      params: { ...(from ? { from } : {}), ...(to ? { to } : {}) },
+      responseType: 'blob',
+      timeout: 120_000,
+      skipRetry: true,
+    }),
+};

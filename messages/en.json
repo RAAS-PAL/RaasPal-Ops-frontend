@@ -154,7 +154,8 @@
     "kpiRepeatCost": "Repeat Cost",
     "kpiCsat": "CSAT",
     "pmPlanning": "PM Planning",
-    "soon": "Soon"
+    "soon": "Soon",
+    "tickets": "Service Tickets"
   },
   "sidebar": {
     "teamOperations": "Team operations",
@@ -321,6 +322,21 @@
       "totalCount": "{count} tracked",
       "empty": "No CVTE devices synced yet — visit CVTE C3 Status to add some.",
       "failedToLoad": "Failed to load device status."
+    },
+    "tickets": {
+      "title": "{brand} service health",
+      "subtitle": "Tickets from the delivery board",
+      "syncedAt": "Board synced {at}",
+      "viewAnalysis": "View analysis",
+      "failedToLoad": "Couldn't load ticket data.",
+      "open": "Open now",
+      "thisMonth": "This month",
+      "sla": "7-day SLA",
+      "repeat": "Repeat rate",
+      "sparkline": "Tickets per month, last 12 months",
+      "noData": "No tickets synced yet",
+      "oldestOpen": "Oldest open case: {n} days",
+      "repeatRobots": "{n} robots with repeat tickets"
     }
   },
   "generateSolution": {
@@ -766,7 +782,9 @@
       "caseMk": "MK pending",
       "caseCleaning": "Cleaning pending",
       "caseMakro": "Makro pending",
-      "caseAotga": "AOTGA pending"
+      "caseAotga": "AOTGA pending",
+      "caseDelivery": "Delivery pending",
+      "caseOnHold": "On Hold"
     },
     "brands": {
       "gausium": "Gausium",
@@ -1378,6 +1396,101 @@
       "generate": "Generate",
       "solutions": "Solutions",
       "proposals": "Proposals"
+    }
+  },
+  "tickets": {
+    "eyebrow": "Service analytics",
+    "title": "{brand} service tickets",
+    "range": {
+      "month": "This month",
+      "quarter": "3 months",
+      "year": "This year",
+      "all": "All time"
+    },
+    "scope": {
+      "open": "Open",
+      "all": "All"
+    },
+    "syncedAt": "Board synced {at}",
+    "neverSynced": "Not synced yet",
+    "refresh": "Refresh from monday",
+    "exportExcel": "Export Excel",
+    "syncFailed": "Could not refresh from monday. Check the API token and try again.",
+    "exportFailed": "The Excel export failed. Try again.",
+    "loadFailed": "Couldn't load the ticket analytics.",
+    "firstSyncHint": "No tickets stored yet. Press \"Refresh from monday\" to pull this brand's tickets; the nightly sync keeps them current afterwards.",
+    "unknownBrand": "No brand called \"{brand}\"",
+    "unknownBrandHint": "Brands are configured on the backend under app.tickets.brands.",
+    "kpi": {
+      "openNow": "Open now",
+      "openNowHint": "Nothing waiting",
+      "oldestOpen": "Oldest open: {n} days",
+      "thisMonth": "This month",
+      "vsLastMonth": "Last month: {n}",
+      "timeToAction": "Time to RE action",
+      "timeToActionDef": "Median days from Open Date to RE Action",
+      "daysValue": "{n} d",
+      "sample": "{n} tickets measured",
+      "sla": "Within 7-day SLA",
+      "repeat": "Repeat within 14 d",
+      "robots": "Robots affected",
+      "robotsHint": "{tickets} tickets · {sites} sites"
+    },
+    "charts": {
+      "empty": "Nothing in this range",
+      "opened": "Opened",
+      "done": "Done",
+      "stillOpen": "Still open",
+      "tickets": "Tickets",
+      "other": "Other"
+    },
+    "breakdowns": {
+      "empty": "Nothing in this range",
+      "noOpen": "No open tickets",
+      "noRepeats": "No robot has more than one ticket in this range",
+      "days": "{range} days",
+      "openTail": "{n} open"
+    },
+    "panels": {
+      "monthly": "Tickets per month",
+      "monthlyHint": "Opened per month, split by whether they are done today",
+      "rootCause": "Root cause",
+      "rootCauseHint": "As recorded by the RE team on the board",
+      "aging": "Open tickets by age",
+      "agingHint": "Days since Open Date, open tickets only",
+      "sites": "Top sites",
+      "sitesHint": "Projects with the most tickets in the range",
+      "robots": "Repeat robots",
+      "robotsHint": "Serials with more than one ticket in the range",
+      "tickets": "Tickets ({n})",
+      "ticketsHint": "Click a row to read the comment thread"
+    },
+    "table": {
+      "empty": "No tickets match",
+      "ticket": "Ticket",
+      "site": "Site",
+      "robot": "Robot",
+      "rootCause": "Root cause",
+      "status": "Status",
+      "re": "RE",
+      "opened": "Opened",
+      "age": "Age / took",
+      "comments": "Comments",
+      "group": "Board group",
+      "caseType": "Type",
+      "level": "Level",
+      "channel": "Channel",
+      "province": "Province",
+      "warranty": "Warranty",
+      "reAction": "RE action",
+      "solution": "Solution",
+      "openInMonday": "Open in monday",
+      "thread": "Comments ({n})",
+      "noComments": "No comments on this ticket",
+      "reply": "reply",
+      "daysShort": "{n} d",
+      "ageOpen": "Days since Open Date",
+      "ageDone": "Days from Open Date to RE Action"
     }
   }
 }

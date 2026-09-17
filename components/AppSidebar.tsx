@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   Smile,
   Sparkles,
+  Ticket,
   TrendingUp,
   Users,
   Wrench,
@@ -68,6 +69,7 @@ export const navigationItems: NavItem[] = [
   // routes, so those paths light this entry up too.
   { title: 'Solutions', labelKey: 'solutions', href: '/solutions', icon: Sparkles, alsoMatches: ['/generate-solution', '/proposals'] },
   { title: 'PM Planning', labelKey: 'pmPlanning', href: '/pm-planning', icon: CalendarRange },
+  { title: 'Service Tickets', labelKey: 'tickets', href: '/tickets', icon: Ticket },
   // "Robot Catalog": the approved-model catalog that solutions are matched against,
   // not the deployed fleet -- the fleet lives under Tools -> Robots.
   { title: 'Robot Catalog', labelKey: 'robots', href: '/robots', icon: Bot },
