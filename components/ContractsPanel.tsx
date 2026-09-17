@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   ExternalLink,
+  Eye,
   FileSignature,
   FileText,
   Loader2,
@@ -236,29 +237,37 @@ function DocumentCell({
     );
   }
 
+  const details = `${doc.fileName} · ${fileSize(doc.sizeBytes)} · attached ${new Date(doc.uploadedAt).toLocaleDateString()}${doc.uploadedBy ? ` by ${doc.uploadedBy}` : ''}${doc.sharedWith > 1 ? ` · shared by ${doc.sharedWith} robots` : ''}`;
+
   return (
-    <div className="flex min-w-0 items-center gap-1.5">
-      <button
-        type="button"
-        onClick={view}
-        disabled={opening}
-        title={`${doc.fileName} · ${fileSize(doc.sizeBytes)} · attached ${new Date(doc.uploadedAt).toLocaleDateString()}${doc.uploadedBy ? ` by ${doc.uploadedBy}` : ''}${doc.sharedWith > 1 ? ` · shared by ${doc.sharedWith} robots` : ''}`}
-        className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium text-[var(--app-brand-dark)] hover:underline disabled:opacity-60"
-      >
-        {opening ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" /> : <FileText className="h-3.5 w-3.5 shrink-0" />}
+    <div className="flex min-w-0 flex-col gap-1">
+      <div className="flex min-w-0 items-center gap-1.5 text-xs text-[var(--app-muted)]" title={details}>
+        <FileText className="h-3.5 w-3.5 shrink-0" />
         <span className="max-w-[11rem] truncate">{doc.fileName}</span>
-      </button>
-      {doc.sharedWith > 1 && (
-        <span className="shrink-0 rounded bg-[var(--app-faint)] px-1 text-[10px] font-semibold text-[var(--app-muted)]" title={`Shared by ${doc.sharedWith} robots on this contract`}>
-          ×{doc.sharedWith}
-        </span>
-      )}
-      <button type="button" onClick={onAttach} title="Replace the PDF" aria-label="Replace contract PDF" className="rounded p-1 text-[var(--app-muted)] hover:bg-[var(--app-faint)] hover:text-[var(--app-brand-dark)]">
-        <Paperclip className="h-3.5 w-3.5" />
-      </button>
-      <button type="button" onClick={onRemove} title="Remove the PDF from this robot" aria-label="Remove contract PDF" className="rounded p-1 text-[var(--app-muted)] hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/40">
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
+        {doc.sharedWith > 1 && (
+          <span className="shrink-0 rounded bg-[var(--app-faint)] px-1 text-[10px] font-semibold" title={`Shared by ${doc.sharedWith} robots on this contract`}>
+            ×{doc.sharedWith}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-1">
+        {/* The one action the staff take every day, as a button that says so. */}
+        <button
+          type="button"
+          onClick={view}
+          disabled={opening}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--app-brand)] px-2.5 py-1 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+        >
+          {opening ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
+          View PDF
+        </button>
+        <button type="button" onClick={onAttach} title="Replace the PDF" aria-label="Replace contract PDF" className="rounded-lg p-1.5 text-[var(--app-muted)] hover:bg-[var(--app-faint)] hover:text-[var(--app-brand-dark)]">
+          <Paperclip className="h-3.5 w-3.5" />
+        </button>
+        <button type="button" onClick={onRemove} title="Remove the PDF from this robot" aria-label="Remove contract PDF" className="rounded-lg p-1.5 text-[var(--app-muted)] hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/40">
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
     </div>
   );
 }
