@@ -8,7 +8,7 @@
  * reporting. The backend also emails each contract once as it enters the window
  * (the morning ops alert); the Ending soon chip is that same list, always current.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -191,6 +191,78 @@ function AttachDialog({
   );
 }
 
+/**
+ * The PDF, on the page. A large box over the table rather than a new tab: the
+ * staff are checking a contract against the row beside it, and a tab switch
+ * loses the row. The browser's own PDF viewer renders inside the frame, so
+ * zoom, search and print are its. The link behind it lasts five minutes,
+ * long enough to load; once loaded the document is the browser's.
+ */
+function PdfViewer({ title, url, onClose }: { title: string; url: string; onClose: () => void }) {
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    // The page behind must not scroll while the viewer is up.
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onClick={onClose}
+    >
+      <div
+        className="flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-panel)] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3 border-b border-[var(--app-border)] px-4 py-3">
+          <FileText className="h-4 w-4 shrink-0 text-[var(--app-muted)]" />
+          <p className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--app-text)]" title={title}>
+            {title}
+          </p>
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 py-1.5 text-xs font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Open in new tab
+          </a>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close viewer"
+            className="rounded-lg p-1.5 text-[var(--app-muted)] transition hover:bg-[var(--app-faint)] hover:text-[var(--app-text)]"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="relative flex-1 bg-[var(--app-faint)]">
+          {!loaded && (
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-[var(--app-muted)]">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading the PDF…
+            </div>
+          )}
+          <iframe src={url} title={title} onLoad={() => setLoaded(true)} className="h-full w-full border-0" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** The Contract PDF cell: attach, or view / replace / remove what is attached. */
 function DocumentCell({
   row,
@@ -204,20 +276,17 @@ function DocumentCell({
   onError: (message: string) => void;
 }) {
   const [opening, setOpening] = useState(false);
+  const [viewing, setViewing] = useState<string | null>(null);
   const doc = row.document;
 
   const view = async () => {
-    // The bucket is private; ask for a five-minute link, then open it. The tab is
-    // opened first so the browser treats it as the click it is, not a popup.
-    const tab = window.open('', '_blank');
+    // The bucket is private; ask for a five-minute link, then show it in the viewer.
     setOpening(true);
     try {
       const url = (await contractsApi.documentUrl(row.robotUnitId)).data.data?.url;
       if (!url) throw new Error('No link returned');
-      if (tab) tab.location.href = url;
-      else window.open(url, '_blank');
+      setViewing(url);
     } catch (e) {
-      tab?.close();
       onError(errorMessage(e, 'Could not open the contract.'));
     } finally {
       setOpening(false);
@@ -250,6 +319,7 @@ function DocumentCell({
           </span>
         )}
       </div>
+      {viewing && doc && <PdfViewer title={doc.fileName} url={viewing} onClose={() => setViewing(null)} />}
       <div className="flex items-center gap-1">
         {/* The one action the staff take every day, as a button that says so. */}
         <button
