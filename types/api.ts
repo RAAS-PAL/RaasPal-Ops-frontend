@@ -674,6 +674,27 @@ export interface ExpiringContract {
   status: ContractStatus;
   /** When the ending-soon alert was emailed; null if not yet. */
   alertedAt: string | null;
+  /** The signed contract PDF attached to this deployment; null if none. */
+  document: ContractDocumentInfo | null;
+}
+
+/**
+ * A contract PDF as the Contracts page sees it. Never a link: the page asks for one
+ * when somebody clicks, and gets a five-minute pre-signed URL into the private bucket.
+ */
+export interface ContractDocumentInfo {
+  id: string;
+  fileName: string;
+  sizeBytes: number;
+  uploadedBy: string | null;
+  uploadedAt: string;
+  /** How many deployments share this document, this one included. */
+  sharedWith: number;
+}
+
+export interface ContractDocumentAttached {
+  document: ContractDocumentInfo;
+  deploymentsLinked: number;
 }
 
 export interface ContractExpiryResponse {

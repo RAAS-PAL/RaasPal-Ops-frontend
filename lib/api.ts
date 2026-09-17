@@ -121,6 +121,7 @@ import type {
   TelemetrySyncStatus,
   ZeroDataRobotsResponse,
   ZeroDataFollowupRequest,
+  ContractDocumentAttached,
   ContractExpiryResponse,
   TestStatus,
   TranslationResponse,
@@ -568,6 +569,30 @@ export const contractsApi = {
     api.get<ApiResponse<ContractExpiryResponse>>('/api/v1/robot-units/contracts/expiring', {
       params: { withinDays },
     }),
+
+  /**
+   * Attach (or replace) the signed contract PDF on a robot's deployment. With
+   * `applyToSameContract`, every other robot of the same customer with the same
+   * contract dates gets the same document. PDF only, 20 MB.
+   */
+  attachDocument: (robotUnitId: string, file: File, applyToSameContract: boolean) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('applyToSameContract', String(applyToSameContract));
+    return api.post<ApiResponse<ContractDocumentAttached>>(
+      `/api/v1/robot-units/${robotUnitId}/contract-document`,
+      form,
+      { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120_000, skipRetry: true },
+    );
+  },
+
+  /** A five-minute link to the PDF, for opening in a new tab. */
+  documentUrl: (robotUnitId: string) =>
+    api.get<ApiResponse<{ url: string }>>(`/api/v1/robot-units/${robotUnitId}/contract-document/url`),
+
+  /** Detach the PDF from this robot only; others on the same contract keep it. */
+  removeDocument: (robotUnitId: string) =>
+    api.delete<ApiResponse<void>>(`/api/v1/robot-units/${robotUnitId}/contract-document`),
 };
 
 /**
