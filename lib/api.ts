@@ -123,6 +123,7 @@ import type {
   ZeroDataFollowupRequest,
   ContractDocumentAttached,
   ContractExpiryResponse,
+  ContractListResponse,
   TestStatus,
   TranslationResponse,
   UserResponse,
@@ -569,6 +570,10 @@ export const contractsApi = {
     api.get<ApiResponse<ContractExpiryResponse>>('/api/v1/robot-units/contracts/expiring', {
       params: { withinDays },
     }),
+
+  /** Every active deployment as a contract row; `withinDays` decides "ending soon". */
+  all: (withinDays = 30) =>
+    api.get<ApiResponse<ContractListResponse>>('/api/v1/robot-units/contracts', { params: { withinDays } }),
 
   /**
    * Attach (or replace) the signed contract PDF on a robot's deployment. With

@@ -1,12 +1,12 @@
 'use client';
 
 /**
- * ContractsPanel — robots whose contract ends within the window, and robots whose
- * contract has already ended.
+ * ContractsPanel — every robot's contract, with the signed PDF attached, and the ones
+ * ending soon or already ended a chip away.
  *
  * A renewal should be visible a month out, not discovered when the robot stops
  * reporting. The backend also emails each contract once as it enters the window
- * (the morning ops alert); this is the same list, always current.
+ * (the morning ops alert); the Ending soon chip is that same list, always current.
  */
 import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +20,7 @@ import {
   Mail,
   Paperclip,
   RefreshCw,
+  Search,
   Trash2,
   X,
 } from 'lucide-react';
@@ -262,29 +263,55 @@ function DocumentCell({
   );
 }
 
+type StatusFilter = 'all' | 'soon' | 'ended' | 'none';
+
+const STATUS_BADGE: Record<ExpiringContract['status'], { label: string; className: string }> = {
+  ENDED: { label: 'Ended', className: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-900' },
+  ENDING_SOON: { label: 'Ending soon', className: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900' },
+  ACTIVE: { label: 'Active', className: 'bg-[var(--app-faint)] text-[var(--app-text)] ring-[var(--app-border)]' },
+  NONE: { label: 'No end date', className: 'bg-transparent text-[var(--app-muted)] ring-[var(--app-border)] ring-dashed' },
+};
+
+function StatusBadge({ status }: { status: ExpiringContract['status'] }) {
+  const s = STATUS_BADGE[status];
+  return <span className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${s.className}`}>{s.label}</span>;
+}
+
+function EndsIn({ c }: { c: ExpiringContract }) {
+  if (c.daysToEnd === null) return <span className="text-[var(--app-muted)]">—</span>;
+  if (c.daysToEnd < 0) return <span className="font-semibold text-red-600">{Math.abs(c.daysToEnd)} d ago</span>;
+  if (c.status === 'ENDING_SOON') {
+    return (
+      <span className={`font-semibold ${c.daysToEnd <= 7 ? 'text-red-600' : 'text-amber-600'}`}>
+        {c.daysToEnd === 0 ? 'today' : `${c.daysToEnd} d`}
+      </span>
+    );
+  }
+  return <span className="text-[var(--app-muted)]">{c.daysToEnd} d</span>;
+}
+
 function Table({
   rows,
-  ended,
   onAttach,
   onRemove,
   onError,
 }: {
   rows: ExpiringContract[];
-  ended: boolean;
   onAttach: (row: ExpiringContract) => void;
   onRemove: (row: ExpiringContract) => void;
   onError: (message: string) => void;
 }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)]">
-      <table className="w-full min-w-[68rem] text-left text-sm">
+      <table className="w-full min-w-[72rem] text-left text-sm">
         <thead className="border-b border-[var(--app-border)] text-xs uppercase tracking-wide text-[var(--app-muted)]">
           <tr>
             <th className="px-3 py-2.5 font-semibold">Customer</th>
             <th className="px-3 py-2.5 font-semibold">Site</th>
             <th className="px-3 py-2.5 font-semibold">Robot</th>
             <th className="px-3 py-2.5 font-semibold">Contract</th>
-            <th className="px-3 py-2.5 text-right font-semibold">{ended ? 'Ended' : 'Ends in'}</th>
+            <th className="px-3 py-2.5 text-right font-semibold">Ends in</th>
+            <th className="px-3 py-2.5 font-semibold">Status</th>
             <th className="px-3 py-2.5 font-semibold">Alert</th>
             <th className="px-3 py-2.5 font-semibold">Contract PDF</th>
             <th className="px-3 py-2.5"><span className="sr-only">Open</span></th>
@@ -300,23 +327,20 @@ function Table({
                 <p className="text-xs text-[var(--app-muted)]">{[c.name, c.brand, c.model].filter(Boolean).join(' · ') || '—'}</p>
               </td>
               <td className="px-3 py-2.5 whitespace-nowrap tabular-nums text-xs">
-                {c.contractStartDate ?? '…'} → {c.contractEndDate}
+                {c.contractStartDate ?? '…'} → {c.contractEndDate ?? '…'}
               </td>
               <td className="px-3 py-2.5 whitespace-nowrap text-right tabular-nums">
-                {ended ? (
-                  <span className="font-semibold text-red-600">{Math.abs(c.daysToEnd)} d ago</span>
-                ) : (
-                  <span className={`font-semibold ${c.daysToEnd <= 7 ? 'text-red-600' : 'text-amber-600'}`}>
-                    {c.daysToEnd === 0 ? 'today' : `${c.daysToEnd} d`}
-                  </span>
-                )}
+                <EndsIn c={c} />
+              </td>
+              <td className="px-3 py-2.5">
+                <StatusBadge status={c.status} />
               </td>
               <td className="px-3 py-2.5 text-xs text-[var(--app-muted)]">
                 {c.alertedAt ? (
                   <span className="inline-flex items-center gap-1" title={new Date(c.alertedAt).toLocaleString()}>
                     <Mail className="h-3.5 w-3.5" /> sent
                   </span>
-                ) : ended ? '—' : 'pending'}
+                ) : c.status === 'ENDING_SOON' ? 'pending' : '—'}
               </td>
               <td className="px-3 py-2.5">
                 <DocumentCell row={c} onAttach={() => onAttach(c)} onRemove={() => onRemove(c)} onError={onError} />
@@ -332,27 +356,69 @@ function Table({
               </td>
             </tr>
           ))}
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan={9} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
+                No contracts match.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
   );
 }
 
+/**
+ * Every active deployment is a contract row; the chips narrow by status and the box
+ * by customer or serial. Opens on All, sorted soonest end first, so the first screen
+ * is the ending-soon list anyway - and a contract can have its PDF attached long
+ * before it is nearly over. The morning alert email is what nudges about renewals;
+ * this page no longer needs to open on them.
+ */
 export function ContractsPanel() {
   const [windowDays, setWindowDays] = useState(30);
+  const [filter, setFilter] = useState<StatusFilter>('all');
+  const [search, setSearch] = useState('');
   const [attaching, setAttaching] = useState<ExpiringContract | null>(null);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const queryClient = useQueryClient();
   const { confirm, confirmDialog } = useConfirm();
 
   const query = useQuery({
-    queryKey: ['contracts-expiring', windowDays],
-    queryFn: () => contractsApi.expiring(windowDays).then((r) => r.data.data),
+    queryKey: ['contracts-all', windowDays],
+    queryFn: () => contractsApi.all(windowDays).then((r) => r.data.data),
   });
   const data = query.data;
-  const allRows = data ? [...data.endingSoon, ...data.ended] : [];
+  const allRows = data?.contracts ?? [];
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['contracts-expiring'] });
+  const counts = {
+    all: allRows.length,
+    soon: allRows.filter((c) => c.status === 'ENDING_SOON').length,
+    ended: allRows.filter((c) => c.status === 'ENDED').length,
+    none: allRows.filter((c) => c.status === 'NONE').length,
+  };
+
+  const needle = search.trim().toLowerCase();
+  const visible = allRows
+    .filter((c) => {
+      if (filter === 'soon') return c.status === 'ENDING_SOON';
+      if (filter === 'ended') return c.status === 'ENDED';
+      if (filter === 'none') return c.status === 'NONE';
+      return true;
+    })
+    .filter(
+      (c) =>
+        !needle ||
+        c.customerName.toLowerCase().includes(needle) ||
+        c.serialNumber.toLowerCase().includes(needle) ||
+        (c.site ?? '').toLowerCase().includes(needle) ||
+        (c.name ?? '').toLowerCase().includes(needle),
+    );
+  // Ended contracts read best most-recent first: the ones somebody can still act on.
+  const rows = filter === 'ended' ? [...visible].reverse() : visible;
+
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['contracts-all'] });
 
   const remove = useMutation({
     mutationFn: (row: ExpiringContract) => contractsApi.removeDocument(row.robotUnitId),
@@ -375,6 +441,13 @@ export function ContractsPanel() {
     }).then((ok) => ok && remove.mutate(row));
   };
 
+  const chips: { id: StatusFilter; label: string; count: number; tone: string }[] = [
+    { id: 'all', label: 'All', count: counts.all, tone: '' },
+    { id: 'soon', label: 'Ending soon', count: counts.soon, tone: counts.soon > 0 ? 'text-amber-700 dark:text-amber-300' : '' },
+    { id: 'ended', label: 'Ended', count: counts.ended, tone: counts.ended > 0 ? 'text-red-700 dark:text-red-300' : '' },
+    { id: 'none', label: 'No end date', count: counts.none, tone: '' },
+  ];
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2.5 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4">
@@ -384,12 +457,37 @@ export function ContractsPanel() {
         <div>
           <p className="text-sm font-semibold text-[var(--app-text)]">Robot contracts</p>
           <p className="text-xs text-[var(--app-muted)]">
-            Contracts ending soon, so a renewal is arranged before the robot stops reporting — and contracts already ended, so the end date can be confirmed or extended.
+            Every robot&apos;s contract, soonest end first, with the signed PDF attached. Ending soon means a renewal should be arranged before
+            the robot stops reporting; ended means the end date should be confirmed or extended.
           </p>
         </div>
       </div>
 
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
+        <div className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
+          Show
+          <div role="radiogroup" aria-label="Filter contracts by status" className="inline-flex overflow-hidden rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] text-sm font-normal">
+            {chips.map((chip) => {
+              const active = filter === chip.id;
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setFilter(chip.id)}
+                  className={`h-9 px-3 font-semibold transition ${
+                    active ? 'bg-[var(--app-brand)] text-white' : `text-[var(--app-text)] hover:bg-[var(--app-faint)] ${chip.tone}`
+                  }`}
+                >
+                  {chip.label}
+                  {data && <span className={`ml-1.5 tabular-nums ${active ? 'opacity-80' : 'opacity-60'}`}>{chip.count}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
           Ending within
           <select
@@ -402,6 +500,21 @@ export function ContractsPanel() {
             <option value={90}>90 days</option>
           </select>
         </label>
+
+        <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
+          Search
+          <span className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--app-muted)]" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Customer, site or serial…"
+              className="h-9 w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] pl-9 pr-3 text-sm font-normal text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
+            />
+          </span>
+        </label>
+
         <button
           type="button"
           onClick={() => query.refetch()}
@@ -413,8 +526,8 @@ export function ContractsPanel() {
         </button>
         {data && (
           <p className="ml-auto text-xs text-[var(--app-muted)]">
-            As of {data.asOf} · <b className="text-[var(--app-text)]">{data.endingSoon.length}</b> ending within {data.windowDays} days ·{' '}
-            <b className="text-[var(--app-text)]">{data.ended.length}</b> ended
+            As of {data.asOf} · <b className="text-[var(--app-text)]">{counts.soon}</b> ending within {data.windowDays} days ·{' '}
+            <b className="text-[var(--app-text)]">{counts.ended}</b> ended · showing {rows.length} of {counts.all}
           </p>
         )}
       </div>
@@ -442,34 +555,29 @@ export function ContractsPanel() {
         </p>
       )}
 
-      {data && (
-        <section className="space-y-2">
-          <h3 className="text-sm font-semibold text-[var(--app-text)]">Ending within {data.windowDays} days</h3>
-          {data.endingSoon.length === 0 ? (
-            <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              No contracts end in the next {data.windowDays} days.
-            </p>
-          ) : (
-            <Table rows={data.endingSoon} ended={false} onAttach={setAttaching} onRemove={askRemove} onError={(text) => setNotice({ kind: 'error', text })} />
-          )}
-        </section>
+      {data && filter === 'soon' && counts.soon === 0 && !needle ? (
+        <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          No contracts end in the next {data.windowDays} days.
+        </p>
+      ) : (
+        data && <Table rows={rows} onAttach={setAttaching} onRemove={askRemove} onError={(text) => setNotice({ kind: 'error', text })} />
       )}
 
-      {data && data.ended.length > 0 && (
-        <section className="space-y-2">
-          <h3 className="text-sm font-semibold text-[var(--app-text)]">Already ended</h3>
-          <Table rows={data.ended} ended onAttach={setAttaching} onRemove={askRemove} onError={(text) => setNotice({ kind: 'error', text })} />
-          <p className="text-xs leading-5 text-[var(--app-muted)]">
-            An ended robot gets no monthly report and is not on the No data list. If the contract was renewed, extend the end date on the robot; if the robot came back, clear it.
-          </p>
-        </section>
+      {filter === 'ended' && counts.ended > 0 && (
+        <p className="text-xs leading-5 text-[var(--app-muted)]">
+          An ended robot gets no monthly report and is not on the No data list. If the contract was renewed, extend the end date on the robot; if the robot came back, clear it.
+        </p>
+      )}
+      {filter === 'none' && counts.none > 0 && (
+        <p className="text-xs leading-5 text-[var(--app-muted)]">
+          These robots have no contract end date, so they can never appear as ending soon and never trigger the renewal alert. Set the date on the robot when it is known.
+        </p>
       )}
 
       <p className="text-xs leading-5 text-[var(--app-muted)]">
-        Only robots with an end date appear here. Each contract is emailed to the customer success address once as it enters the 30-day
-        window; changing the end date re-arms that alert. The Contract PDF is the signed document, kept in private storage; one upload can
-        cover every robot of the customer on the same contract dates.
+        Each contract is emailed to the customer success address once as it enters the 30-day window; changing the end date re-arms that alert.
+        The Contract PDF is the signed document, kept in private storage; one upload can cover every robot of the customer on the same contract dates.
       </p>
 
       {attaching && (

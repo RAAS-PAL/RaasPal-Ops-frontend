@@ -668,9 +668,10 @@ export interface ExpiringContract {
   customerName: string;
   site: string | null;
   contractStartDate: string | null;
-  contractEndDate: string;
-  /** Negative once ended. */
-  daysToEnd: number;
+  /** Null on the All view for a robot whose contract has no end date. */
+  contractEndDate: string | null;
+  /** Negative once ended; null when there is no end date. */
+  daysToEnd: number | null;
   status: ContractStatus;
   /** When the ending-soon alert was emailed; null if not yet. */
   alertedAt: string | null;
@@ -702,6 +703,13 @@ export interface ContractExpiryResponse {
   windowDays: number;
   endingSoon: ExpiringContract[];
   ended: ExpiringContract[];
+}
+
+/** Every active deployment as a contract row, soonest end first, no-end-date last. */
+export interface ContractListResponse {
+  asOf: string;
+  windowDays: number;
+  contracts: ExpiringContract[];
 }
 
 /** Aggregate outcome of a fleet-wide sync run. */
