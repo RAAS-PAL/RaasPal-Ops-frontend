@@ -264,8 +264,14 @@ html {
    Chrome and Firefox are styled separately on purpose. Since Chrome 121 an element
    that sets the standard scrollbar-width / scrollbar-color has its ::-webkit-scrollbar
    rules IGNORED and gets Chrome's classic bar, arrows and all - which is exactly the
-   look this is here to avoid. So the standard properties are only applied where the
+   look this is here to avoid. And scrollbar-color is INHERITED, so the html rule
+   above reaches every element: the reset to auto here is what lets Chrome see the
+   webkit rules at all. The standard properties are then applied only where the
    webkit pseudo-elements do not exist, i.e. Firefox. */
+.scroll-quiet {
+  scrollbar-width: auto;
+  scrollbar-color: auto;
+}
 .scroll-quiet::-webkit-scrollbar        { width: 6px; height: 6px; }
 .scroll-quiet::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 .scroll-quiet::-webkit-scrollbar-track  { background: transparent; }
