@@ -122,6 +122,8 @@ import type {
   ZeroDataRobotsResponse,
   ZeroDataFollowupRequest,
   ContractDocumentAttached,
+  ContractRenewalFollowupUpdated,
+  UpdateRenewalFollowupRequest,
   ContractExpiryResponse,
   ContractListResponse,
   TestStatus,
@@ -598,6 +600,10 @@ export const contractsApi = {
   /** Detach the PDF from this robot only; others on the same contract keep it. */
   removeDocument: (robotUnitId: string) =>
     api.delete<ApiResponse<void>>(`/api/v1/robot-units/${robotUnitId}/contract-document`),
+
+  /** Record where the CS team is with renewing this contract; resets itself when the end date changes. */
+  updateFollowup: (robotUnitId: string, body: UpdateRenewalFollowupRequest) =>
+    api.put<ApiResponse<ContractRenewalFollowupUpdated>>(`/api/v1/robot-units/${robotUnitId}/contract-followup`, body),
 };
 
 /**

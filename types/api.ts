@@ -677,6 +677,8 @@ export interface ExpiringContract {
   alertedAt: string | null;
   /** The signed contract PDF attached to this deployment; null if none. */
   document: ContractDocumentInfo | null;
+  /** What the CS team has done about renewing; never null. */
+  followup: ContractRenewalFollowup;
 }
 
 /**
@@ -691,6 +693,30 @@ export interface ContractDocumentInfo {
   uploadedAt: string;
   /** How many deployments share this document, this one included. */
   sharedWith: number;
+}
+
+/* ─── Renewal follow-up ─────────────────────────────────────────────────── */
+
+/** Where the CS team is with a contract that is ending. NOT_CONTACTED is the unset state. */
+export type ContractRenewalStatus = 'NOT_CONTACTED' | 'CONTACTED' | 'WILL_RENEW' | 'WILL_NOT_RENEW';
+
+export interface ContractRenewalFollowup {
+  status: ContractRenewalStatus;
+  note: string | null;
+  updatedBy: string | null;
+  updatedAt: string | null;
+}
+
+export interface UpdateRenewalFollowupRequest {
+  status: ContractRenewalStatus;
+  note?: string | null;
+  /** Also record it on the customer's other robots with the same contract dates. Default true. */
+  applyToSameContract?: boolean;
+}
+
+export interface ContractRenewalFollowupUpdated {
+  followup: ContractRenewalFollowup;
+  deploymentsUpdated: number;
 }
 
 export interface ContractDocumentAttached {
