@@ -691,7 +691,7 @@ function Table({
  * this page no longer needs to open on them.
  */
 export function ContractsPanel() {
-  const [windowDays, setWindowDays] = useState(30);
+  const [windowDays, setWindowDays] = useState(90);
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
   const [followupFilter, setFollowupFilter] = useState<FollowupFilter>('any');
@@ -817,9 +817,10 @@ export function ContractsPanel() {
             onChange={(e) => setWindowDays(Number(e.target.value))}
             className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm font-normal text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
           >
-            <option value={30}>30 days</option>
-            <option value={60}>60 days</option>
             <option value={90}>90 days</option>
+            <option value={60}>60 days</option>
+            <option value={30}>30 days</option>
+            <option value={180}>180 days</option>
           </select>
         </label>
 
@@ -933,7 +934,7 @@ export function ContractsPanel() {
       )}
 
       <p className="text-xs leading-5 text-[var(--app-muted)]">
-        Each contract is emailed to the customer success address once as it enters the 30-day window; changing the end date re-arms that alert
+        Each contract is emailed to the customer success address once as it enters the 90-day window; changing the end date re-arms that alert
         and puts the follow-up back to <i>Not contacted</i> for the new term. Changing a follow-up applies to every robot of the customer on the
         same contract dates — one call, one contract. The Contract PDF is the signed document, kept in private storage; one upload covers them the same way.
       </p>
