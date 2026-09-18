@@ -3,18 +3,20 @@
 /**
  * CmReportPanel — build one Corrective Maintenance report.
  *
- * Paste the Monday.com ticket, let the AI split it into fields, correct anything
- * it got wrong, attach the two signature photos, then save and print.
+ * Pick the monday ticket (or paste one), let the AI split it into fields, correct
+ * anything it got wrong, attach the two signature photos, then save and print.
  *
  * The review step is deliberate: this document is signed and handed to a customer,
  * so nothing reaches the printed page that a person hasn't looked at. Extraction
  * only ever fills the form — the form is the source of truth for what gets saved.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
+  ArrowLeft,
   Check,
+  ClipboardList,
   FileText,
   Loader2,
   Printer,
@@ -28,7 +30,8 @@ import { cmReportApi } from '@/lib/api';
 import { fileToSignatureDataUrl } from '@/lib/signature-image';
 import { todayIso } from '@/lib/thai-date';
 import { CorrectiveMaintenanceReportView } from '@/components/report/CorrectiveMaintenanceReportView';
-import type { CmReportRequest, CmReportResponse } from '@/types/api';
+import { CmTicketPicker } from '@/components/CmTicketPicker';
+import type { CmReportDraft, CmReportRequest, CmReportResponse, CmTicketSummary } from '@/types/api';
 
 const inputClass =
   'h-10 w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]';
@@ -119,6 +122,27 @@ function errorMessage(e: unknown, fallback: string): string {
 }
 
 /** Maps a saved report back into the editable form shape. */
+/**
+ * Lay a draft over a form. Only what the AI actually found is written — a null
+ * field must not wipe something the operator already typed by hand.
+ */
+function applyDraft(f: CmReportRequest, draft: CmReportDraft, sourceText: string): CmReportRequest {
+  return {
+    ...f,
+    reportDate: draft.reportDate || f.reportDate,
+    ticketNo: draft.ticketNo || f.ticketNo,
+    customerName: draft.customerName || f.customerName,
+    technicianName: draft.technicianName || f.technicianName,
+    robotModel: draft.robotModel || f.robotModel,
+    serialNumber: draft.serialNumber || f.serialNumber,
+    causeDetail: draft.causeDetail || f.causeDetail,
+    inspectionResult: draft.inspectionResult || f.inspectionResult,
+    correctiveActions: draft.correctiveActions?.length ? draft.correctiveActions.join('\n') : f.correctiveActions,
+    testResult: draft.testResult || f.testResult,
+    sourceText,
+  };
+}
+
 function toForm(r: CmReportResponse): CmReportRequest {
   return {
     reportDate: r.reportDate ?? '',
@@ -277,16 +301,10 @@ export function CmReportPanel({
   );
   const [savedId, setSavedId] = useState<string | null>(initialReport?.id ?? null);
   const [formError, setFormError] = useState<string | null>(null);
-
-  // Reopening a different report from history must reload the form rather than
-  // leaving the previous one's edits on screen.
-  useEffect(() => {
-    if (!initialReport) return;
-    setSourceText(initialReport.sourceText ?? '');
-    setForm(toForm(initialReport));
-    setSavedId(initialReport.id);
-    setFormError(null);
-  }, [initialReport]);
+  /** The monday ticket this report is being drafted from; null when pasted or reopened. */
+  const [ticket, setTicket] = useState<CmTicketSummary | null>(null);
+  /** The paste box, for a ticket that is not on the boards. Reopened reports show it too. */
+  const [pasteMode, setPasteMode] = useState(Boolean(initialReport));
 
   const field = (key: keyof CmReportRequest, value: string) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -295,26 +313,29 @@ export function CmReportPanel({
     mutationFn: () => cmReportApi.parse(sourceText).then((r) => r.data.data),
     onSuccess: (draft) => {
       if (!draft) return;
-      // Only overwrite what the AI actually found — a null field must not wipe
-      // something the operator already typed by hand.
-      setForm((f) => ({
-        ...f,
-        reportDate: draft.reportDate || f.reportDate,
-        ticketNo: draft.ticketNo || f.ticketNo,
-        customerName: draft.customerName || f.customerName,
-        technicianName: draft.technicianName || f.technicianName,
-        robotModel: draft.robotModel || f.robotModel,
-        serialNumber: draft.serialNumber || f.serialNumber,
-        causeDetail: draft.causeDetail || f.causeDetail,
-        inspectionResult: draft.inspectionResult || f.inspectionResult,
-        correctiveActions: draft.correctiveActions?.length
-          ? draft.correctiveActions.join('\n')
-          : f.correctiveActions,
-        testResult: draft.testResult || f.testResult,
-        sourceText,
-      }));
+      setForm((f) => applyDraft(f, draft, sourceText));
     },
   });
+
+  // A ticket starts a report from scratch: a field the previous ticket filled must
+  // not survive into this one, so the draft lands on an empty form, not the current one.
+  const parseTicketMutation = useMutation({
+    mutationFn: (t: CmTicketSummary) => cmReportApi.parseTicket(t.caseTicketId).then((r) => r.data.data),
+    onSuccess: (d) => {
+      if (!d) return;
+      setTicket(d.ticket);
+      setSourceText(d.sourceText);
+      setForm(applyDraft({ ...EMPTY_FORM, reportDate: todayIso() }, d.draft, d.sourceText));
+      setSavedId(null);
+      setFormError(null);
+    },
+  });
+
+  const chooseAnother = () => {
+    setTicket(null);
+    setPasteMode(false);
+    parseTicketMutation.reset();
+  };
 
   const saveMutation = useMutation({
     mutationFn: (body: CmReportRequest) =>
@@ -379,15 +400,77 @@ export function CmReportPanel({
               {savedId ? 'Edit corrective maintenance report' : 'New corrective maintenance report'}
             </p>
             <p className="text-xs text-[var(--app-muted)]">
-              Paste the ticket, check the extracted fields, attach the signatures, then print.
+              Pick the monday ticket, check the extracted fields, attach the signatures, then print.
             </p>
           </div>
         </div>
 
-        {/* Step 1 — paste + extract */}
+        {/* Step 1 — pick a ticket (or paste one) + extract */}
+        {!ticket && !pasteMode ? (
+          <div className="space-y-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
+                <ClipboardList className="h-4 w-4 text-[var(--app-brand-dark)]" />
+                Tickets from monday
+              </p>
+              <button
+                type="button"
+                onClick={() => setPasteMode(true)}
+                className="text-xs font-semibold text-[var(--app-muted)] underline-offset-2 hover:text-[var(--app-brand-dark)] hover:underline"
+              >
+                Paste ticket text instead
+              </button>
+            </div>
+            {parseTicketMutation.isError && (
+              <p className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                {errorMessage(parseTicketMutation.error, 'Could not draft the report from that ticket. Try again, or paste the ticket text.')}
+              </p>
+            )}
+            <CmTicketPicker
+              onPick={(t) => parseTicketMutation.mutate(t)}
+              busyId={parseTicketMutation.isPending ? parseTicketMutation.variables?.caseTicketId ?? null : null}
+            />
+          </div>
+        ) : (
         <div className="space-y-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
+          {ticket && (
+            <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg bg-[var(--app-brand-soft)]/40 px-3 py-2.5">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[var(--app-text)]">
+                  <span className="font-mono">{ticket.caseId}</span> · {ticket.itemName ?? '—'}
+                </p>
+                <p className="text-xs text-[var(--app-muted)]">
+                  {ticket.board === 'DELIVERY' ? 'Delivery Tickets' : 'Cleaning Tickets'}
+                  {[ticket.project, ticket.branch].filter(Boolean).length > 0 && ` · ${[ticket.project, ticket.branch].filter(Boolean).join(' · ')}`}
+                  {ticket.serialNumbers && ` · ${ticket.serialNumbers}`}
+                  {` · ${ticket.commentCount} comment${ticket.commentCount === 1 ? '' : 's'}`}
+                </p>
+              </div>
+              {!savedId && (
+                <button
+                  type="button"
+                  onClick={chooseAnother}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-2.5 text-xs font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Choose another ticket
+                </button>
+              )}
+            </div>
+          )}
+          {!ticket && !initialReport && (
+            <button
+              type="button"
+              onClick={chooseAnother}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--app-muted)] underline-offset-2 hover:text-[var(--app-brand-dark)] hover:underline"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Pick a ticket from monday instead
+            </button>
+          )}
           <label className="flex flex-col gap-1.5 text-xs font-semibold text-[var(--app-muted)]">
-            Ticket content from Monday
+            {ticket ? 'Ticket content from monday — columns and comments, as read' : 'Ticket content from Monday'}
             <textarea
               rows={8}
               value={sourceText}
@@ -411,7 +494,7 @@ export function CmReportPanel({
               )}
               {parseMutation.isPending ? 'Extracting…' : 'Extract fields'}
             </button>
-            {parseMutation.isSuccess && !parseMutation.isPending && (
+            {((parseMutation.isSuccess && !parseMutation.isPending) || (ticket && parseTicketMutation.isSuccess)) && (
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                 <Check className="h-3.5 w-3.5" />
                 Fields filled — check them below
@@ -426,6 +509,7 @@ export function CmReportPanel({
             </p>
           )}
         </div>
+        )}
 
         {/* Step 2 — review + edit */}
         <div className="space-y-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">

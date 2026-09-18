@@ -74,7 +74,8 @@ export function CmReportHistoryPanel() {
             {errorMessage(openQuery.error, 'Could not load that report.')}
           </p>
         )}
-        {openQuery.data && <CmReportPanel initialReport={openQuery.data} />}
+        {/* Keyed by id: reopening a different report remounts the form instead of patching it. */}
+        {openQuery.data && <CmReportPanel key={openQuery.data.id} initialReport={openQuery.data} />}
       </div>
     );
   }
