@@ -871,6 +871,38 @@ export interface CmReportDraft {
   testResult: string | null;
 }
 
+/** Which synced monday board a ticket came from. */
+export type CmTicketBoard = 'CLEANING' | 'DELIVERY';
+
+/** One monday ticket a CM report can be started from (All Case group, as last synced). */
+export interface CmTicketSummary {
+  caseTicketId: string;
+  /** The monday item id — what the report calls "Ticket No.". */
+  caseId: string;
+  board: CmTicketBoard;
+  itemName: string | null;
+  project: string | null;
+  branch: string | null;
+  province: string | null;
+  robotModel: string | null;
+  serialNumbers: string | null;
+  status: string | null;
+  supStatus: string | null;
+  mainIssue: string | null;
+  openDate: string | null;
+  commentCount: number;
+  lastCommentAt: string | null;
+  /** A CM report with this ticket number already exists. */
+  hasReport: boolean;
+}
+
+/** A report drafted from a ticket: the text it was read from, and the fields. */
+export interface CmTicketDraft {
+  ticket: CmTicketSummary;
+  sourceText: string;
+  draft: CmReportDraft;
+}
+
 export interface CmReportRequest {
   reportDate: string;
   ticketNo: string;

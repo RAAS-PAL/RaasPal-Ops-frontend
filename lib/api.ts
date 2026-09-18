@@ -84,6 +84,9 @@ import type {
   AuthResponse,
   ChangePasswordRequest,
   CmReportDraft,
+  CmTicketBoard,
+  CmTicketDraft,
+  CmTicketSummary,
   CmReportRequest,
   CmReportResponse,
   CustomerBundlePreview,
@@ -622,6 +625,20 @@ export const cmReportApi = {
     api.post<ApiResponse<CmReportDraft>>(
       '/api/v1/cm-reports/parse',
       { sourceText },
+      { timeout: 120_000, skipRetry: true },
+    ),
+
+  /** The monday tickets a report can start from — All Case on both boards, as last synced. */
+  tickets: (board?: CmTicketBoard, q?: string) =>
+    api.get<ApiResponse<CmTicketSummary[]>>('/api/v1/cm-reports/tickets', {
+      params: { board, q: q?.trim() || undefined },
+    }),
+
+  /** Draft a report from one ticket: its columns and comments in, fields out. Persists nothing. */
+  parseTicket: (caseTicketId: string) =>
+    api.post<ApiResponse<CmTicketDraft>>(
+      `/api/v1/cm-reports/tickets/${caseTicketId}/parse`,
+      undefined,
       { timeout: 120_000, skipRetry: true },
     ),
 
