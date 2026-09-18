@@ -260,7 +260,7 @@ export function CorrectiveMaintenanceReportView({ report }: { report: CmReportRe
             the default align-items:stretch would override w-auto and smear the
             wordmark across the full page width. */}
         <Image
-          src="/raas-pal-wordmark.png"
+          src="/raas-pal-wordmark-print.png"
           alt="RAAS PAL"
           width={240}
           height={60}
@@ -351,7 +351,7 @@ export function CorrectiveMaintenanceReportView({ report }: { report: CmReportRe
             ))}
           </div>
           <Image
-            src="/raas-pal-wordmark.png"
+            src="/raas-pal-wordmark-print.png"
             alt="RAAS PAL"
             width={200}
             height={50}

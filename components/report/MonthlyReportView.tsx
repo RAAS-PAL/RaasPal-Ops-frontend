@@ -218,7 +218,7 @@ export function MonthlyReportView({
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
             <Image
-              src="/raas-pal-wordmark.png"
+              src="/raas-pal-wordmark-print.png"
               alt="RAAS PAL"
               width={240}
               height={60}
