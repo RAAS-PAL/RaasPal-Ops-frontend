@@ -204,16 +204,16 @@ export function DeliveryReportView({ report }: { report: AutoxingDeliveryReport 
 
   return (
     <div className="bg-white px-10 py-9 text-[#12263a]" style={{ fontVariantNumeric: 'tabular-nums' }}>
-      {/* Brand */}
-      <div className="flex items-center gap-2">
-        <Image alt="RAAS PAL" src="/raas-pal-logo-print.png" width={34} height={34} className="h-9 w-9 object-contain" />
-        <div>
-          <p className="text-xl font-extrabold leading-none" style={{ color: '#1d4ed8' }}>RAAS PAL</p>
-          <p className="text-[8px] font-bold uppercase tracking-[3px]" style={{ color: INK_FAINT }}>
-            Robot as a Service
-          </p>
-        </div>
-      </div>
+      {/* Brand — the same printed wordmark as the Gausium report, so every
+          customer report opens with the same logo. */}
+      <Image
+        src="/raas-pal-wordmark-print.png"
+        alt="RAAS PAL"
+        width={240}
+        height={60}
+        priority
+        className="h-8 w-auto sm:h-9"
+      />
 
       {/* Title */}
       <div className="mt-5 flex flex-wrap items-center gap-3">
