@@ -139,6 +139,7 @@ import type {
   PmYearResponse,
 } from '@/lib/pm/types';
 import type { MonthlyPerformanceReport } from '@/lib/reports/types';
+import type { DeliveryPerformanceReport } from '@/lib/reports/autoxing-performance';
 import type {
   BrandSyncStatus,
   BrandTicket,
@@ -505,6 +506,25 @@ export const autoxingApi = {
     api.get<ApiResponse<AutoxingDeliveryReport>>('/api/v1/autoxing/report/preview', {
       params: { robotId, from, to, robotName: robotName || undefined, model: model || undefined },
       timeout: 120_000,
+      skipRetry: true,
+    }),
+
+  /**
+   * The delivery-robot Executive Performance Report (prototype, live pull, max 31
+   * days). Pages through every task in the period plus the previous period for the
+   * month-on-month line, so it is slower than `preview`.
+   */
+  performance: (
+    robotId: string,
+    from?: string,
+    to?: string,
+    robotName?: string,
+    model?: string,
+    serviceCases = true,
+  ) =>
+    api.get<ApiResponse<DeliveryPerformanceReport>>('/api/v1/autoxing/report/performance', {
+      params: { robotId, from, to, robotName: robotName || undefined, model: model || undefined, serviceCases },
+      timeout: 180_000,
       skipRetry: true,
     }),
 };

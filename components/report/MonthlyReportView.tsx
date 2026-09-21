@@ -26,9 +26,9 @@ import type {
 
 /* ─── Palette (matches the approved PowerPoint) ──────────────────────────── */
 
-const BLUE_PANEL = '#bcccea';
-const RING_ARC = '#4472c4';
-const RING_TRACK = '#dbe4f3';
+export const BLUE_PANEL = '#bcccea';
+export const RING_ARC = '#4472c4';
+export const RING_TRACK = '#dbe4f3';
 const DOT: Record<HealthState, string> = {
   good: '#22b04b',
   monitor: '#e0b100',
@@ -68,7 +68,7 @@ function recommendationText(
 
 /* ─── Building blocks ─────────────────────────────────────────────────────── */
 
-function SectionBar({ heading }: { heading: string }) {
+export function SectionBar({ heading }: { heading: string }) {
   return (
     <div className="rounded-sm px-4 py-2 text-lg font-bold text-[#16243a]" style={{ backgroundColor: BLUE_PANEL }}>
       {heading}
@@ -81,7 +81,7 @@ function SectionBar({ heading }: { heading: string }) {
  * its widest label via `max-content`, so longer translated labels (e.g. Thai
  * "หมายเลขเครื่อง (SN)") stay on one line instead of wrapping.
  */
-function InfoTable({ rows }: { rows: [string, string][] }) {
+export function InfoTable({ rows }: { rows: [string, string][] }) {
   return (
     <div className="grid grid-cols-[max-content_1fr] overflow-hidden rounded-sm border border-white">
       {rows.map(([label, value], i) => (
@@ -101,7 +101,7 @@ function InfoTable({ rows }: { rows: [string, string][] }) {
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
+export function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline gap-4 py-1.5">
       <span className="w-48 shrink-0 text-[#16243a]">{label}</span>
@@ -111,7 +111,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 /** SVG donut gauge with the percentage centred. */
-function RingGauge({ label, percent }: { label: string; percent: number }) {
+export function RingGauge({ label, percent }: { label: string; percent: number }) {
   const radius = 52;
   const circumference = 2 * Math.PI * radius;
   const pct = Math.min(100, Math.max(0, percent));
@@ -157,7 +157,7 @@ function ConsumableRow({ item }: { item: ConsumableStatus }) {
 /* ─── Sub-sections ────────────────────────────────────────────────────────── */
 
 /** Formats a number with thousands separators (e.g. 76349.79 -> "76,349.79"). */
-function formatNumber(n: number): string {
+export function formatNumber(n: number): string {
   return n.toLocaleString('en-US', { maximumFractionDigits: 2 });
 }
 

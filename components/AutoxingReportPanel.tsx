@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { autoxingApi } from '@/lib/api';
 import { DeliveryReportView } from '@/components/report/DeliveryReportView';
+import { DeliveryPerformanceReportView } from '@/components/report/DeliveryPerformanceReportView';
 import type { AutoxingLiveStatus } from '@/types/api';
 
 /** Local date "YYYY-MM-DD" for today minus {@code daysAgo}. */
@@ -124,6 +125,12 @@ export function AutoxingReportPanel() {
   const [from, setFrom] = useState(() => isoDate(29));
   const [to, setTo] = useState(() => isoDate(0));
 
+  // Prototype switch: the delivery-robot performance report (new) or the original
+  // delivery summary. Both are live pulls; only the performance one is headed for
+  // the monthly customer bundle.
+  const [layout, setLayout] = useState<'performance' | 'summary'>('performance');
+  const [includeServiceCases, setIncludeServiceCases] = useState(true);
+
   const mutation = useMutation({
     mutationFn: () =>
       autoxingApi
@@ -131,8 +138,17 @@ export function AutoxingReportPanel() {
         .then((r) => r.data.data),
   });
 
-  const canSubmit = robotId.trim().length > 0 && !mutation.isPending;
-  const report = mutation.data;
+  const performance = useMutation({
+    mutationFn: () =>
+      autoxingApi
+        .performance(robotId.trim(), from, to, robotName.trim(), model.trim(), includeServiceCases)
+        .then((r) => r.data.data),
+  });
+
+  const active = layout === 'performance' ? performance : mutation;
+  const canSubmit = robotId.trim().length > 0 && !active.isPending;
+  const report = layout === 'summary' ? mutation.data : undefined;
+  const performanceReport = layout === 'performance' ? performance.data : undefined;
 
   return (
     <div className="space-y-5">
@@ -151,6 +167,43 @@ export function AutoxingReportPanel() {
 
       {/* Controls */}
       <div className="space-y-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="inline-flex rounded-lg border border-[var(--app-border)] p-0.5 text-sm">
+            {(
+              [
+                ['performance', 'Performance report (new)'],
+                ['summary', 'Delivery summary (current)'],
+              ] as const
+            ).map(([id, text]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setLayout(id)}
+                className={`rounded-md px-3 py-1.5 font-medium transition ${
+                  layout === id
+                    ? 'bg-[var(--app-brand)] text-white shadow-sm'
+                    : 'text-[var(--app-muted)] hover:text-[var(--app-text)]'
+                }`}
+              >
+                {text}
+              </button>
+            ))}
+          </div>
+          {layout === 'performance' && (
+            <label className="inline-flex items-center gap-2 text-sm text-[var(--app-text)]">
+              <input
+                type="checkbox"
+                checked={includeServiceCases}
+                onChange={(e) => setIncludeServiceCases(e.target.checked)}
+                className="h-4 w-4 accent-[var(--app-brand)]"
+              />
+              Include service cases
+            </label>
+          )}
+          <span className="text-xs text-[var(--app-muted)]">
+            {layout === 'performance' ? 'Max 31 days — use a calendar month for the real report.' : 'Max 30 days.'}
+          </span>
+        </div>
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
             Robot ID
@@ -208,14 +261,14 @@ export function AutoxingReportPanel() {
           </label>
           <button
             type="button"
-            onClick={() => mutation.mutate()}
+            onClick={() => active.mutate()}
             disabled={!canSubmit}
             className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--app-brand)] px-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
           >
-            {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gauge className="h-4 w-4" />}
-            {mutation.isPending ? 'Generating…' : 'Generate report'}
+            {active.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gauge className="h-4 w-4" />}
+            {active.isPending ? 'Generating…' : 'Generate report'}
           </button>
-          {report && (
+          {(report || performanceReport) && (
             <button
               type="button"
               onClick={() => window.print()}
@@ -228,10 +281,23 @@ export function AutoxingReportPanel() {
         </div>
       </div>
 
-      {mutation.isError && (
+      {active.isError && (
         <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          {errorMessage(mutation.error, 'Could not generate the report — check the robot ID, AutoXing credentials, and the date range.')}
+          {errorMessage(active.error, 'Could not generate the report — check the robot ID, AutoXing credentials, and the date range.')}
+        </p>
+      )}
+
+      {performanceReport && (
+        <div className="overflow-hidden rounded-2xl border border-[var(--app-border)] shadow-sm">
+          <DeliveryPerformanceReportView report={performanceReport} />
+        </div>
+      )}
+
+      {performanceReport && performanceReport.notes.length > 0 && (
+        <p className="px-1 text-xs leading-5 text-[var(--app-muted)]">
+          {performanceReport.notes.includes('previous_period_unavailable') && 'The previous period could not be read, so there is no month-on-month comparison. '}
+          {performanceReport.notes.includes('service_cases_unavailable') && 'Service cases could not be read from the ticket data.'}
         </p>
       )}
 
