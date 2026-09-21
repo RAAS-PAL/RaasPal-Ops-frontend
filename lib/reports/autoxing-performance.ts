@@ -58,6 +58,23 @@ export interface DeliveryPerformanceReport {
     stillOpen: number;
     medianDaysToAction: number | null;
   } | null;
+  /** Recorded fault history (the fleet poller); null when it could not be read. */
+  faults: {
+    recordingSince: string | null;
+    partialPeriod: boolean;
+    errorOccurrences: number;
+    errors: {
+      code: number;
+      message: string | null;
+      level: number | null;
+      occurrences: number;
+      activeSeconds: number;
+      activeNow: boolean;
+    }[];
+    emergencyStops: number;
+    emergencyStopSeconds: number;
+    offlineSeconds: number;
+  } | null;
   recommendations: { code: string; params: Record<string, string | number> }[];
   notes: string[];
 }

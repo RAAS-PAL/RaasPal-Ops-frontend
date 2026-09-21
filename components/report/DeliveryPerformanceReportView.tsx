@@ -181,6 +181,11 @@ function recommendationText(rec: DeliveryPerformanceReport['recommendations'][nu
       });
     case 'USAGE_DROP':
       return t('rec.USAGE_DROP', { value: Math.abs(Number(p.value)) });
+    case 'ROBOT_FAULTS':
+      return t('rec.ROBOT_FAULTS', {
+        count: p.count,
+        message: p.message ? t('rec.faultMessageSuffix', { message: String(p.message) }) : '',
+      });
     default:
       return t.has(`rec.${rec.code}`) ? t(`rec.${rec.code}`, p) : rec.code;
   }
@@ -314,6 +319,32 @@ export function DeliveryPerformanceReportView({ report }: { report: DeliveryPerf
                   perDay: r.chargingPerActiveDay == null ? '—' : r.chargingPerActiveDay,
                 })}
               </span>
+
+              {report.faults && (
+                <>
+                  <span>{t('robotFaults')}</span>
+                  <span>
+                    {report.faults.recordingSince == null ? (
+                      <span style={{ color: MUTED }}>{t('faultsNotRecorded')}</span>
+                    ) : report.faults.errorOccurrences === 0 ? (
+                      t('noFaults')
+                    ) : (
+                      report.faults.errors
+                        .map((f) => `${f.message ?? t('faultCode', { code: f.code })} ×${f.occurrences}`)
+                        .join(' · ')
+                    )}
+                    {report.faults.emergencyStops > 0 && (
+                      <span> · {t('emergencyStops', { count: report.faults.emergencyStops })}</span>
+                    )}
+                    {report.faults.recordingSince != null && report.faults.partialPeriod && (
+                      <span style={{ color: MUTED }}>
+                        {' '}
+                        ({t('recordedSince', { date: report.faults.recordingSince.slice(0, 10) })})
+                      </span>
+                    )}
+                  </span>
+                </>
+              )}
 
               {c && (
                 <>

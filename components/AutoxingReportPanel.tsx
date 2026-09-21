@@ -298,6 +298,7 @@ export function AutoxingReportPanel() {
         <p className="px-1 text-xs leading-5 text-[var(--app-muted)]">
           {performanceReport.notes.includes('previous_period_unavailable') && 'The previous period could not be read, so there is no month-on-month comparison. '}
           {performanceReport.notes.includes('service_cases_unavailable') && 'Service cases could not be read from the ticket data.'}
+          {performanceReport.notes.includes('faults_unavailable') && ' The recorded fault history could not be read.'}
         </p>
       )}
 

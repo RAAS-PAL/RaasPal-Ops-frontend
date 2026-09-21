@@ -1562,7 +1562,16 @@
       "PEAK_HOURS": "{value}% of tasks fall between {start} and {end}. Consider planning staff and deliveries around this peak.",
       "USAGE_DROP": "Task volume fell {value}% compared with the previous period.",
       "OPEN_SERVICE_CASES": "{count} service case(s) are still open. RAAS PAL is following up.",
-      "HEALTHY": "The robot performed well this period. No action is needed."
-    }
+      "HEALTHY": "The robot performed well this period. No action is needed.",
+      "ROBOT_FAULTS": "The robot reported {count} fault(s){message}. RAAS PAL will check the robot and follow up with AutoXing where needed.",
+      "faultMessageSuffix": ", most often \"{message}\"",
+      "EMERGENCY_STOPS": "The emergency stop was pressed {count} time(s). Please remind staff to release it once the path is clear."
+    },
+    "robotFaults": "Robot faults",
+    "faultsNotRecorded": "Not recorded yet",
+    "noFaults": "None recorded",
+    "faultCode": "Error {code}",
+    "emergencyStops": "E-stop ×{count}",
+    "recordedSince": "recorded since {date}"
   }
 }
