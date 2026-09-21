@@ -16,6 +16,8 @@ export interface DeliveryPerformanceReport {
   model: string | null;
   customerName: string;
   siteBranch: string;
+  /** True when the header comes from Tools -> Robots; false = AutoXing's own names. */
+  registered: boolean;
   periodLabel: string;
   from: string;
   to: string;

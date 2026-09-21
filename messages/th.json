@@ -131,7 +131,8 @@
     "deactivateAria": "ปิดการใช้งาน {name}",
     "cadenceMonthly": "รายเดือน",
     "cadenceWeekly": "รายสัปดาห์",
-    "cadenceOff": "ปิด"
+    "cadenceOff": "ปิด",
+    "autoxingSerialHint": "คัดลอก Robot ID จากระบบ AutoXing ระบบจะตรวจสอบกับรายการหุ่นยนต์ของ AutoXing เมื่อบันทึก — ID มีทั้งตัว \"l\" พิมพ์เล็กและ \"I\" พิมพ์ใหญ่"
   },
   "nav": {
     "dashboard": "แดชบอร์ด",

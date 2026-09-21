@@ -36,7 +36,9 @@ import type {
   UpdateRobotRequest,
 } from '@/types/api';
 
-const BRANDS = ['GAUSIUM', 'KEENON', 'CENOBOT'];
+// AUTOXING and PUDU are delivery robots: the backend registers them as DELIVERY
+// (not CLEANING) and keeps them out of the cleaning report bundle.
+const BRANDS = ['GAUSIUM', 'KEENON', 'CENOBOT', 'AUTOXING', 'PUDU'];
 // Weekly is intentionally omitted — automated report delivery only sends MONTHLY.
 const CADENCES: ReportCadence[] = ['MONTHLY', 'OFF'];
 const CADENCE_KEY: Record<ReportCadence, string> = {
@@ -348,10 +350,13 @@ export function RobotsPanel() {
               className={`${inputClass} disabled:cursor-not-allowed disabled:opacity-60`}
               value={form.serialNumber}
               onChange={(e) => field('serialNumber', e.target.value)}
-              placeholder="GS401-XXXX-0001"
+              placeholder={form.brand === 'AUTOXING' ? '2382410c042997l' : 'GS401-XXXX-0001'}
               disabled={!!editing}
               title={editing ? t('serialImmutable') : undefined}
             />
+            {!editing && form.brand === 'AUTOXING' && (
+              <p className="text-xs text-[var(--app-muted)]">{t('autoxingSerialHint')}</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-[var(--app-muted)]">{t('brand')} *</label>

@@ -131,7 +131,8 @@
     "deactivateAria": "Deactivate {name}",
     "cadenceMonthly": "Monthly",
     "cadenceWeekly": "Weekly",
-    "cadenceOff": "Off"
+    "cadenceOff": "Off",
+    "autoxingSerialHint": "Copy the Robot ID from the AutoXing platform. It is checked against the AutoXing fleet on save — IDs mix a lowercase \"l\" and a capital \"I\"."
   },
   "nav": {
     "dashboard": "Dashboard",

@@ -11,8 +11,8 @@
  * operator card — deliberately NOT inside the printable report, which describes
  * only the reporting period.
  */
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
   BatteryMedium,
@@ -23,10 +23,11 @@ import {
   Wifi,
   WifiOff,
 } from 'lucide-react';
-import { autoxingApi } from '@/lib/api';
+import { autoxingApi, robotUnitApi } from '@/lib/api';
 import { DeliveryReportView } from '@/components/report/DeliveryReportView';
 import { DeliveryPerformanceReportView } from '@/components/report/DeliveryPerformanceReportView';
-import type { AutoxingLiveStatus } from '@/types/api';
+import { Link } from '@/i18n/navigation';
+import type { AutoxingLiveStatus, RobotUnitResponse } from '@/types/api';
 
 /** Local date "YYYY-MM-DD" for today minus {@code daysAgo}. */
 function isoDate(daysAgo = 0): string {
@@ -145,6 +146,34 @@ export function AutoxingReportPanel() {
         .then((r) => r.data.data),
   });
 
+  // AutoXing robots registered in Tools -> Robots, grouped by customer. Picking one fills
+  // the robot ID from the registration, so it is never retyped (the l/I trap).
+  const registered = useQuery({
+    queryKey: ['robot-units', 'autoxing'],
+    queryFn: () =>
+      robotUnitApi.list().then((r) =>
+        (r.data.data ?? []).filter(
+          (u: RobotUnitResponse) => u.brand?.toUpperCase() === 'AUTOXING' && u.deployment?.active,
+        ),
+      ),
+  });
+  const byCustomer = useMemo(() => {
+    const groups = new Map<string, RobotUnitResponse[]>();
+    for (const u of registered.data ?? []) {
+      const key = u.deployment?.customerName ?? '—';
+      groups.set(key, [...(groups.get(key) ?? []), u]);
+    }
+    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [registered.data]);
+
+  function pickRegistered(serial: string) {
+    const unit = (registered.data ?? []).find((u) => u.serialNumber === serial);
+    if (!unit) return;
+    setRobotId(unit.serialNumber);
+    setRobotName(unit.name ?? '');
+    setModel(unit.model ?? '');
+  }
+
   const active = layout === 'performance' ? performance : mutation;
   const canSubmit = robotId.trim().length > 0 && !active.isPending;
   const report = layout === 'summary' ? mutation.data : undefined;
@@ -204,6 +233,43 @@ export function AutoxingReportPanel() {
             {layout === 'performance' ? 'Max 31 days — use a calendar month for the real report.' : 'Max 30 days.'}
           </span>
         </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex min-w-72 flex-1 flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
+            Registered robot
+            <select
+              value={(registered.data ?? []).some((u) => u.serialNumber === robotId) ? robotId : ''}
+              onChange={(e) => pickRegistered(e.target.value)}
+              className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm font-normal text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
+            >
+              <option value="">
+                {registered.isLoading
+                  ? 'Loading…'
+                  : (registered.data ?? []).length === 0
+                    ? 'No AutoXing robots registered yet'
+                    : 'Choose customer · robot…'}
+              </option>
+              {byCustomer.map(([customer, units]) => (
+                <optgroup key={customer} label={customer}>
+                  {units.map((u) => (
+                    <option key={u.serialNumber} value={u.serialNumber}>
+                      {[u.name, u.model, u.deployment?.site].filter(Boolean).join(' · ') || u.serialNumber} ({u.serialNumber})
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
+          {registered.isSuccess && (registered.data ?? []).length === 0 && (
+            <p className="pb-2 text-xs text-[var(--app-muted)]">
+              Register them in{' '}
+              <Link href="/tools?tab=robots" className="font-semibold text-[var(--app-brand-dark)] hover:underline">
+                Tools → Robots
+              </Link>{' '}
+              (brand AUTOXING), or type an ID below for a one-off report.
+            </p>
+          )}
+        </div>
+
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
             Robot ID
@@ -285,6 +351,14 @@ export function AutoxingReportPanel() {
         <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           {errorMessage(active.error, 'Could not generate the report — check the robot ID, AutoXing credentials, and the date range.')}
+        </p>
+      )}
+
+      {performanceReport && (
+        <p className="px-1 text-xs text-[var(--app-muted)]">
+          {performanceReport.registered
+            ? 'Customer, site, robot name and model come from Tools → Robots; the period is clipped to the contract dates.'
+            : 'This robot is not registered in Tools → Robots, so the customer and site are AutoXing’s own names.'}
         </p>
       )}
 
