@@ -45,6 +45,9 @@ export interface AssignmentView {
   endedBy: string | null;
   emailStatus: 'NOT_SENT' | 'SENT' | 'FAILED' | 'DISABLED' | 'NO_ADDRESS';
   emailDetail: string | null;
+  /** What happened in the board's RE column. */
+  mondayStatus: 'NOT_WRITTEN' | 'WRITTEN' | 'CLEARED' | 'LEFT';
+  mondayDetail: string | null;
 }
 
 export interface QueueRow {
@@ -75,6 +78,8 @@ export interface QueueRow {
   excluded: Exclusion[];
   assignment: AssignmentView | null;
   mondayUrl: string | null;
+  /** The day availability was checked for: the RE Action date when set and not past, else today. */
+  forDate: string | null;
 }
 
 export interface QueueView {
@@ -86,6 +91,8 @@ export interface QueueView {
   canManage: boolean;
   engineers: number;
   engineersWithoutMondayId: number;
+  /** Approving sets the engineer as RE on monday. */
+  mondayWriteEnabled: boolean;
 }
 
 export interface RefreshResult {
@@ -123,6 +130,29 @@ export interface EngineerRequest {
   maxLoad?: number | null;
   note?: string | null;
   active?: boolean;
+}
+
+/** Days an engineer is booked on a job, so they are not suggested for other work then. */
+export interface ScheduleView {
+  id: string;
+  engineerId: string;
+  engineerName: string | null;
+  itemId: string | null;
+  ticketName: string | null;
+  assignmentId: string | null;
+  startsOn: string;
+  endsOn: string;
+  note: string | null;
+  createdBy: string;
+}
+
+export interface ApproveBody {
+  itemId: string;
+  engineerId: string;
+  origin?: string;
+  reason?: string;
+  bookedFrom?: string;
+  bookedTo?: string;
 }
 
 export interface LeaveView {

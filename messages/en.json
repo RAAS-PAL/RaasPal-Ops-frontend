@@ -1609,7 +1609,7 @@
       "emptyFirst": "No tickets yet — press \"Refresh from monday\" to read the open tickets.",
       "noEngineers": "No engineers yet. Import the skill matrix workbook to add them with their levels.",
       "goSkills": "Go to Skill matrix",
-      "missingMonday": "{n} engineer(s) are not linked to a monday account, so their current workload can't be seen.",
+      "missingMonday": "{n} engineer(s) are not linked to a monday account: their workload can't be seen and they can't be approved until linked.",
       "goEngineers": "Link them",
       "emailOff": "Assignment emails are switched off on this server — approvals are recorded but no email is sent.",
       "noDifficulty": "Difficulty not set",
@@ -1653,7 +1653,9 @@
         "people": "RE on monday",
         "approvedBy": "Approved by",
         "why": "Reason",
-        "email": "Email"
+        "email": "Email",
+        "forDate": "Staffed for",
+        "monday": "monday"
       },
       "category": {
         "ELECTRICAL": "Electrical",
@@ -1664,7 +1666,21 @@
       "model": "Model",
       "load": "Load now → after",
       "excluded": "Not suggested",
-      "scoreHint": "Score = 100 − 8×levels above need − 30×load share + 2×matching expertise + 3×rotation + 4×development − 20×keep expert free. Hover a row for its parts."
+      "scoreHint": "Score = 100 − 8×levels above need − 30×load share + 2×matching expertise + 3×rotation + 4×development − 20×keep expert free. Hover a row for its parts.",
+      "mondayWriteOn": "Approving sets the engineer as RE on monday. Engineers must be linked to their monday person first.",
+      "forDay": "for {date}",
+      "approveWritesHint": "Approving also sets them as RE on the monday ticket.",
+      "cancelWritesHint": "Cancelling also removes them from the monday ticket, if it still shows only them.",
+      "cancelPromptMonday": "Why cancel this approval? The engineer will also be removed from the RE column on monday.",
+      "bookFrom": "Booked from",
+      "bookTo": "Booked to",
+      "bookHint": "For a job that runs several days, book the dates: the engineer won't be suggested for other work on those days.",
+      "monday": {
+        "NOT_WRITTEN": "not on monday yet",
+        "WRITTEN": "set on monday",
+        "CLEARED": "removed from monday",
+        "LEFT": "monday left as is"
+      }
     },
     "engineers": {
       "title": "Engineers ({n} active)",
@@ -1700,7 +1716,7 @@
       "create": "Add engineer",
       "saveFailed": "Couldn't save.",
       "leaveTitle": "Leave and days off",
-      "leaveHint": "An engineer on leave today is never suggested.",
+      "leaveHint": "An engineer on leave is not suggested for work on those days.",
       "engineer": "Engineer",
       "pick": "Pick…",
       "from": "From",
@@ -1712,7 +1728,13 @@
       "managersHint": "Admins always can. An admin can also give a Senior RE access here.",
       "userEmail": "User email",
       "grant": "Give access",
-      "noManagers": "Only admins for now."
+      "noManagers": "Only admins for now.",
+      "bookingsTitle": "Booked jobs",
+      "bookingsHint": "Days an engineer is out on a job - e.g. an installation that takes a week. They won't be suggested for other work on these days. A booking for a ticket stops counting once the ticket is done. Tickets whose RE Action date is set and that are On Site block that day automatically.",
+      "ticket": "Ticket",
+      "noTicket": "No ticket",
+      "addBooking": "Book",
+      "noBookings": "No bookings from today on."
     },
     "skills": {
       "title": "Skill matrix",
@@ -1804,6 +1826,13 @@
         "SUGGESTION": "Suggestion",
         "ALTERNATIVE": "Alternative",
         "MANUAL": "Manual choice"
+      },
+      "monday": "monday",
+      "mondayKind": {
+        "NOT_WRITTEN": "not on monday yet",
+        "WRITTEN": "set on monday",
+        "CLEARED": "removed from monday",
+        "LEFT": "monday left as is"
       }
     }
   }

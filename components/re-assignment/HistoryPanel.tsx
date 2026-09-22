@@ -28,7 +28,7 @@ export function HistoryPanel() {
         <p className="py-6 text-center text-sm text-[var(--app-muted)]">{t('empty')}</p>
       ) : (
         <div className="-mx-4 overflow-x-auto sm:-mx-5">
-          <table className="w-full min-w-[900px] text-sm">
+          <table className="w-full min-w-[1000px] text-sm">
             <thead>
               <tr className="border-b border-[var(--app-border)] text-left text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">
                 <th className="px-4 py-2 sm:px-5">{t('ticket')}</th>
@@ -36,6 +36,7 @@ export function HistoryPanel() {
                 <th className="px-2 py-2">{t('status')}</th>
                 <th className="px-2 py-2">{t('origin')}</th>
                 <th className="px-2 py-2">{t('reason')}</th>
+                <th className="px-2 py-2">{t('monday')}</th>
                 <th className="px-2 py-2">{t('email')}</th>
                 <th className="px-4 py-2 sm:px-5">{t('approved')}</th>
               </tr>
@@ -54,6 +55,7 @@ export function HistoryPanel() {
                   </td>
                   <td className="px-2 py-2 text-xs text-[var(--app-muted)]">{t(`originKind.${a.origin}`)}</td>
                   <td className="max-w-[280px] px-2 py-2 text-xs text-[var(--app-text)]">{a.reason}</td>
+                  <td className="px-2 py-2 text-xs text-[var(--app-muted)]" title={a.mondayDetail ?? ''}>{t(`mondayKind.${a.mondayStatus}`)}</td>
                   <td className="px-2 py-2 text-xs text-[var(--app-muted)]" title={a.emailDetail ?? ''}>{a.emailStatus}</td>
                   <td className="whitespace-nowrap px-4 py-2 text-xs text-[var(--app-muted)] sm:px-5">
                     {fmtDateTime(a.approvedAt, locale)}

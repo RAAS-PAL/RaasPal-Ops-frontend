@@ -19,7 +19,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { reAssignmentApi } from '@/lib/api';
-import type { Candidate, Outcome, QueueRow, QueueView } from '@/lib/re-assignment/types';
+import type { ApproveBody, Candidate, Outcome, QueueRow, QueueView } from '@/lib/re-assignment/types';
 import {
   Card,
   ErrorLine,
@@ -157,6 +157,7 @@ export function QueuePanel({ onGoTo }: { onGoTo: (tab: 'engineers' | 'skills' | 
                 key={row.itemId}
                 row={row}
                 canManage={data?.canManage ?? false}
+                mondayWrite={data?.mondayWriteEnabled ?? false}
                 expanded={openRow === row.itemId}
                 onToggle={() => setOpenRow(openRow === row.itemId ? null : row.itemId)}
               />
@@ -175,6 +176,7 @@ function Notices({ data, onGoTo }: { data: QueueView; onGoTo: (tab: 'engineers' 
   if (data.engineersWithoutMondayId > 0) {
     notes.push({ text: t('missingMonday', { n: data.engineersWithoutMondayId }), action: { label: t('goEngineers'), tab: 'engineers' } });
   }
+  if (data.mondayWriteEnabled) notes.push({ text: t('mondayWriteOn') });
   if (!data.emailEnabled) notes.push({ text: t('emailOff') });
   if (notes.length === 0) return null;
   return (
@@ -197,9 +199,12 @@ function Notices({ data, onGoTo }: { data: QueueView; onGoTo: (tab: 'engineers' 
   );
 }
 
-function TicketRow({ row, canManage, expanded, onToggle }: {
+type ApproveInput = Omit<ApproveBody, 'itemId'>;
+
+function TicketRow({ row, canManage, mondayWrite, expanded, onToggle }: {
   row: QueueRow;
   canManage: boolean;
+  mondayWrite: boolean;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -213,8 +218,7 @@ function TicketRow({ row, canManage, expanded, onToggle }: {
   };
 
   const approve = useMutation({
-    mutationFn: (v: { engineerId: string; origin: string; reason?: string }) =>
-      reAssignmentApi.approve({ itemId: row.itemId, ...v }).then((r) => r.data.data),
+    mutationFn: (v: ApproveInput) => reAssignmentApi.approve({ itemId: row.itemId, ...v }).then((r) => r.data.data),
     onSuccess: () => {
       setChoosing(false);
       invalidate();
@@ -233,6 +237,10 @@ function TicketRow({ row, canManage, expanded, onToggle }: {
 
   const busy = approve.isPending || hold.isPending || release.isPending || cancel.isPending || resend.isPending;
   const site = [row.customer, row.branch].filter(Boolean).join(' · ');
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+  const futureDay = row.forDate && row.forDate !== today ? row.forDate : null;
+  // A current approval can be withdrawn whether it is still waiting or already on monday.
+  const ownAssignment = row.assignment && (row.outcome === 'APPROVED' || row.outcome === 'ASSIGNED') ? row.assignment : null;
 
   return (
     <div className={expanded ? 'bg-[var(--app-panel-alt)]' : ''}>
@@ -276,6 +284,11 @@ function TicketRow({ row, canManage, expanded, onToggle }: {
               {t('assumed')}
             </span>
           )}
+          {futureDay && ['SUGGESTED', 'ALL_BUSY'].includes(row.outcome) && (
+            <span className="ml-1.5 inline-flex rounded-md bg-[var(--app-faint)] px-2 py-0.5 text-xs font-semibold text-[var(--app-muted)]">
+              {t('forDay', { date: fmtDate(futureDay, locale) })}
+            </span>
+          )}
           {row.outcome === 'SUGGESTED' && row.suggested ? (
             <p className="mt-1 text-sm">
               <span className="font-semibold text-[var(--app-text)]">{row.suggested.name}</span>
@@ -290,7 +303,7 @@ function TicketRow({ row, canManage, expanded, onToggle }: {
             <p className="mt-1 text-sm">
               <span className="font-semibold text-[var(--app-text)]">{row.assignment.engineerName}</span>
               <span className="ml-1 text-xs text-[var(--app-muted)]">
-                · {t(`email.${row.assignment.emailStatus}`)}
+                · {t(`monday.${row.assignment.mondayStatus}`)} · {t(`email.${row.assignment.emailStatus}`)}
               </span>
             </p>
           ) : row.outcome === 'ASSIGNED' ? (
@@ -308,6 +321,7 @@ function TicketRow({ row, canManage, expanded, onToggle }: {
                 type="button"
                 disabled={busy}
                 onClick={() => approve.mutate({ engineerId: row.suggested!.engineerId, origin: 'SUGGESTION' })}
+                title={mondayWrite ? t('approveWritesHint') : undefined}
                 className={primaryButton}
               >
                 {approve.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
@@ -341,17 +355,18 @@ function TicketRow({ row, canManage, expanded, onToggle }: {
                 {t('release')}
               </button>
             )}
-            {row.assignment && row.outcome === 'APPROVED' && (
+            {ownAssignment && (
               <>
-                <button type="button" disabled={busy} onClick={() => resend.mutate()} className={secondaryButton} title={row.assignment.emailDetail ?? ''}>
+                <button type="button" disabled={busy} onClick={() => resend.mutate()} className={secondaryButton} title={ownAssignment.emailDetail ?? ''}>
                   <Mail className="h-4 w-4" />
                   {t('resend')}
                 </button>
                 <button
                   type="button"
                   disabled={busy}
+                  title={ownAssignment.mondayStatus === 'WRITTEN' ? t('cancelWritesHint') : undefined}
                   onClick={() => {
-                    const reason = window.prompt(t('cancelPrompt'));
+                    const reason = window.prompt(ownAssignment.mondayStatus === 'WRITTEN' ? t('cancelPromptMonday') : t('cancelPrompt'));
                     if (reason && reason.trim()) cancel.mutate(reason.trim());
                   }}
                   className={secondaryButton}
@@ -375,18 +390,19 @@ function TicketRow({ row, canManage, expanded, onToggle }: {
       </div>
 
       {choosing && canManage && (
-        <ChoosePanel row={row} busy={approve.isPending} onApprove={(v) => approve.mutate(v)} onClose={() => setChoosing(false)} />
+        <ChoosePanel row={row} busy={approve.isPending} mondayWrite={mondayWrite} onApprove={(v) => approve.mutate(v)} onClose={() => setChoosing(false)} />
       )}
       {expanded && <Detail row={row} canManage={canManage} />}
     </div>
   );
 }
 
-/** Pick an alternative, or anyone active, with a reason. */
-function ChoosePanel({ row, busy, onApprove, onClose }: {
+/** Pick an alternative, or anyone active, with a reason - and optionally book them for the days the job takes. */
+function ChoosePanel({ row, busy, mondayWrite, onApprove, onClose }: {
   row: QueueRow;
   busy: boolean;
-  onApprove: (v: { engineerId: string; origin: string; reason?: string }) => void;
+  mondayWrite: boolean;
+  onApprove: (v: ApproveInput) => void;
   onClose: () => void;
 }) {
   const t = useTranslations('reAssignment.queue');
@@ -397,6 +413,9 @@ function ChoosePanel({ row, busy, onApprove, onClose }: {
   const ranked = [row.suggested, ...row.alternatives].filter(Boolean) as Candidate[];
   const [engineerId, setEngineerId] = useState<string>(ranked[1]?.engineerId ?? ranked[0]?.engineerId ?? '');
   const [reason, setReason] = useState('');
+  const [bookedFrom, setBookedFrom] = useState(row.forDate ?? '');
+  const [bookedTo, setBookedTo] = useState('');
+  const bookingInvalid = (bookedTo !== '' && bookedFrom === '') || (bookedFrom !== '' && bookedTo !== '' && bookedTo < bookedFrom);
   const isSuggested = row.suggested?.engineerId === engineerId;
   const isRanked = ranked.some((c) => c.engineerId === engineerId);
   const exclusion = row.excluded.find((x) => x.engineerId === engineerId);
@@ -436,14 +455,25 @@ function ChoosePanel({ row, busy, onApprove, onClose }: {
           {t('reason')} {!isSuggested && <span className="text-red-600">*</span>}
           <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('reasonHint')} className={inputClass} />
         </label>
+        <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]" title={t('bookHint')}>
+          {t('bookFrom')}
+          <input type="date" value={bookedFrom} onChange={(e) => setBookedFrom(e.target.value)} className={inputClass} />
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]" title={t('bookHint')}>
+          {t('bookTo')}
+          <input type="date" value={bookedTo} min={bookedFrom || undefined} onChange={(e) => setBookedTo(e.target.value)} className={inputClass} />
+        </label>
         <button
           type="button"
-          disabled={busy || !engineerId || (!isSuggested && !reason.trim())}
+          disabled={busy || !engineerId || (!isSuggested && !reason.trim()) || bookingInvalid}
           onClick={() =>
             onApprove({
               engineerId,
               origin: isSuggested ? 'SUGGESTION' : isRanked ? 'ALTERNATIVE' : 'MANUAL',
               reason: reason.trim() || undefined,
+              // A booking needs an end date; the pre-filled start date alone books nothing.
+              bookedFrom: bookedTo ? bookedFrom : undefined,
+              bookedTo: bookedTo || undefined,
             })
           }
           className={primaryButton}
@@ -455,6 +485,7 @@ function ChoosePanel({ row, busy, onApprove, onClose }: {
           {t('close')}
         </button>
       </div>
+      <p className="mt-2 text-xs text-[var(--app-muted)]">{t('bookHint')}{mondayWrite ? ` ${t('approveWritesHint')}` : ''}</p>
       {exclusion && <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">{t('overrideWarning', { reason: exclusion.reason })}</p>}
     </div>
   );
@@ -473,11 +504,13 @@ function Detail({ row, canManage }: { row: QueueRow; canManage: boolean }) {
         <Fact label={t('facts.issue')} value={row.mainIssue} />
         <Fact label={t('facts.category')} value={row.issueCategory ? t(`category.${row.issueCategory}`) : null} />
         <Fact label={t('facts.reason')} value={row.reason} />
+        <Fact label={t('facts.forDate')} value={row.forDate} />
         <Fact label={t('facts.people')} value={row.people.join(', ')} />
         {row.assignment && (
           <>
             <Fact label={t('facts.approvedBy')} value={`${row.assignment.approvedBy} · ${row.assignment.origin}`} />
             <Fact label={t('facts.why')} value={row.assignment.reason} />
+            <Fact label={t('facts.monday')} value={[t(`monday.${row.assignment.mondayStatus}`), row.assignment.mondayDetail].filter(Boolean).join(' · ')} />
             <Fact label={t('facts.email')} value={row.assignment.emailDetail} />
           </>
         )}

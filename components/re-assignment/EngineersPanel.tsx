@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
-import { CalendarOff, Loader2, Pencil, Plus, ShieldCheck, Trash2, UserPlus } from 'lucide-react';
+import { CalendarClock, CalendarOff, Loader2, Pencil, Plus, ShieldCheck, Trash2, UserPlus } from 'lucide-react';
 import { reAssignmentApi } from '@/lib/api';
 import type { EngineerRequest, EngineerView, MondayPerson } from '@/lib/re-assignment/types';
 import { Card, ErrorLine, fmtDate, inputClass, primaryButton, secondaryButton } from './shared';
@@ -110,6 +110,7 @@ export function EngineersPanel({ isAdmin }: { isAdmin: boolean }) {
         )}
       </Card>
 
+      <BookingsCard engineers={list} />
       <LeaveCard engineers={list} />
       <ManagersCard isAdmin={isAdmin} />
     </div>
@@ -317,6 +318,92 @@ function LeaveCard({ engineers }: { engineers: EngineerView[] }) {
               {l.note ? ` · ${l.note}` : ''}
             </span>
             <button type="button" onClick={() => remove.mutate(l.id)} className="ml-auto text-[var(--app-muted)] hover:text-red-600" aria-label={t('remove')}>
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+/**
+ * Days an engineer is booked on a job - usually one that runs several days - so they are not
+ * suggested for other work then. A booking for a ticket stops counting once the ticket is done.
+ */
+function BookingsCard({ engineers }: { engineers: EngineerView[] }) {
+  const t = useTranslations('reAssignment.engineers');
+  const locale = useLocale();
+  const qc = useQueryClient();
+  const bookings = useQuery({ queryKey: ['re-bookings'], queryFn: () => reAssignmentApi.bookings().then((r) => r.data.data ?? []) });
+  const queue = useQuery({ queryKey: ['re-queue'], queryFn: () => reAssignmentApi.queue().then((r) => r.data.data) });
+  const tickets = [...(queue.data?.rows ?? [])].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+  const [f, setF] = useState({ engineerId: '', itemId: '', startsOn: today, endsOn: today, note: '' });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['re-bookings'] });
+    qc.invalidateQueries({ queryKey: ['re-queue'] });
+  };
+  const add = useMutation({
+    mutationFn: () => reAssignmentApi.addBooking({ ...f, itemId: f.itemId || undefined, note: f.note || undefined }),
+    onSuccess: () => {
+      setF({ ...f, itemId: '', note: '' });
+      invalidate();
+    },
+  });
+  const remove = useMutation({ mutationFn: (id: string) => reAssignmentApi.deleteBooking(id), onSuccess: invalidate });
+
+  return (
+    <Card title={t('bookingsTitle')} hint={t('bookingsHint')}>
+      <div className="flex flex-wrap items-end gap-2">
+        <Field label={t('engineer')}>
+          <select value={f.engineerId} onChange={(e) => setF({ ...f, engineerId: e.target.value })} className={inputClass}>
+            <option value="">{t('pick')}</option>
+            {engineers.filter((e) => e.active).map((e) => (
+              <option key={e.id} value={e.id}>{e.displayName}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label={t('ticket')}>
+          <select value={f.itemId} onChange={(e) => setF({ ...f, itemId: e.target.value })} className={`${inputClass} max-w-72`}>
+            <option value="">{t('noTicket')}</option>
+            {tickets.map((r) => (
+              <option key={r.itemId} value={r.itemId}>{r.name ?? r.itemId}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label={t('from')}>
+          <input type="date" value={f.startsOn} onChange={(e) => setF({ ...f, startsOn: e.target.value })} className={inputClass} />
+        </Field>
+        <Field label={t('to')}>
+          <input type="date" value={f.endsOn} min={f.startsOn} onChange={(e) => setF({ ...f, endsOn: e.target.value })} className={inputClass} />
+        </Field>
+        <Field label={t('note')}>
+          <input value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} className={inputClass} />
+        </Field>
+        <button
+          type="button"
+          disabled={!f.engineerId || !f.startsOn || !f.endsOn || f.endsOn < f.startsOn || add.isPending}
+          onClick={() => add.mutate()}
+          className={primaryButton}
+        >
+          <Plus className="h-4 w-4" />
+          {t('addBooking')}
+        </button>
+      </div>
+      <ErrorLine error={add.error ?? remove.error} fallback={t('saveFailed')} />
+      <ul className="mt-3 divide-y divide-[var(--app-border)] text-sm">
+        {(bookings.data ?? []).length === 0 && <li className="py-2 text-[var(--app-muted)]">{t('noBookings')}</li>}
+        {(bookings.data ?? []).map((b) => (
+          <li key={b.id} className="flex items-center gap-3 py-2">
+            <CalendarClock className="h-4 w-4 shrink-0 text-[var(--app-muted)]" />
+            <span className="font-medium text-[var(--app-text)]">{b.engineerName}</span>
+            <span className="min-w-0 truncate text-[var(--app-muted)]">
+              {fmtDate(b.startsOn, locale)} – {fmtDate(b.endsOn, locale)}
+              {b.ticketName ? ` · ${b.ticketName}` : ''}
+              {b.note ? ` · ${b.note}` : ''}
+            </span>
+            <button type="button" onClick={() => remove.mutate(b.id)} className="ml-auto text-[var(--app-muted)] hover:text-red-600" aria-label={t('remove')}>
               <Trash2 className="h-4 w-4" />
             </button>
           </li>

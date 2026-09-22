@@ -156,6 +156,8 @@ import type {
   QueueView,
   RefreshResult,
   RevisionView,
+  ApproveBody,
+  ScheduleView,
 } from '@/lib/re-assignment/types';
 import type {
   BrandSyncStatus,
@@ -1032,7 +1034,8 @@ export const reAssignmentApi = {
   /** Reads every unfinished ticket from monday (about 7 calls) and saves them; allow a few minutes. */
   refresh: () =>
     api.post<ApiResponse<RefreshResult>>('/api/v1/re-assignment/refresh', null, { timeout: 300_000, skipRetry: true }),
-  approve: (body: { itemId: string; engineerId: string; origin?: string; reason?: string }) =>
+  /** Records the approval and, with monday writes on, sets the engineer as the ticket's RE on monday. */
+  approve: (body: ApproveBody) =>
     api.post<ApiResponse<AssignmentView>>('/api/v1/re-assignment/assignments', body, { skipRetry: true }),
   cancel: (id: string, reason: string) =>
     api.post<ApiResponse<AssignmentView>>(`/api/v1/re-assignment/assignments/${id}/cancel`, { reason }),
@@ -1053,6 +1056,10 @@ export const reAssignmentApi = {
   addLeave: (body: { engineerId: string; startsOn: string; endsOn: string; note?: string }) =>
     api.post<ApiResponse<void>>('/api/v1/re-assignment/leave', body),
   deleteLeave: (id: string) => api.delete<ApiResponse<void>>(`/api/v1/re-assignment/leave/${id}`),
+  bookings: () => api.get<ApiResponse<ScheduleView[]>>('/api/v1/re-assignment/bookings'),
+  addBooking: (body: { engineerId: string; itemId?: string; startsOn: string; endsOn: string; note?: string }) =>
+    api.post<ApiResponse<void>>('/api/v1/re-assignment/bookings', body),
+  deleteBooking: (id: string) => api.delete<ApiResponse<void>>(`/api/v1/re-assignment/bookings/${id}`),
 
   skills: () => api.get<ApiResponse<MatrixView>>('/api/v1/re-assignment/skills'),
   updateSkills: (changes: LevelChange[], reason: string) =>
