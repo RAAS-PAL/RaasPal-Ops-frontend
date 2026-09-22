@@ -37,6 +37,21 @@ function isoDate(daysAgo = 0): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/**
+ * "Zara L300 · Phase 1 (L3525…)": the customer is the group header, so it is stripped from
+ * the site and the name; a name that only repeats model + site is dropped.
+ */
+function optionLabel(u: RobotUnitResponse, customer: string): string {
+  const strip = (s: string | null | undefined) =>
+    (s ?? '').replace(customer, '').replace(/^[\s_·:,.\-–]+|[\s_·:,.\-–]+$/g, '').trim();
+  const model = (u.model ?? '').trim();
+  const site = strip(u.deployment?.site);
+  let name = strip(u.name);
+  if (name && [model, site, `${model} ${site}`].map((x) => x.trim()).includes(name)) name = '';
+  const parts = [model || null, site || null, name || null].filter(Boolean);
+  return `${parts.join(' · ') || 'Robot'} (${u.serialNumber})`;
+}
+
 function errorMessage(e: unknown, fallback: string): string {
   const ax = e as { response?: { data?: { message?: string } }; code?: string };
   if (ax?.response?.data?.message) return ax.response.data.message;
@@ -253,7 +268,7 @@ export function AutoxingReportPanel() {
                 <optgroup key={customer} label={customer}>
                   {units.map((u) => (
                     <option key={u.serialNumber} value={u.serialNumber}>
-                      {[u.name, u.model, u.deployment?.site].filter(Boolean).join(' · ') || u.serialNumber} ({u.serialNumber})
+                      {optionLabel(u, customer)}
                     </option>
                   ))}
                 </optgroup>
