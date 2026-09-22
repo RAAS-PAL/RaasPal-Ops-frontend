@@ -1655,7 +1655,14 @@
         "why": "Reason",
         "email": "Email",
         "forDate": "Staffed for",
-        "monday": "monday"
+        "monday": "monday",
+        "site": "Site",
+        "opened": "Opened",
+        "robot": "Robot",
+        "difficulty": "Difficulty",
+        "caseType": "Case",
+        "suggested": "Suggested",
+        "assigned": "Assigned"
       },
       "category": {
         "ELECTRICAL": "Electrical",

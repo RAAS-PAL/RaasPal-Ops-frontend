@@ -1655,7 +1655,14 @@
         "why": "เหตุผล",
         "email": "อีเมล",
         "forDate": "จัดคนสำหรับวันที่",
-        "monday": "monday"
+        "monday": "monday",
+        "site": "สถานที่",
+        "opened": "วันที่เปิด",
+        "robot": "หุ่นยนต์",
+        "difficulty": "ความยาก",
+        "caseType": "ประเภท",
+        "suggested": "ผู้ที่แนะนำ",
+        "assigned": "ผู้รับงาน"
       },
       "category": {
         "ELECTRICAL": "ไฟฟ้า",

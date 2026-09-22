@@ -237,153 +237,96 @@ function TicketRow({ row, canManage, mondayWrite, expanded, onToggle }: {
   const resend = useMutation({ mutationFn: () => reAssignmentApi.resendEmail(row.assignment!.id), onSuccess: invalidate });
 
   const busy = approve.isPending || hold.isPending || release.isPending || cancel.isPending || resend.isPending;
-  const site = [row.customer, row.branch].filter(Boolean).join(' · ');
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
   const futureDay = row.forDate && row.forDate !== today ? row.forDate : null;
   // A current approval can be withdrawn whether it is still waiting or already on monday.
   const ownAssignment = row.assignment && (row.outcome === 'APPROVED' || row.outcome === 'ASSIGNED') ? row.assignment : null;
 
+  // One line per ticket: what it is, who, and the actions. Everything else is in the drop-down.
+  const who =
+    row.outcome === 'SUGGESTED' && row.suggested ? nick(row.suggested.name)
+      : row.assignment ? nick(row.assignment.engineerName)
+        : row.outcome === 'ASSIGNED' ? row.people.map(nick).join(', ')
+          : t(`outcome.${row.outcome}`);
+
   return (
     <div className={expanded ? 'bg-[var(--app-panel-alt)]' : ''}>
-      <div className="grid gap-3 px-4 py-3 sm:px-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto]">
-        {/* Ticket */}
-        <button type="button" onClick={onToggle} className="flex min-w-0 items-start gap-2 text-left">
-          {expanded ? <ChevronDown className="mt-0.5 h-4 w-4 shrink-0" /> : <ChevronRight className="mt-0.5 h-4 w-4 shrink-0" />}
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-semibold text-[var(--app-text)]" title={row.name ?? ''}>
-              {row.name ?? row.itemId}
+      <div className="flex items-center gap-3 px-4 py-2 sm:px-5">
+        <button type="button" onClick={onToggle} className="flex min-w-0 flex-1 items-center gap-2 text-left" title={row.name ?? ''}>
+          {expanded ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
+          <span className="truncate text-sm font-medium text-[var(--app-text)]">{row.name ?? row.itemId}</span>
+          {row.zone && (
+            <span className="shrink-0 rounded bg-sky-100 px-1.5 py-px text-[11px] font-semibold text-sky-800 dark:bg-sky-950/40 dark:text-sky-300">
+              {tz(row.zone)}
             </span>
-            <span className="block truncate text-xs text-[var(--app-muted)]">
-              {row.zone && (
-                <span className="mr-1.5 rounded bg-sky-100 px-1 py-px font-semibold text-sky-800 dark:bg-sky-950/40 dark:text-sky-300">
-                  {tz(row.zone)}
-                </span>
-              )}
-              {site || '—'} · {fmtDate(row.openDate, locale)}
-            </span>
-          </span>
+          )}
         </button>
 
-        {/* Robot and difficulty */}
-        <div className="min-w-0 text-sm">
-          <p className="truncate text-[var(--app-text)]">
-            {row.modelLabel ?? '—'}
-            {row.modelName && row.modelName !== row.modelLabel && (
-              <span className="text-xs text-[var(--app-muted)]"> → {row.modelName}</span>
-            )}
-          </p>
-          <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-[var(--app-muted)]">
-            <span>{row.issueLevel ?? t('noDifficulty')}</span>
-            {row.requiredLevel && <LevelBadge level={row.requiredLevel} prefix={t('needs')} />}
-            {row.caseType && <span>· {row.caseType}</span>}
-            {row.serviceMode && <span>· {row.serviceMode}</span>}
-          </p>
-        </div>
+        <span
+          className={`inline-flex max-w-44 shrink-0 items-center gap-1 truncate rounded-md px-2 py-0.5 text-xs font-semibold ${OUTCOME_STYLE[row.outcome]}`}
+          title={[t(`outcome.${row.outcome}`), row.assumedDifficulty ? t('assumed') : null, futureDay ? t('forDay', { date: fmtDate(futureDay, locale) }) : null]
+            .filter(Boolean).join(' · ')}
+        >
+          <span className="truncate">{who}</span>
+          {row.assumedDifficulty && row.outcome === 'SUGGESTED' && <span className="text-amber-600 dark:text-amber-400">?</span>}
+        </span>
 
-        {/* Outcome */}
-        <div className="min-w-0">
-          <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${OUTCOME_STYLE[row.outcome]}`}>
-            {t(`outcome.${row.outcome}`)}
-          </span>
-          {row.assumedDifficulty && row.outcome === 'SUGGESTED' && (
-            <span className="ml-1.5 inline-flex rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-              {t('assumed')}
-            </span>
-          )}
-          {futureDay && ['SUGGESTED', 'ALL_BUSY'].includes(row.outcome) && (
-            <span className="ml-1.5 inline-flex rounded-md bg-[var(--app-faint)] px-2 py-0.5 text-xs font-semibold text-[var(--app-muted)]">
-              {t('forDay', { date: fmtDate(futureDay, locale) })}
-            </span>
-          )}
-          {row.outcome === 'SUGGESTED' && row.suggested ? (
-            <p className="mt-1 text-sm">
-              <span className="font-semibold text-[var(--app-text)]">{row.suggested.name}</span>
-              {canManage && (
-                <span className="ml-2 inline-flex items-center gap-1 align-middle">
-                  <LevelBadge level={row.suggested.modelLevel} prefix={row.modelName ?? ''} />
-                  <LevelBadge level={row.suggested.cmLevel} prefix="CM" />
-                </span>
-              )}
-            </p>
-          ) : row.assignment ? (
-            <p className="mt-1 text-sm">
-              <span className="font-semibold text-[var(--app-text)]">{row.assignment.engineerName}</span>
-              <span className="ml-1 text-xs text-[var(--app-muted)]">
-                · {t(`monday.${row.assignment.mondayStatus}`)} · {t(`email.${row.assignment.emailStatus}`)}
-              </span>
-            </p>
-          ) : row.outcome === 'ASSIGNED' ? (
-            <p className="mt-1 truncate text-sm text-[var(--app-text)]">{row.people.join(', ')}</p>
-          ) : (
-            <p className="mt-1 text-xs text-[var(--app-muted)]">{row.reason}</p>
-          )}
-        </div>
-
-        {/* Actions */}
         {canManage && (
-          <div className="flex flex-wrap items-start justify-end gap-1.5">
+          <div className="flex shrink-0 items-center gap-1">
             {row.outcome === 'SUGGESTED' && row.suggested && (
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => approve.mutate({ engineerId: row.suggested!.engineerId, origin: 'SUGGESTION' })}
-                title={mondayWrite ? t('approveWritesHint') : undefined}
-                className={primaryButton}
+                title={mondayWrite ? t('approveWritesHint') : t('approve')}
+                className={`${primaryButton} !px-2.5 !py-1 text-xs`}
               >
-                {approve.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                {approve.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                 {t('approve')}
               </button>
             )}
             {['SUGGESTED', 'ALL_BUSY', 'NO_QUALIFIED', 'MANUAL', 'HELD'].includes(row.outcome) && (
-              <button type="button" disabled={busy} onClick={() => setChoosing((v) => !v)} className={secondaryButton}>
+              <IconButton title={t('choose')} disabled={busy} onClick={() => setChoosing((v) => !v)}>
                 <UserCheck className="h-4 w-4" />
-                {t('choose')}
-              </button>
+              </IconButton>
             )}
             {['SUGGESTED', 'ALL_BUSY', 'NO_QUALIFIED'].includes(row.outcome) && (
-              <button
-                type="button"
+              <IconButton
+                title={`${t('hold')} - ${t('holdHint')}`}
                 disabled={busy}
-                title={t('holdHint')}
                 onClick={() => {
                   const reason = window.prompt(t('holdPrompt'));
                   if (reason && reason.trim()) hold.mutate(reason.trim());
                 }}
-                className={secondaryButton}
               >
                 <PauseCircle className="h-4 w-4" />
-                {t('hold')}
-              </button>
+              </IconButton>
             )}
             {row.outcome === 'HELD' && (
-              <button type="button" disabled={busy} onClick={() => release.mutate()} className={secondaryButton}>
+              <IconButton title={t('release')} disabled={busy} onClick={() => release.mutate()}>
                 <PlayCircle className="h-4 w-4" />
-                {t('release')}
-              </button>
+              </IconButton>
             )}
             {ownAssignment && (
               <>
-                <button type="button" disabled={busy} onClick={() => resend.mutate()} className={secondaryButton} title={ownAssignment.emailDetail ?? ''}>
+                <IconButton title={`${t('resend')}${ownAssignment.emailDetail ? ` - ${ownAssignment.emailDetail}` : ''}`} disabled={busy} onClick={() => resend.mutate()}>
                   <Mail className="h-4 w-4" />
-                  {t('resend')}
-                </button>
-                <button
-                  type="button"
+                </IconButton>
+                <IconButton
+                  title={ownAssignment.mondayStatus === 'WRITTEN' ? `${t('cancel')} - ${t('cancelWritesHint')}` : t('cancel')}
                   disabled={busy}
-                  title={ownAssignment.mondayStatus === 'WRITTEN' ? t('cancelWritesHint') : undefined}
                   onClick={() => {
                     const reason = window.prompt(ownAssignment.mondayStatus === 'WRITTEN' ? t('cancelPromptMonday') : t('cancelPrompt'));
                     if (reason && reason.trim()) cancel.mutate(reason.trim());
                   }}
-                  className={secondaryButton}
                 >
                   <XCircle className="h-4 w-4" />
-                  {t('cancel')}
-                </button>
+                </IconButton>
               </>
             )}
             {row.mondayUrl && (
-              <a href={row.mondayUrl} target="_blank" rel="noreferrer" className={secondaryButton} title={t('openMonday')}>
+              <a href={row.mondayUrl} target="_blank" rel="noreferrer" title={t('openMonday')}
+                 className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-[var(--app-faint)] hover:text-[var(--app-text)]">
                 <ExternalLink className="h-4 w-4" />
               </a>
             )}
@@ -500,10 +443,22 @@ function ChoosePanel({ row, busy, mondayWrite, onApprove, onClose }: {
 /** Why: every candidate's levels, load and score parts, and why others were left out. */
 function Detail({ row, canManage }: { row: QueueRow; canManage: boolean }) {
   const t = useTranslations('reAssignment.queue');
+  const locale = useLocale();
   const ranked = [row.suggested, ...row.alternatives].filter(Boolean) as Candidate[];
   return (
     <div className="grid gap-4 px-4 pb-4 sm:px-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+        <Fact label={t('facts.site')} value={[row.customer, row.branch].filter(Boolean).join(' · ')} />
+        <Fact label={t('facts.opened')} value={fmtDate(row.openDate, locale)} />
+        <Fact label={t('facts.robot')} value={[row.modelLabel, row.modelName && row.modelName !== row.modelLabel ? `→ ${row.modelName}` : null].filter(Boolean).join(' ')} />
+        <Fact
+          label={t('facts.difficulty')}
+          value={[row.issueLevel ?? t('noDifficulty'), row.requiredLevel ? `${t('needs')} L${row.requiredLevel}` : null, row.assumedDifficulty ? t('assumed') : null]
+            .filter(Boolean).join(' · ')}
+        />
+        <Fact label={t('facts.caseType')} value={[row.caseType, row.serviceMode].filter(Boolean).join(' · ')} />
+        {row.suggested && row.outcome === 'SUGGESTED' && <Fact label={t('facts.suggested')} value={row.suggested.name} />}
+        {row.assignment && <Fact label={t('facts.assigned')} value={row.assignment.engineerName} />}
         <Fact label={t('facts.group')} value={row.group} />
         <Fact label={t('facts.status')} value={[row.status, row.subStatus].filter(Boolean).join(' · ')} />
         <Fact label={t('facts.serial')} value={row.serial} />
@@ -571,6 +526,31 @@ function Detail({ row, canManage }: { row: QueueRow; canManage: boolean }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** "Jay (ภูวนาถ คงพูล)" -> "Jay": the row shows the nickname, the drop-down the full name. */
+function nick(name: string | null | undefined): string {
+  return (name ?? '').replace(/\s*\(.*\)\s*$/, '') || '—';
+}
+
+function IconButton({ title, disabled, onClick, children }: {
+  title: string;
+  disabled?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      disabled={disabled}
+      onClick={onClick}
+      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-[var(--app-faint)] hover:text-[var(--app-text)] disabled:opacity-40"
+    >
+      {children}
+    </button>
   );
 }
 
