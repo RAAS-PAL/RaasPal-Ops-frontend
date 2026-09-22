@@ -24,6 +24,7 @@ import {
   WifiOff,
 } from 'lucide-react';
 import { autoxingApi, robotUnitApi } from '@/lib/api';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { DeliveryReportView } from '@/components/report/DeliveryReportView';
 import { DeliveryPerformanceReportView } from '@/components/report/DeliveryPerformanceReportView';
 import { Link } from '@/i18n/navigation';
@@ -281,27 +282,18 @@ export function AutoxingReportPanel() {
               className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm font-normal text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
             />
           </label>
-          <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
-            From
-            <input
-              type="date"
-              value={from}
-              max={to}
-              onChange={(e) => setFrom(e.target.value)}
-              className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm font-normal text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
-            To
-            <input
-              type="date"
-              value={to}
-              min={from}
+          <div className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
+            Period
+            <DateRangePicker
+              from={from}
+              to={to}
               max={isoDate(0)}
-              onChange={(e) => setTo(e.target.value)}
-              className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm font-normal text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
+              onChange={(r) => {
+                setFrom(r.from);
+                setTo(r.to);
+              }}
             />
-          </label>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-end gap-3">
