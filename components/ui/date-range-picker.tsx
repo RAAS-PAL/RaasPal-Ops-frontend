@@ -21,6 +21,9 @@ export function DateRangePicker({ from, to, onChange, max, min, className = '' }
   const [hover, setHover] = useState<string | null>(null);
   const [month, setMonth] = useState(() => monthOf(from || max || today()));
   const root = useRef<HTMLDivElement>(null);
+  // Where the popup fits: right-aligned when the left edge would push it off-screen, and
+  // one month instead of two on narrow screens.
+  const [layout, setLayout] = useState<{ alignRight: boolean; months: 1 | 2 }>({ alignRight: false, months: 2 });
 
   useEffect(() => {
     if (!open) return;
@@ -70,6 +73,11 @@ export function DateRangePicker({ from, to, onChange, max, min, className = '' }
   const openPicker = () => {
     setMonth(monthOf(from || max || today()));
     setDraftFrom(null);
+    const rect = root.current?.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const months: 1 | 2 = vw < 700 ? 1 : 2;
+    const width = months === 2 ? 640 : 400;
+    setLayout({ alignRight: !!rect && rect.left + width > vw - 8 && rect.right - width >= 8, months });
     setOpen((v) => !v);
   };
 
@@ -85,8 +93,10 @@ export function DateRangePicker({ from, to, onChange, max, min, className = '' }
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-30 mt-1 flex gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3 shadow-lg">
-          <div className="flex flex-col gap-1 border-r border-[var(--app-border)] pr-3">
+        <div
+          className={`absolute top-full z-30 mt-1 flex max-w-[calc(100vw-16px)] flex-col gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3 shadow-lg sm:flex-row ${layout.alignRight ? 'right-0' : 'left-0'}`}
+        >
+          <div className="flex flex-wrap gap-1 border-b border-[var(--app-border)] pb-2 sm:w-32 sm:flex-col sm:border-b-0 sm:border-r sm:pb-0 sm:pr-3">
             {presets.map((p) => (
               <button
                 key={p.label}
@@ -96,18 +106,18 @@ export function DateRangePicker({ from, to, onChange, max, min, className = '' }
                   setDraftFrom(null);
                   setOpen(false);
                 }}
-                className="rounded-md px-2 py-1 text-left text-xs text-[var(--app-text)] hover:bg-[var(--app-faint)]"
+                className="whitespace-nowrap rounded-md px-2 py-1 text-left text-xs text-[var(--app-text)] hover:bg-[var(--app-faint)]"
               >
                 {p.label}
               </button>
             ))}
-            <p className="mt-2 max-w-32 text-[11px] leading-snug text-[var(--app-muted)]">
+            <p className="mt-1 w-full text-[11px] leading-snug text-[var(--app-muted)] sm:mt-2">
               {draftFrom === null ? 'Click a start day, then an end day.' : `Start ${label(draftFrom)} - now pick the end day.`}
             </p>
           </div>
 
           <div className="flex gap-4">
-            {[0, 1].map((offset) => {
+            {(layout.months === 2 ? [0, 1] : [0]).map((offset) => {
               const m = new Date(month.getFullYear(), month.getMonth() + offset, 1);
               return (
                 <Month
@@ -119,7 +129,7 @@ export function DateRangePicker({ from, to, onChange, max, min, className = '' }
                   onPick={pick}
                   onHover={setHover}
                   prev={offset === 0 ? () => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1)) : undefined}
-                  next={offset === 1 ? () => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1)) : undefined}
+                  next={offset === layout.months - 1 ? () => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1)) : undefined}
                 />
               );
             })}
