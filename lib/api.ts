@@ -141,6 +141,23 @@ import type {
 import type { MonthlyPerformanceReport } from '@/lib/reports/types';
 import type { DeliveryPerformanceReport } from '@/lib/reports/autoxing-performance';
 import type {
+  AccessView,
+  AssignmentView,
+  EngineerRequest,
+  EngineerView,
+  ImportPreview,
+  ImportResult,
+  LeaveView,
+  LevelChange,
+  ManagerView,
+  MappingView,
+  MatrixView,
+  MondayPerson,
+  QueueView,
+  RefreshResult,
+  RevisionView,
+} from '@/lib/re-assignment/types';
+import type {
   BrandSyncStatus,
   BrandTicket,
   BrandTicketSummary,
@@ -1001,4 +1018,70 @@ export const brandTicketApi = {
       timeout: 120_000,
       skipRetry: true,
     }),
+};
+
+/* ─── RE assignment for CM tickets ────────────────────────────────────────── */
+
+/**
+ * Suggest-then-approve RE assignment (Cleaning Tickets board). Reading the queue is
+ * open to the team; everything else needs ADMIN or a Senior RE grant.
+ */
+export const reAssignmentApi = {
+  access: () => api.get<ApiResponse<AccessView>>('/api/v1/re-assignment/access'),
+  queue: () => api.get<ApiResponse<QueueView>>('/api/v1/re-assignment/queue'),
+  /** Reads every unfinished ticket from monday - about 7 calls, a few seconds. */
+  refresh: () =>
+    api.post<ApiResponse<RefreshResult>>('/api/v1/re-assignment/refresh', null, { timeout: 120_000, skipRetry: true }),
+  approve: (body: { itemId: string; engineerId: string; origin?: string; reason?: string }) =>
+    api.post<ApiResponse<AssignmentView>>('/api/v1/re-assignment/assignments', body, { skipRetry: true }),
+  cancel: (id: string, reason: string) =>
+    api.post<ApiResponse<AssignmentView>>(`/api/v1/re-assignment/assignments/${id}/cancel`, { reason }),
+  resendEmail: (id: string) =>
+    api.post<ApiResponse<AssignmentView>>(`/api/v1/re-assignment/assignments/${id}/email`, null, { skipRetry: true }),
+  history: () => api.get<ApiResponse<AssignmentView[]>>('/api/v1/re-assignment/assignments'),
+  hold: (itemId: string, reason: string) =>
+    api.post<ApiResponse<void>>('/api/v1/re-assignment/holds', { itemId, reason }),
+  release: (itemId: string) =>
+    api.delete<ApiResponse<void>>(`/api/v1/re-assignment/holds/${encodeURIComponent(itemId)}`),
+
+  engineers: () => api.get<ApiResponse<EngineerView[]>>('/api/v1/re-assignment/engineers'),
+  createEngineer: (body: EngineerRequest) => api.post<ApiResponse<string>>('/api/v1/re-assignment/engineers', body),
+  updateEngineer: (id: string, body: EngineerRequest) =>
+    api.put<ApiResponse<string>>(`/api/v1/re-assignment/engineers/${id}`, body),
+  mondayPeople: () => api.get<ApiResponse<MondayPerson[]>>('/api/v1/re-assignment/monday-people'),
+  leave: () => api.get<ApiResponse<LeaveView[]>>('/api/v1/re-assignment/leave'),
+  addLeave: (body: { engineerId: string; startsOn: string; endsOn: string; note?: string }) =>
+    api.post<ApiResponse<void>>('/api/v1/re-assignment/leave', body),
+  deleteLeave: (id: string) => api.delete<ApiResponse<void>>(`/api/v1/re-assignment/leave/${id}`),
+
+  skills: () => api.get<ApiResponse<MatrixView>>('/api/v1/re-assignment/skills'),
+  updateSkills: (changes: LevelChange[], reason: string) =>
+    api.put<ApiResponse<RevisionView>>('/api/v1/re-assignment/skills', { changes, reason }),
+  previewImport: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post<ApiResponse<ImportPreview>>('/api/v1/re-assignment/skills/import/preview', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60_000,
+    });
+  },
+  commitImport: (file: File, label: string, reason: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('label', label);
+    form.append('reason', reason);
+    return api.post<ApiResponse<ImportResult>>('/api/v1/re-assignment/skills/import', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60_000,
+      skipRetry: true,
+    });
+  },
+
+  mappings: () => api.get<ApiResponse<MappingView[]>>('/api/v1/re-assignment/model-mappings'),
+  saveMapping: (body: { label: string; disposition: string; skillCode?: string | null; note?: string | null }) =>
+    api.put<ApiResponse<MappingView>>('/api/v1/re-assignment/model-mappings', body),
+
+  managers: () => api.get<ApiResponse<ManagerView[]>>('/api/v1/re-assignment/managers'),
+  grant: (email: string) => api.post<ApiResponse<void>>('/api/v1/re-assignment/managers', { email }),
+  revoke: (userId: string) => api.delete<ApiResponse<void>>(`/api/v1/re-assignment/managers/${userId}`),
 };

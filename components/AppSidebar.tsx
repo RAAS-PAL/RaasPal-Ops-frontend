@@ -13,6 +13,7 @@ import {
   Smile,
   Sparkles,
   Ticket,
+  UserCog,
   TrendingUp,
   Users,
   Wrench,
@@ -70,6 +71,7 @@ export const navigationItems: NavItem[] = [
   { title: 'Solutions', labelKey: 'solutions', href: '/solutions', icon: Sparkles, alsoMatches: ['/generate-solution', '/proposals'] },
   { title: 'PM Planning', labelKey: 'pmPlanning', href: '/pm-planning', icon: CalendarRange },
   { title: 'Service Tickets', labelKey: 'tickets', href: '/tickets', icon: Ticket },
+  { title: 'RE Assignment', labelKey: 'reAssignment', href: '/re-assignment', icon: UserCog },
   // "Robot Catalog": the approved-model catalog that solutions are matched against,
   // not the deployed fleet -- the fleet lives under Tools -> Robots.
   { title: 'Robot Catalog', labelKey: 'robots', href: '/robots', icon: Bot },
