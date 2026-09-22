@@ -1029,9 +1029,9 @@ export const brandTicketApi = {
 export const reAssignmentApi = {
   access: () => api.get<ApiResponse<AccessView>>('/api/v1/re-assignment/access'),
   queue: () => api.get<ApiResponse<QueueView>>('/api/v1/re-assignment/queue'),
-  /** Reads every unfinished ticket from monday - about 7 calls, a few seconds. */
+  /** Reads every unfinished ticket from monday (about 7 calls) and saves them; allow a few minutes. */
   refresh: () =>
-    api.post<ApiResponse<RefreshResult>>('/api/v1/re-assignment/refresh', null, { timeout: 120_000, skipRetry: true }),
+    api.post<ApiResponse<RefreshResult>>('/api/v1/re-assignment/refresh', null, { timeout: 300_000, skipRetry: true }),
   approve: (body: { itemId: string; engineerId: string; origin?: string; reason?: string }) =>
     api.post<ApiResponse<AssignmentView>>('/api/v1/re-assignment/assignments', body, { skipRetry: true }),
   cancel: (id: string, reason: string) =>
@@ -1072,7 +1072,7 @@ export const reAssignmentApi = {
     form.append('reason', reason);
     return api.post<ApiResponse<ImportResult>>('/api/v1/re-assignment/skills/import', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 60_000,
+      timeout: 180_000,
       skipRetry: true,
     });
   },
