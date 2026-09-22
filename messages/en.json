@@ -1734,7 +1734,12 @@
       "ticket": "Ticket",
       "noTicket": "No ticket",
       "addBooking": "Book",
-      "noBookings": "No bookings from today on."
+      "noBookings": "No bookings from today on.",
+      "employeeCode": "Employee code",
+      "homeZone": "Based in",
+      "homeZoneHint": "Preferred for tickets in this zone, and the last resort elsewhere.",
+      "anywhere": "Bangkok - goes anywhere",
+      "showInactive": "Show {n} inactive"
     },
     "skills": {
       "title": "Skill matrix",
@@ -1834,6 +1839,9 @@
         "CLEARED": "removed from monday",
         "LEFT": "monday left as is"
       }
+    },
+    "zone": {
+      "EASTERN_SEABOARD": "Eastern Seaboard"
     }
   }
 }

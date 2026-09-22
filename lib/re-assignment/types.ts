@@ -80,6 +80,8 @@ export interface QueueRow {
   mondayUrl: string | null;
   /** The day availability was checked for: the RE Action date when set and not past, else today. */
   forDate: string | null;
+  /** Zone found in the ticket's name, branch or project (e.g. EASTERN_SEABOARD), or null. */
+  zone: string | null;
 }
 
 export interface QueueView {
@@ -120,6 +122,9 @@ export interface EngineerView {
   openTickets: number;
   assessedSkills: number;
   onLeaveToday: boolean;
+  employeeCode: string | null;
+  /** Zone code the engineer is based in; null = Bangkok, goes anywhere. */
+  homeZone: string | null;
 }
 
 export interface EngineerRequest {
@@ -130,6 +135,8 @@ export interface EngineerRequest {
   maxLoad?: number | null;
   note?: string | null;
   active?: boolean;
+  employeeCode?: string | null;
+  homeZone?: string | null;
 }
 
 /** Days an engineer is booked on a job, so they are not suggested for other work then. */

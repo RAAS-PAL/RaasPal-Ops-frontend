@@ -8,13 +8,16 @@ import { reAssignmentApi } from '@/lib/api';
 import type { EngineerRequest, EngineerView, MondayPerson } from '@/lib/re-assignment/types';
 import { Card, ErrorLine, fmtDate, inputClass, primaryButton, secondaryButton } from './shared';
 
-const EMPTY: EngineerRequest = { fullName: '', nickname: '', email: '', mondayUserId: '', maxLoad: 6, note: '', active: true };
+const EMPTY: EngineerRequest = {
+  fullName: '', nickname: '', email: '', mondayUserId: '', maxLoad: 6, note: '', active: true, employeeCode: '', homeZone: '',
+};
 
 /** The RE team: add and edit engineers, link each to their monday account, leave, and who may approve. */
 export function EngineersPanel({ isAdmin }: { isAdmin: boolean }) {
   const t = useTranslations('reAssignment.engineers');
   const qc = useQueryClient();
   const [editing, setEditing] = useState<string | 'new' | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
 
   const engineers = useQuery({
     queryKey: ['re-engineers'],
@@ -32,17 +35,28 @@ export function EngineersPanel({ isAdmin }: { isAdmin: boolean }) {
     qc.invalidateQueries({ queryKey: ['re-skills'] });
   };
 
-  const list = engineers.data ?? [];
+  const all = engineers.data ?? [];
+  const list = all.filter((e) => e.active);
+  const inactive = all.length - list.length;
+  const shown = showInactive ? all : list;
   return (
     <div className="space-y-4">
       <Card
-        title={t('title', { n: list.filter((e) => e.active).length })}
+        title={t('title', { n: list.length })}
         hint={t('hint')}
         action={
-          <button type="button" onClick={() => setEditing('new')} className={primaryButton}>
-            <UserPlus className="h-4 w-4" />
-            {t('add')}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {inactive > 0 && (
+              <label className="inline-flex items-center gap-1.5 text-xs text-[var(--app-muted)]">
+                <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} className="h-3.5 w-3.5" />
+                {t('showInactive', { n: inactive })}
+              </label>
+            )}
+            <button type="button" onClick={() => setEditing('new')} className={primaryButton}>
+              <UserPlus className="h-4 w-4" />
+              {t('add')}
+            </button>
+          </div>
         }
       >
         {editing === 'new' && (
@@ -59,7 +73,7 @@ export function EngineersPanel({ isAdmin }: { isAdmin: boolean }) {
         <ErrorLine error={engineers.error} fallback={t('loadFailed')} />
         {engineers.isLoading ? (
           <Loader2 className="mx-auto my-6 h-5 w-5 animate-spin text-[var(--app-muted)]" />
-        ) : list.length === 0 ? (
+        ) : shown.length === 0 ? (
           <p className="py-6 text-center text-sm text-[var(--app-muted)]">{t('empty')}</p>
         ) : (
           <div className="-mx-4 overflow-x-auto sm:-mx-5">
@@ -76,7 +90,7 @@ export function EngineersPanel({ isAdmin }: { isAdmin: boolean }) {
                 </tr>
               </thead>
               <tbody>
-                {list.map((e) =>
+                {shown.map((e) =>
                   editing === e.id ? (
                     <tr key={e.id}>
                       <td colSpan={7} className="px-4 py-2 sm:px-5">
@@ -90,6 +104,8 @@ export function EngineersPanel({ isAdmin }: { isAdmin: boolean }) {
                             maxLoad: e.maxLoad,
                             note: e.note ?? '',
                             active: e.active,
+                            employeeCode: e.employeeCode ?? '',
+                            homeZone: e.homeZone ?? '',
                           }}
                           people={people.data ?? []}
                           onDone={() => {
@@ -119,12 +135,22 @@ export function EngineersPanel({ isAdmin }: { isAdmin: boolean }) {
 
 function EngineerRowView({ e, onEdit }: { e: EngineerView; onEdit: () => void }) {
   const t = useTranslations('reAssignment.engineers');
+  const tz = useTranslations('reAssignment.zone');
   const pct = Math.min(100, (e.load / e.maxLoad) * 100);
   return (
     <tr className={`border-b border-[var(--app-border)] align-top ${e.active ? '' : 'opacity-60'}`}>
       <td className="px-4 py-2.5 sm:px-5">
-        <p className="font-medium text-[var(--app-text)]">{e.nickname || e.fullName}</p>
-        {e.nickname && <p className="text-xs text-[var(--app-muted)]">{e.fullName}</p>}
+        <p className="font-medium text-[var(--app-text)]">
+          {e.nickname || e.fullName}
+          {e.homeZone && (
+            <span className="ml-2 rounded-md bg-sky-100 px-1.5 py-0.5 text-xs font-semibold text-sky-800 dark:bg-sky-950/40 dark:text-sky-300">
+              {tz(e.homeZone)}
+            </span>
+          )}
+        </p>
+        <p className="text-xs text-[var(--app-muted)]">
+          {[e.employeeCode, e.nickname ? e.fullName : null].filter(Boolean).join(' · ')}
+        </p>
       </td>
       <td className="px-2 py-2.5 text-[var(--app-text)]">{e.email ?? <span className="text-amber-700 dark:text-amber-300">{t('noEmail')}</span>}</td>
       <td className="px-2 py-2.5">
@@ -172,7 +198,9 @@ function EngineerForm({ id, initial, people, onDone, onCancel }: {
   onCancel: () => void;
 }) {
   const t = useTranslations('reAssignment.engineers');
+  const tz = useTranslations('reAssignment.zone');
   const [f, setF] = useState<EngineerRequest>(initial);
+  const zones = useQuery({ queryKey: ['re-zones'], queryFn: () => reAssignmentApi.zones().then((r) => r.data.data ?? []) });
   const save = useMutation({
     mutationFn: () => {
       const body: EngineerRequest = {
@@ -183,6 +211,8 @@ function EngineerForm({ id, initial, people, onDone, onCancel }: {
         maxLoad: f.maxLoad ? Number(f.maxLoad) : 6,
         note: f.note?.trim() || null,
         active: f.active,
+        employeeCode: f.employeeCode?.trim() || null,
+        homeZone: f.homeZone || null,
       };
       return id ? reAssignmentApi.updateEngineer(id, body) : reAssignmentApi.createEngineer(body);
     },
@@ -225,6 +255,17 @@ function EngineerForm({ id, initial, people, onDone, onCancel }: {
             onChange={(e) => set('maxLoad', e.target.value === '' ? 6 : Number(e.target.value))}
             className={inputClass}
           />
+        </Field>
+        <Field label={t('employeeCode')}>
+          <input value={f.employeeCode ?? ''} placeholder="RAAS-00000" onChange={(e) => set('employeeCode', e.target.value)} className={inputClass} />
+        </Field>
+        <Field label={t('homeZone')} hint={t('homeZoneHint')}>
+          <select value={f.homeZone ?? ''} onChange={(e) => set('homeZone', e.target.value)} className={inputClass}>
+            <option value="">{t('anywhere')}</option>
+            {(zones.data ?? []).map((z) => (
+              <option key={z} value={z}>{tz(z)}</option>
+            ))}
+          </select>
         </Field>
         <Field label={t('note')}>
           <input value={f.note ?? ''} onChange={(e) => set('note', e.target.value)} className={inputClass} />

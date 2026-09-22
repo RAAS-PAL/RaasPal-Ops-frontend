@@ -1052,6 +1052,7 @@ export const reAssignmentApi = {
   updateEngineer: (id: string, body: EngineerRequest) =>
     api.put<ApiResponse<string>>(`/api/v1/re-assignment/engineers/${id}`, body),
   mondayPeople: () => api.get<ApiResponse<MondayPerson[]>>('/api/v1/re-assignment/monday-people'),
+  zones: () => api.get<ApiResponse<string[]>>('/api/v1/re-assignment/zones'),
   leave: () => api.get<ApiResponse<LeaveView[]>>('/api/v1/re-assignment/leave'),
   addLeave: (body: { engineerId: string; startsOn: string; endsOn: string; note?: string }) =>
     api.post<ApiResponse<void>>('/api/v1/re-assignment/leave', body),

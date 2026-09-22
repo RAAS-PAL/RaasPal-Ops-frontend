@@ -27,6 +27,8 @@ export function SkillMatrixPanel() {
   const [reason, setReason] = useState('');
 
   const matrix = useQuery({ queryKey: ['re-skills'], queryFn: () => reAssignmentApi.skills().then((r) => r.data.data) });
+  // Engineers out of the rotation keep their levels, but are not shown or edited here.
+  const activeRows = (matrix.data?.rows ?? []).filter((r) => r.active);
   const save = useMutation({
     mutationFn: () => {
       const changes: LevelChange[] = Object.entries(pending).map(([k, level]) => {
@@ -88,7 +90,7 @@ export function SkillMatrixPanel() {
         <ErrorLine error={matrix.error} fallback={t('loadFailed')} />
         {matrix.isLoading ? (
           <Loader2 className="mx-auto my-6 h-5 w-5 animate-spin text-[var(--app-muted)]" />
-        ) : (matrix.data?.rows ?? []).length === 0 ? (
+        ) : activeRows.length === 0 ? (
           <p className="py-6 text-center text-sm text-[var(--app-muted)]">{t('empty')}</p>
         ) : (
           <div className="-mx-4 overflow-x-auto sm:-mx-5">
@@ -118,7 +120,7 @@ export function SkillMatrixPanel() {
                 </tr>
               </thead>
               <tbody>
-                {(matrix.data?.rows ?? []).map((row) => (
+                {activeRows.map((row) => (
                   <tr key={row.engineerId} className={row.active ? '' : 'opacity-50'}>
                     <td className="sticky left-0 z-10 whitespace-nowrap border-b border-[var(--app-border)] bg-[var(--app-panel)] px-3 py-1 font-medium text-[var(--app-text)]">
                       {row.name}

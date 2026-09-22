@@ -209,6 +209,7 @@ function TicketRow({ row, canManage, mondayWrite, expanded, onToggle }: {
   onToggle: () => void;
 }) {
   const t = useTranslations('reAssignment.queue');
+  const tz = useTranslations('reAssignment.zone');
   const locale = useLocale();
   const qc = useQueryClient();
   const [choosing, setChoosing] = useState(false);
@@ -253,6 +254,11 @@ function TicketRow({ row, canManage, mondayWrite, expanded, onToggle }: {
               {row.name ?? row.itemId}
             </span>
             <span className="block truncate text-xs text-[var(--app-muted)]">
+              {row.zone && (
+                <span className="mr-1.5 rounded bg-sky-100 px-1 py-px font-semibold text-sky-800 dark:bg-sky-950/40 dark:text-sky-300">
+                  {tz(row.zone)}
+                </span>
+              )}
               {site || '—'} · {fmtDate(row.openDate, locale)}
             </span>
           </span>
