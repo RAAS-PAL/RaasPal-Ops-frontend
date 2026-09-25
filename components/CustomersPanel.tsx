@@ -89,7 +89,7 @@ export function CustomersPanel() {
   // the delivery history — powers the "Sent ×N" badge on each row.
   const { data: monthHistory = [] } = useQuery({
     queryKey: ['report-delivery-history', reportMonth],
-    queryFn: () => reportApi.deliveryHistory(reportMonth).then((r) => r.data.data ?? []),
+    queryFn: () => reportApi.deliveryHistory({ month: reportMonth }).then((r) => r.data.data ?? []),
   });
   const sentCounts = useMemo(() => {
     const counts = new Map<string, number>();

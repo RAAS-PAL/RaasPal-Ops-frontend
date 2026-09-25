@@ -60,7 +60,7 @@ export function ReportDeliveryStats() {
 
   const history = useQuery({
     queryKey: ['report-delivery-history', month],
-    queryFn: () => reportApi.deliveryHistory(month).then((r) => r.data.data ?? []),
+    queryFn: () => reportApi.deliveryHistory({ month }).then((r) => r.data.data ?? []),
     refetchInterval: REFRESH_MS,
   });
   const customers = useQuery({

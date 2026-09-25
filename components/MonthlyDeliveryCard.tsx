@@ -24,7 +24,7 @@ export function MonthlyDeliveryCard() {
   });
   const history = useQuery({
     queryKey: ['report-delivery-history', month],
-    queryFn: () => reportApi.deliveryHistory(month).then((r) => r.data.data ?? []),
+    queryFn: () => reportApi.deliveryHistory({ month }).then((r) => r.data.data ?? []),
     refetchInterval: status.data?.running ? 5000 : 60_000,
   });
   const customers = useQuery({

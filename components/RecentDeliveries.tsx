@@ -23,7 +23,7 @@ export function RecentDeliveries() {
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['report-delivery-history', month],
-    queryFn: () => reportApi.deliveryHistory(month).then((r) => r.data.data ?? []),
+    queryFn: () => reportApi.deliveryHistory({ month }).then((r) => r.data.data ?? []),
     refetchInterval: 60_000,
   });
 

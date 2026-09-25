@@ -4,9 +4,12 @@
  * ReportAutomationPanel — "Manage report automation" tab.
  *
  * The monthly bundle email is sent automatically by the backend scheduler on
- * the 2nd of each month (for the previous month). This panel lets the team:
- *   - see the delivery history for any month (who was sent, skipped, or failed),
- *   - run a month now (idempotent — already-sent customers are skipped),
+ * the 2nd of each month (for the previous month). The weekly bundle goes every
+ * Monday (for the week just ended) to customers with a robot set to Weekly —
+ * the Monthly / Weekly toggle switches everything below between the two.
+ * This panel lets the team:
+ *   - see the delivery history for any month or week (who was sent, skipped, or failed),
+ *   - run a month or week now (idempotent — already-sent customers are skipped),
  *   - resend a single customer whose delivery failed.
  */
 import { useState } from 'react';
@@ -26,6 +29,7 @@ import {
 } from 'lucide-react';
 import { customerApi, reportApi } from '@/lib/api';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { previousIsoWeek, weekRangeLabel } from '@/lib/report-week';
 import type { CustomerResponse, ReportSend } from '@/types/api';
 
 /** Dropdown label: append the branch so same-company branches are distinguishable. */
@@ -65,12 +69,22 @@ const STATUS_ICON: Record<ReportSend['status'], React.ReactNode> = {
 
 export function ReportAutomationPanel() {
   const { confirm, confirmDialog } = useConfirm();
+  const [periodKind, setPeriodKind] = useState<'month' | 'week'>('month');
   const [month, setMonth] = useState(previousMonth);
+  const [week, setWeek] = useState(previousIsoWeek);
   const [customerId, setCustomerId] = useState('');
   /** Customers held back from "Run delivery now" (e.g. a site not fully registered yet). */
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
   const [excludeQuery, setExcludeQuery] = useState('');
   const maxMonth = previousMonth();
+  const maxWeek = previousIsoWeek();
+  const isWeekly = periodKind === 'week';
+  /** The one period the run, the single send and the history all act on. */
+  const periodValue = isWeekly ? week : month;
+  const periodParam = isWeekly ? { week } : { month };
+  /** How the period reads in a sentence — the raw month as before, a date range for a week. */
+  const periodName = isWeekly ? weekRangeLabel(week) : month;
+  const unit = isWeekly ? 'week' : 'month';
   const queryClient = useQueryClient();
 
   // The bulk run executes in the background on the server (it syncs every robot
@@ -88,8 +102,8 @@ export function ReportAutomationPanel() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ['report-delivery-history', month],
-    queryFn: () => reportApi.deliveryHistory(month).then((r) => r.data.data ?? []),
+    queryKey: ['report-delivery-history', periodValue],
+    queryFn: () => reportApi.deliveryHistory(periodParam).then((r) => r.data.data ?? []),
     refetchInterval: running ? 5000 : false,
   });
 
@@ -99,12 +113,12 @@ export function ReportAutomationPanel() {
   });
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['report-delivery-history', month] });
+    queryClient.invalidateQueries({ queryKey: ['report-delivery-history', periodValue] });
     queryClient.invalidateQueries({ queryKey: ['report-delivery-status'] });
   };
 
   const runMutation = useMutation({
-    mutationFn: () => reportApi.runDelivery(month, [...excludedIds]).then((r) => r.data),
+    mutationFn: () => reportApi.runDelivery(periodParam, [...excludedIds]).then((r) => r.data),
     onSuccess: invalidate,
   });
 
@@ -129,7 +143,7 @@ export function ReportAutomationPanel() {
   // the history below shows it and a later "Run delivery now" skips them.
   const sendMutation = useMutation({
     mutationFn: (customerProfileId: string) =>
-      reportApi.sendCustomerBundle(customerProfileId, month).then((r) => r.data),
+      reportApi.sendCustomerBundle(customerProfileId, periodParam).then((r) => r.data),
     onSuccess: invalidate,
   });
 
@@ -141,35 +155,64 @@ export function ReportAutomationPanel() {
           <CalendarClock className="h-4.5 w-4.5" />
         </span>
         <div>
-          <p className="text-sm font-semibold text-[var(--app-text)]">Automated monthly report delivery</p>
-          <p className="text-xs text-[var(--app-muted)]">One link per customer — auto on the 2nd, or run a month below.</p>
+          <p className="text-sm font-semibold text-[var(--app-text)]">
+            {isWeekly ? 'Automated weekly report delivery' : 'Automated monthly report delivery'}
+          </p>
+          <p className="text-xs text-[var(--app-muted)]">
+            {isWeekly
+              ? 'One link per customer, covering their robots set to Weekly — auto every Monday for the week before, or run a week below.'
+              : 'One link per customer — auto on the 2nd, or run a month below.'}
+          </p>
         </div>
       </div>
 
       {/* Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
-        <label className="flex items-center gap-2 text-sm text-[var(--app-muted)]">
-          Report month
-          <input
-            type="month"
-            value={month}
-            max={maxMonth}
-            onChange={(e) => setMonth(e.target.value)}
-            className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
-          />
-        </label>
+        <div className="flex flex-wrap items-center gap-3">
+          <div
+            role="group"
+            aria-label="Report period"
+            className="flex items-center gap-0.5 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] p-0.5"
+          >
+            {(['month', 'week'] as const).map((kind) => (
+              <button
+                key={kind}
+                type="button"
+                onClick={() => setPeriodKind(kind)}
+                aria-pressed={periodKind === kind}
+                className={
+                  periodKind === kind
+                    ? 'rounded-md bg-[var(--app-brand)] px-3 py-1.5 text-sm font-semibold text-white'
+                    : 'rounded-md px-3 py-1.5 text-sm font-semibold text-[var(--app-muted)] transition hover:text-[var(--app-text)]'
+                }
+              >
+                {kind === 'month' ? 'Monthly' : 'Weekly'}
+              </button>
+            ))}
+          </div>
+          <label className="flex items-center gap-2 text-sm text-[var(--app-muted)]">
+            {isWeekly ? 'Report week' : 'Report month'}
+            <input
+              type={isWeekly ? 'week' : 'month'}
+              value={periodValue}
+              max={isWeekly ? maxWeek : maxMonth}
+              onChange={(e) => (isWeekly ? setWeek(e.target.value) : setMonth(e.target.value))}
+              className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
+            />
+          </label>
+        </div>
         <button
           type="button"
           onClick={() =>
             void confirm({
-              title: 'Send this month\'s reports to every customer?',
+              title: `Send this ${unit}'s reports to every customer?`,
               kind: 'send',
               confirmLabel: 'Send to all customers',
               message: (
                 <>
-                  Every eligible customer receives their {month} performance report by email
+                  Every eligible customer receives their {periodName} performance report by email
                   {excludedIds.size > 0 ? ` — except the ${excludedIds.size} you excluded` : ''}.
-                  Customers already sent this month are skipped. This cannot be recalled once it
+                  Customers already sent this {unit} are skipped. This cannot be recalled once it
                   starts.
                 </>
               ),
@@ -178,8 +221,8 @@ export function ReportAutomationPanel() {
           disabled={runMutation.isPending || running}
           title={
             excludedIds.size > 0
-              ? `Send this month's bundle to every eligible customer except ${excludedIds.size} excluded (already-sent are also skipped). Runs in the background.`
-              : "Send this month's bundle to every eligible customer (already-sent are skipped). Runs in the background — progress appears in the history below."
+              ? `Send this ${unit}'s bundle to every eligible customer except ${excludedIds.size} excluded (already-sent are also skipped). Runs in the background.`
+              : `Send this ${unit}'s bundle to every eligible customer (already-sent are skipped). Runs in the background — progress appears in the history below.`
           }
           className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
         >
@@ -269,7 +312,7 @@ export function ReportAutomationPanel() {
       {running && (
         <p className="flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700 dark:border-sky-900/40 dark:bg-sky-950/30 dark:text-sky-300">
           <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-          Delivery run in progress for {runStatus?.month ?? month} — syncing robots and sending emails. The
+          Delivery run in progress for {runStatus?.month ?? periodValue} — syncing robots and sending emails. The
           history below updates automatically; this can take several minutes.
         </p>
       )}
@@ -307,14 +350,14 @@ export function ReportAutomationPanel() {
                 confirmLabel: 'Send report',
                 message: (
                   <>
-                    <strong>{customerLabel(target)}</strong> receives their {month} performance
+                    <strong>{customerLabel(target)}</strong> receives their {periodName} performance
                     report by email. The send is recorded, so the full run skips them.
                   </>
                 ),
               }).then((ok) => ok && sendMutation.mutate(customerId));
             }}
             disabled={!customerId || sendMutation.isPending || running}
-            title="Email this customer their bundle for the selected month (recorded so the full run skips them)"
+            title={`Email this customer their bundle for the selected ${unit} (recorded so the full run skips them)`}
             className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
           >
             {sendMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -322,7 +365,7 @@ export function ReportAutomationPanel() {
           </button>
         </div>
         <p className="mt-2 text-xs text-[var(--app-muted)]">
-          Sends one customer their report for the selected month. This is recorded in the history below, so a
+          Sends one customer their report for the selected {unit}. This is recorded in the history below, so a
           later “Run delivery now” will skip anyone already sent — no duplicate emails.
         </p>
       </div>
@@ -375,7 +418,7 @@ export function ReportAutomationPanel() {
 
         {!isLoading && !isError && history.length === 0 && (
           <div className="rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-panel)] py-10 text-center text-sm text-[var(--app-muted)]">
-            No deliveries recorded for this month yet. Use “Run delivery now” to send.
+            No deliveries recorded for this {unit} yet. Use “Run delivery now” to send.
           </div>
         )}
 
@@ -430,7 +473,7 @@ export function ReportAutomationPanel() {
                         confirmLabel: 'Send report',
                         message: (
                           <>
-                            <strong>{row.customerName}</strong> receives their {month} performance
+                            <strong>{row.customerName}</strong> receives their {periodName} performance
                             report by email.
                           </>
                         ),

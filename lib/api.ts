@@ -476,10 +476,10 @@ export const reportApi = {
    * `excludedCustomerIds` holds back specific customers for this run only (e.g.
    * a site not fully registered yet) — they stay eligible for a later run.
    */
-  runDelivery: (month: string, excludedCustomerIds?: string[]) =>
+  runDelivery: (period: { month: string } | { week: string }, excludedCustomerIds?: string[]) =>
     api.post<ApiResponse<DeliveryRunStatus>>('/api/v1/reports/delivery/run', null, {
       params: {
-        month,
+        ...period,
         excludedCustomerIds: excludedCustomerIds?.length ? excludedCustomerIds.join(',') : undefined,
       },
     }),
@@ -489,20 +489,20 @@ export const reportApi = {
     api.get<ApiResponse<DeliveryRunStatus>>('/api/v1/reports/delivery/status'),
 
   /**
-   * Send (or resend) one customer's bundle for the month. Runs in the background
+   * Send (or resend) one customer's bundle for a month or ISO week. Runs in the background
    * on the server (syncing a large site's robots can take minutes) and returns
    * immediately; the outcome appears in the delivery history. Rejected while
    * another delivery is running.
    */
-  sendCustomerBundle: (customerProfileId: string, month: string) =>
+  sendCustomerBundle: (customerProfileId: string, period: { month: string } | { week: string }) =>
     api.post<ApiResponse<DeliveryRunStatus>>('/api/v1/reports/delivery/send', null, {
-      params: { customerProfileId, month },
+      params: { customerProfileId, ...period },
     }),
 
-  /** Delivery history for a month, newest first. */
-  deliveryHistory: (month: string) =>
+  /** Delivery history for a month or ISO week, newest first. */
+  deliveryHistory: (period: { month: string } | { week: string }) =>
     api.get<ApiResponse<ReportSend[]>>('/api/v1/reports/delivery/history', {
-      params: { month },
+      params: period,
     }),
 };
 

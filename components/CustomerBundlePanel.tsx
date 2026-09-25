@@ -146,7 +146,7 @@ export function CustomerBundlePanel() {
   });
 
   const sendMutation = useMutation({
-    mutationFn: () => reportApi.sendCustomerBundle(customerId!, month).then((r) => r.data),
+    mutationFn: () => reportApi.sendCustomerBundle(customerId!, { month }).then((r) => r.data),
   });
 
   const robots = bundleQuery.data?.robots ?? [];
