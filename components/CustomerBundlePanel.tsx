@@ -95,11 +95,11 @@ function RobotRow({
   );
 }
 
-export function CustomerBundlePanel() {
+export function CustomerBundlePanel({ initialCustomerId = null }: { initialCustomerId?: string | null } = {}) {
   const { confirm, confirmDialog } = useConfirm();
   const queryClient = useQueryClient();
 
-  const [customerId, setCustomerId] = useState<string | null>(null);
+  const [customerId, setCustomerId] = useState<string | null>(initialCustomerId);
   const [month, setMonth] = useState(() => previousMonth());
   const [query, setQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);

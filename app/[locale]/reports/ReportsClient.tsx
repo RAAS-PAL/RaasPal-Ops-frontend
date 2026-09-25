@@ -97,7 +97,14 @@ const BRAND_DEFAULT_TAB: Record<ReportBrand, ReportTab> = {
   autoxing: 'autoxing',
 };
 
-export function ReportsClient({ initialTab = 'automation' }: { initialTab?: ReportTab }) {
+export function ReportsClient({
+  initialTab = 'automation',
+  initialCustomerId = null,
+}: {
+  initialTab?: ReportTab;
+  /** Company report tab only: the customer to open on arrival. */
+  initialCustomerId?: string | null;
+}) {
   const t = useTranslations('reports');
   const [tab, setTab] = useState<ReportTab>(initialTab);
   const group = TAB_GROUP[tab];
@@ -236,7 +243,7 @@ export function ReportsClient({ initialTab = 'automation' }: { initialTab?: Repo
             )}
 
             {tab === 'automation' && <ReportAutomationPanel />}
-            {tab === 'company' && <CustomerBundlePanel />}
+            {tab === 'company' && <CustomerBundlePanel initialCustomerId={initialCustomerId} />}
             {tab === 'preview' && <ReportPreviewPanel />}
             {tab === 'zero-data' && <ZeroDataPanel />}
             {tab === 'autoxing' && <AutoxingReportPanel />}
