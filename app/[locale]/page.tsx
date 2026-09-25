@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { Bot, CalendarClock, ChevronRight, FileSearch, Mail, Sparkles, Users } from 'lucide-react';
+import { Bot, CalendarClock, ChevronRight, FileSearch, Mail, Users } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { BrandTicketHealthCard } from '@/components/BrandTicketHealthCard';
@@ -126,21 +126,6 @@ export default async function LocaleHomePage() {
                 ))}
               </div>
             </div>
-
-            {/* Secondary: the AI solution flow is still available */}
-            <Link
-              href="/generate-solution"
-              className="group flex items-center gap-4 rounded-2xl border border-dashed border-[var(--app-border-strong)] bg-[var(--app-panel)]/60 p-4 transition hover:border-[var(--app-brand)]"
-            >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]">
-                <Sparkles className="h-5 w-5" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-[var(--app-text)]">{t('solutionShortcut.label')}</p>
-                <p className="truncate text-xs text-[var(--app-muted)]">{t('solutionShortcut.description')}</p>
-              </div>
-              <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-[var(--app-muted)] transition group-hover:translate-x-0.5 group-hover:text-[var(--app-brand)]" />
-            </Link>
 
           </div>
         </section>
