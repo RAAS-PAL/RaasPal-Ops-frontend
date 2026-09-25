@@ -1006,6 +1006,12 @@ export interface CaseReportRow {
    * every single-board sheet, and on rows frozen before the field existed.
    */
   board?: CaseBoard | null;
+  /**
+   * Whose hold a held case is: CUSTOMER when the board's Status says On Hold, RAASPAL
+   * when only Sup Status does. Null when the case is not held, and on rows frozen before
+   * the field existed — the summary counts those as held without an owner.
+   */
+  heldBy?: CaseHeldBy | null;
   /** AOTGA only. The board's Spare Parts Name. Null on every other sheet. */
   requiredPart?: string | null;
   /** AOTGA only. What the case is waiting on, in the RE team's words. */
@@ -1035,6 +1041,8 @@ export interface CaseReportRow {
 export const MANUAL_CASE_ROW_PREFIX = 'manual-';
 
 export type CaseBoard = 'CLEANING' | 'DELIVERY';
+
+export type CaseHeldBy = 'CUSTOMER' | 'RAASPAL';
 
 export function isManualCaseRow(row: Pick<CaseReportRow, 'sourceItemId'>): boolean {
   return row.sourceItemId?.startsWith(MANUAL_CASE_ROW_PREFIX) ?? false;

@@ -12,7 +12,8 @@ import { AutoxingReportPanel } from '@/components/AutoxingReportPanel';
 import { ZeroDataPanel } from '@/components/ZeroDataPanel';
 import { CmReportPanel } from '@/components/CmReportPanel';
 import { CmReportHistoryPanel } from '@/components/CmReportHistoryPanel';
-import { CASE_REPORTS, CasePendingPanel } from '@/components/CasePendingPanel';
+import { CASE_REPORTS } from '@/components/CasePendingPanel';
+import { CasePendingSummary } from '@/components/CasePendingSummary';
 import { EmptyState } from '@/components/ui/empty-state';
 
 const REPORT_TABS = [
@@ -256,12 +257,12 @@ export function ReportsClient({
             )}
             {tab === 'cm-new' && <CmReportPanel />}
             {tab === 'cm-history' && <CmReportHistoryPanel />}
-            {tab === 'case-mk' && <CasePendingPanel report={CASE_REPORTS.mk} />}
-            {tab === 'case-cleaning' && <CasePendingPanel report={CASE_REPORTS.cleaning} />}
-            {tab === 'case-makro' && <CasePendingPanel report={CASE_REPORTS.makro} />}
-            {tab === 'case-aotga' && <CasePendingPanel report={CASE_REPORTS.aotga} />}
-            {tab === 'case-delivery' && <CasePendingPanel report={CASE_REPORTS.delivery} />}
-            {tab === 'case-on-hold' && <CasePendingPanel report={CASE_REPORTS['on-hold']} />}
+            {tab === 'case-mk' && <CasePendingSummary report={CASE_REPORTS.mk} />}
+            {tab === 'case-cleaning' && <CasePendingSummary report={CASE_REPORTS.cleaning} />}
+            {tab === 'case-makro' && <CasePendingSummary report={CASE_REPORTS.makro} />}
+            {tab === 'case-aotga' && <CasePendingSummary report={CASE_REPORTS.aotga} />}
+            {tab === 'case-delivery' && <CasePendingSummary report={CASE_REPORTS.delivery} />}
+            {tab === 'case-on-hold' && <CasePendingSummary report={CASE_REPORTS['on-hold']} />}
           </div>
         </section>
       </div>

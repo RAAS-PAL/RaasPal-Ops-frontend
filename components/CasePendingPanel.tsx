@@ -31,10 +31,13 @@ import { CaseRowEditDialog } from './CaseRowEditDialog';
  * stored report and kept even if the board is re-read. Regenerate re-reads monday
  * for the rows nobody has touched.
  *
+ * <p>The Reports tab shows only the counts (CasePendingSummary); this sheet is the
+ * details page it links to, at /reports/cases/[slug]?date=.
+ *
  * <p>Delivery is still by hand — nothing here sends anything.
  */
 
-function errorMessage(e: unknown, fallback: string): string {
+export function errorMessage(e: unknown, fallback: string): string {
   const detail =
     typeof e === 'object' && e !== null && 'response' in e
       ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,7 +47,7 @@ function errorMessage(e: unknown, fallback: string): string {
 }
 
 /** Today in Bangkok, as yyyy-MM-dd — the business day, not the browser's. */
-function todayInBangkok(): string {
+export function todayInBangkok(): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Bangkok',
     year: 'numeric',
@@ -117,6 +120,16 @@ export interface CaseReportSpec {
   hint: string;
   /** Pre-filled on "Add row". */
   newRow: { project: string; robot: string };
+  /**
+   * Whose name goes on the customer's on-hold count: "MK on hold". The generic sheets
+   * say "Customer", since their rows belong to many.
+   */
+  holdOwner: string;
+  /**
+   * True where held cases leave this sheet for On Hold, so its on-hold counts are always
+   * zero and the summary says where they went instead of implying there are none.
+   */
+  heldElsewhere?: boolean;
 }
 
 export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
@@ -127,6 +140,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     layout: 'sla',
     hint: 'MK, Yayoi and Bonus Suki delivery cases. Days counts from the day after the case opened (opened today = 0); the SLA is 3 days inside greater Bangkok, 5 elsewhere.',
     newRow: { project: 'MK', robot: 'Pudu 1' },
+    holdOwner: 'MK',
   },
   cleaning: {
     slug: 'cleaning',
@@ -135,6 +149,8 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     layout: 'sla',
     hint: 'Every open cleaning case except Makro’s and the airports’, which have their own sheets, and except held cases (see On Hold). Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
     newRow: { project: '', robot: 'M50' },
+    holdOwner: 'Customer',
+    heldElsewhere: true,
   },
   makro: {
     slug: 'makro',
@@ -143,6 +159,8 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     layout: 'sla',
     hint: 'Makro’s cleaning cases, minus held cases (see On Hold). Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
     newRow: { project: 'Makro', robot: 'Omnie' },
+    holdOwner: 'Makro',
+    heldElsewhere: true,
   },
   aotga: {
     slug: 'aotga',
@@ -151,6 +169,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     layout: 'parts',
     hint: 'The airports’ open cleaning cases, tracked by spare-part turnaround rather than SLA. Days and Aging After Received both count from the day after (opened or received today = 0). The 3-day SLA is computed but the sheet does not print it.',
     newRow: { project: 'AOTGA-', robot: 'M75' },
+    holdOwner: 'AOTGA',
   },
   delivery: {
     slug: 'delivery',
@@ -159,6 +178,8 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     layout: 'sla',
     hint: 'Every open delivery case that is not MK’s, minus held cases (see On Hold). Days counts from the day after the case opened (opened today = 0); the SLA is 3 days inside greater Bangkok, 5 elsewhere.',
     newRow: { project: '', robot: 'Pudu 1' },
+    holdOwner: 'Customer',
+    heldElsewhere: true,
   },
   'on-hold': {
     slug: 'on-hold',
@@ -168,6 +189,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     layout: 'sla',
     hint: 'Every held case on the cleaning and delivery boards, except the airports’. A held case has no SLA: the clock is not RAASPAL’s to run. MK’s held cases are also still on the MK sheet, by request.',
     newRow: { project: '', robot: '' },
+    holdOwner: 'Customer',
   },
 };
 
@@ -203,20 +225,46 @@ function TicketLink({ row, boardId }: { row: CaseReportRow; boardId: string }) {
   );
 }
 
-export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
-  const { confirm, confirmDialog } = useConfirm();
-  const [asOf, setAsOf] = useState<string>(todayInBangkok());
-  // The row being corrected, 'new' for one being added, null when the dialog is closed.
-  const [editing, setEditing] = useState<CaseReportRow | 'new' | null>(null);
-  const [editError, setEditError] = useState<string | null>(null);
-  // On Hold only. 'all' is the default: the sheet's point is both boards at once.
-  const [boardFilter, setBoardFilter] = useState<CaseBoard | 'all'>('all');
-  // Removed rows are hidden by default; the chip toggles them into view for restoring.
-  const [showRemoved, setShowRemoved] = useState(false);
+/** The sheet's totals, as the summary tiles and the details chips both print them. */
+export interface CaseCounts {
+  total: number;
+  within: number;
+  breached: number;
+  /** Held on the board's Status column: the customer's hold. */
+  heldByCustomer: number;
+  /** Held on Sup Status only: RAASPAL's own hold. */
+  heldByRaaspal: number;
+  /** Held on a row frozen before the owner was recorded, or set to On Hold by hand. */
+  heldUnsplit: number;
+  unknown: number;
+}
+
+/** Counts the rows on the sheet. Pass the sheet, not the stored list: removed rows are not cases. */
+export function countCases(sheet: CaseReportRow[]): CaseCounts {
+  const held = sheet.filter((r) => r.sla === 'ON_HOLD');
+  const heldByCustomer = held.filter((r) => r.heldBy === 'CUSTOMER').length;
+  const heldByRaaspal = held.filter((r) => r.heldBy === 'RAASPAL').length;
+  return {
+    total: sheet.length,
+    within: sheet.filter((r) => r.sla === 'WITHIN').length,
+    breached: sheet.filter((r) => r.sla === 'BREACHED').length,
+    heldByCustomer,
+    heldByRaaspal,
+    heldUnsplit: held.length - heldByCustomer - heldByRaaspal,
+    unknown: sheet.filter((r) => r.sla === 'UNKNOWN').length,
+  };
+}
+
+/**
+ * One date's stored sheet, and the two whole-sheet actions the summary and the details
+ * page both offer. One query key for both, so opening the details after Generate reads
+ * the cached rows instead of asking again.
+ */
+export function useCaseReport(report: CaseReportSpec, asOf: string) {
   const queryClient = useQueryClient();
   const queryKey = ['case-report', report.slug, asOf];
 
-  const { data: rows = [], isFetching, isError, error, refetch } = useQuery({
+  const query = useQuery({
     queryKey,
     queryFn: async () => (await caseReportApi.rows(report.slug, asOf)).data.data ?? [],
     staleTime: 0,
@@ -234,6 +282,49 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
     mutationFn: async () => (await caseReportApi.rows(report.slug, asOf, true)).data.data ?? [],
     onSuccess: (fresh) => queryClient.setQueryData(queryKey, fresh),
   });
+
+  // Download, not a link: the token lives in localStorage and only the axios
+  // interceptor attaches it, so an <a href> to the endpoint would arrive anonymous.
+  const exportExcel = useMutation({
+    mutationFn: async () => {
+      const res = await caseReportApi.exportExcel(report.slug, asOf);
+      const disposition = String(res.headers['content-disposition'] ?? '');
+      const named = /filename="?([^";]+)"?/.exec(disposition)?.[1];
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = named ?? `${report.slug}-pending-${asOf}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+  });
+
+  return { queryKey, query, regenerate, exportExcel };
+}
+
+/**
+ * The full sheet for one date: every row, with the tools to correct it.
+ *
+ * @param initialDate the date the summary linked from; the picker here keeps the URL in step.
+ */
+export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpec; initialDate?: string | null }) {
+  const { confirm, confirmDialog } = useConfirm();
+  const [asOf, setAsOfState] = useState<string>(initialDate ?? todayInBangkok());
+  // Keep the date in the URL, so a reload or a shared link opens the same sheet.
+  const setAsOf = (next: string) => {
+    setAsOfState(next);
+    window.history.replaceState(null, '', `?date=${next}`);
+  };
+  // The row being corrected, 'new' for one being added, null when the dialog is closed.
+  const [editing, setEditing] = useState<CaseReportRow | 'new' | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  // On Hold only. 'all' is the default: the sheet's point is both boards at once.
+  const [boardFilter, setBoardFilter] = useState<CaseBoard | 'all'>('all');
+  // Removed rows are hidden by default; the chip toggles them into view for restoring.
+  const [showRemoved, setShowRemoved] = useState(false);
+  const queryClient = useQueryClient();
+  const { queryKey, query, regenerate, exportExcel } = useCaseReport(report, asOf);
+  const { data: rows = [], isFetching, isError, error, refetch } = query;
 
   const closeDialog = () => {
     setEditing(null);
@@ -301,21 +392,6 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
 
   const busy = isFetching || regenerate.isPending;
 
-  // Download, not a link: the token lives in localStorage and only the axios
-  // interceptor attaches it, so an <a href> to the endpoint would arrive anonymous.
-  const exportExcel = useMutation({
-    mutationFn: async () => {
-      const res = await caseReportApi.exportExcel(report.slug, asOf);
-      const disposition = String(res.headers['content-disposition'] ?? '');
-      const named = /filename="?([^";]+)"?/.exec(disposition)?.[1];
-      const url = URL.createObjectURL(res.data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = named ?? `${report.slug}-pending-${asOf}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(url);
-    },
-  });
   const showProject = report.columns.includes('project');
   const showBranch = report.columns.includes('branch');
   const showBoard = report.boardFilter === true;
@@ -328,9 +404,7 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
   // stay whole-sheet, so "12 cases" means the report, not the current view.
   const onBoard = showBoard && boardFilter !== 'all' ? sheet.filter((r) => r.board === boardFilter) : sheet;
   const visible = showRemoved ? [...onBoard, ...removedRows] : onBoard;
-  const breached = sheet.filter((r) => r.sla === 'BREACHED').length;
-  const onHold = sheet.filter((r) => r.sla === 'ON_HOLD').length;
-  const unknown = sheet.filter((r) => r.sla === 'UNKNOWN').length;
+  const { breached, heldByCustomer, heldByRaaspal, heldUnsplit, unknown } = countCases(sheet);
   const edited = sheet.filter((r) => r.edited && !isManualCaseRow(r)).length;
   const added = sheet.filter(isManualCaseRow).length;
 
@@ -479,10 +553,21 @@ export function CasePendingPanel({ report }: { report: CaseReportSpec }) {
               {breached} over SLA
             </span>
           )}
-          {onHold > 0 && (
-            <span className="rounded-lg bg-amber-50 px-3 py-1.5 font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900">
-              {onHold} on hold
-            </span>
+          {(
+            [
+              [heldByCustomer, `${report.holdOwner} on hold`],
+              [heldByRaaspal, 'RaasPal on hold'],
+              [heldUnsplit, 'on hold'],
+            ] as const
+          ).map(([count, label]) =>
+            count > 0 ? (
+              <span
+                key={label}
+                className="rounded-lg bg-amber-50 px-3 py-1.5 font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900"
+              >
+                {count} {label}
+              </span>
+            ) : null,
           )}
           {unknown > 0 && (
             <span className="rounded-lg border border-[var(--app-border)] px-3 py-1.5 text-[var(--app-muted)]">
