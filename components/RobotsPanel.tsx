@@ -39,8 +39,9 @@ import type {
 // AUTOXING and PUDU are delivery robots: the backend registers them as DELIVERY
 // (not CLEANING) and keeps them out of the cleaning report bundle.
 const BRANDS = ['GAUSIUM', 'KEENON', 'CENOBOT', 'AUTOXING', 'PUDU'];
-// Weekly is intentionally omitted — automated report delivery only sends MONTHLY.
-const CADENCES: ReportCadence[] = ['MONTHLY', 'OFF'];
+// Weekly replaces Monthly for that robot: it leaves the monthly email and is sent
+// automatically every Monday for the week just ended, in one email per customer.
+const CADENCES: ReportCadence[] = ['MONTHLY', 'WEEKLY', 'OFF'];
 const CADENCE_KEY: Record<ReportCadence, string> = {
   MONTHLY: 'cadenceMonthly',
   WEEKLY: 'cadenceWeekly',
