@@ -8,6 +8,7 @@ import { MonthlyDeliveryCard } from '@/components/MonthlyDeliveryCard';
 import { ReportCadenceStats } from '@/components/ReportCadenceStats';
 import { RecentDeliveries } from '@/components/RecentDeliveries';
 import { ReportDeliveryStats } from '@/components/ReportDeliveryStats';
+import { ReportTrackingList } from '@/components/ReportTrackingList';
 import { Link } from '@/i18n/navigation';
 
 export default async function LocaleHomePage() {
@@ -75,6 +76,9 @@ export default async function LocaleHomePage() {
               <MonthlyDeliveryCard />
               <RecentDeliveries />
             </div>
+
+            {/* Customer by customer: not sent, needs attention, sent, weekly */}
+            <ReportTrackingList />
 
             {/* Service health for the delivery-robot brand under review; the full analysis has its own page */}
             <BrandTicketHealthCard />

@@ -4,8 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { ArrowRight, CalendarClock, CheckCircle2, Loader2 } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
-import { customerApi, reportApi } from '@/lib/api';
-import { monthLabel, previousMonth } from '@/lib/report-month';
+import { reportApi } from '@/lib/api';
+import { monthLabel } from '@/lib/report-month';
+import { useReportTracking } from '@/lib/use-report-tracking';
 
 /**
  * The dashboard centerpiece — status of the automated monthly bundle delivery
@@ -15,32 +16,21 @@ import { monthLabel, previousMonth } from '@/lib/report-month';
 export function MonthlyDeliveryCard() {
   const t = useTranslations('teamDashboard.delivery');
   const locale = useLocale();
-  const month = previousMonth();
+  const { month, monthly } = useReportTracking();
 
   const status = useQuery({
     queryKey: ['report-delivery-status'],
     queryFn: () => reportApi.deliveryStatus().then((r) => r.data.data),
     refetchInterval: (query) => (query.state.data?.running ? 3000 : 60_000),
   });
-  const history = useQuery({
-    queryKey: ['report-delivery-history', month],
-    queryFn: () => reportApi.deliveryHistory({ month }).then((r) => r.data.data ?? []),
-    refetchInterval: status.data?.running ? 5000 : 60_000,
-  });
-  const customers = useQuery({
-    queryKey: ['customers'],
-    queryFn: () => customerApi.list().then((r) => r.data.data ?? []),
-  });
-
   const running = status.data?.running ?? false;
-  const rows = history.data ?? [];
-  // Coverage means the bundle reached them. A single robot's report sent from the
-  // preview tab is in the same history but is not the month's delivery.
-  const sentCustomerIds = new Set(
-    rows.filter((r) => r.status === 'SENT' && r.kind === 'BUNDLE').map((r) => r.customerProfileId),
-  );
-  const totalCustomers = customers.data?.length ?? 0;
-  const coverage = totalCustomers > 0 ? Math.round((sentCustomerIds.size / totalCustomers) * 100) : 0;
+  // Coverage is customers sent out of customers DUE a monthly report — not out of
+  // every customer record, which includes delivery-only and robot-less customers who
+  // never get one. A customer counts as sent when their company link went out, or a
+  // single-robot email went out for every robot they are due for (see report-tracking).
+  const sentCount = monthly?.sent.length ?? 0;
+  const dueCount = monthly?.due ?? 0;
+  const coverage = dueCount > 0 ? Math.round((sentCount / dueCount) * 100) : 0;
 
   return (
     <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-5">
@@ -68,12 +58,12 @@ export function MonthlyDeliveryCard() {
         )}
       </div>
 
-      {/* Coverage bar — customers sent this month vs. total recipients */}
+      {/* Coverage bar — customers sent vs. customers due a monthly report */}
       <div className="mt-5">
         <div className="flex items-center justify-between text-xs">
           <span className="font-semibold text-[var(--app-text)]">{t('coverage')}</span>
           <span className="tabular-nums text-[var(--app-muted)]">
-            {t('coverageCount', { sent: sentCustomerIds.size, total: totalCustomers })}
+            {t('coverageCount', { sent: sentCount, total: dueCount })}
           </span>
         </div>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--app-faint)]">
