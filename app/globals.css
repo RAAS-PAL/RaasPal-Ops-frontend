@@ -183,6 +183,19 @@ a.rounded-2xl.border-\[var\(--app-border\)\]:hover {
   --font-mono: var(--font-geist-mono);
 }
 
+/* ─── Type scale, matched to RIMS ─────────────────────────────────────────────
+   The two consoles sit side by side, so they should read at the same size.
+   RIMS sets body text to 14px and uses 13px for most UI text; this console
+   was on the Tailwind defaults (16px base, text-sm 14px). Only the type scale
+   changes: spacing already matches — both use a 240px sidebar and 56px top bar.
+   ─────────────────────────────────────────────────────────────────────────── */
+@theme {
+  --text-sm: 0.8125rem;            /* 13px — RIMS main UI text (was 14px) */
+  --text-sm--line-height: 1.5;
+  --text-base: 0.9375rem;          /* 15px — RIMS larger body text (was 16px) */
+  --text-base--line-height: 1.55;
+}
+
 /* ─── Base styles ─────────────────────────────────────────────────────────── */
 
 *,
@@ -201,6 +214,9 @@ body {
   background-color: var(--canvas);
   color: var(--ink);
   font-family: var(--font-sans, Arial, Helvetica, sans-serif);
+  /* RIMS base: 14px at 1.55 — text without its own size class reads the same in both. */
+  font-size: 0.875rem;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* App text uses the normal arrow cursor instead of the I-beam, so labels and
