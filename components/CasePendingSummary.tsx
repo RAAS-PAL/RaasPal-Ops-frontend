@@ -27,17 +27,32 @@ function Tile({
   value,
   tone,
   note,
+  className = '',
+  children,
 }: {
   label: string;
   value: number;
   tone: keyof typeof TILE_TONE;
   note?: string;
+  className?: string;
+  children?: React.ReactNode;
 }) {
   return (
-    <div className={`flex flex-col gap-1 rounded-xl border p-4 ${TILE_TONE[tone]}`}>
+    <div className={`flex flex-col gap-1 rounded-xl border p-4 ${TILE_TONE[tone]} ${className}`}>
       <span className="text-xs font-semibold uppercase tracking-wide opacity-80">{label}</span>
       <span className="text-3xl font-bold tabular-nums">{value}</span>
       {note && <span className="text-xs opacity-80">{note}</span>}
+      {children}
+    </div>
+  );
+}
+
+/** One part of the RAASPAL Pending total, in the colour the sheet uses for that verdict. */
+function PartOf({ label, value, tone }: { label: string; value: number; tone: keyof typeof TILE_TONE }) {
+  return (
+    <div className={`flex items-baseline justify-between gap-3 rounded-lg border px-3 py-2 ${TILE_TONE[tone]}`}>
+      <span className="text-xs font-semibold uppercase tracking-wide opacity-80">{label}</span>
+      <span className="text-xl font-bold tabular-nums">{value}</span>
     </div>
   );
 }
@@ -128,22 +143,33 @@ export function CasePendingSummary({ report }: { report: CaseReportSpec }) {
         )
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {/* Total = the customer's holds + RAASPAL Pending. Within and over SLA are parts
+              of RAASPAL Pending, not totals beside it: both are cases waiting on RAASPAL,
+              only one of them is late. */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Tile label="Total cases" value={counts.total} tone="neutral" />
-            <Tile label="Within SLA" value={counts.within} tone="within" />
-            <Tile label="Over SLA" value={counts.breached} tone="breached" />
             <Tile
               label={`${report.holdOwner} on hold`}
               value={counts.heldByCustomer}
               tone="held"
-              note={heldNote ?? 'Status is On Hold'}
+              note={heldNote ?? 'Status is On Hold: waiting on the customer'}
             />
             <Tile
-              label="RaasPal on hold"
-              value={counts.heldByRaaspal}
-              tone="held"
-              note={heldNote ?? 'Sup Status is On Hold'}
-            />
+              label="RAASPAL Pending"
+              value={counts.raaspalPending}
+              tone="neutral"
+              note="Waiting on RAASPAL: technician schedule or spare parts"
+              className="sm:col-span-2"
+            >
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <PartOf label="Within SLA" value={counts.within} tone="within" />
+                <PartOf label="Over SLA" value={counts.breached} tone="breached" />
+                {counts.unknown > 0 && <PartOf label="No SLA verdict" value={counts.unknown} tone="neutral" />}
+                {counts.heldByRaaspal > 0 && (
+                  <PartOf label="Sup Status On Hold" value={counts.heldByRaaspal} tone="neutral" />
+                )}
+              </div>
+            </Tile>
           </div>
 
           {/* The tiles above should add up to the total; say what makes up any gap. */}
@@ -154,7 +180,7 @@ export function CasePendingSummary({ report }: { report: CaseReportSpec }) {
                 {counts.unknown > 0 &&
                   `${counts.unknown} case${counts.unknown === 1 ? ' has' : 's have'} no SLA verdict (no open date or province). `}
                 {counts.heldUnsplit > 0 &&
-                  `${counts.heldUnsplit} held case${counts.heldUnsplit === 1 ? '' : 's'} not split between ${report.holdOwner} and RaasPal: generated before the split existed, or set to On Hold by hand. Regenerate from monday to split the unedited ones.`}
+                  `${counts.heldUnsplit} held case${counts.heldUnsplit === 1 ? ' is' : 's are'} in neither count: generated before ${report.holdOwner} on hold and RAASPAL Pending were told apart, or set to On Hold by hand. Regenerate from monday to sort the unedited ones.`}
               </span>
             </p>
           )}

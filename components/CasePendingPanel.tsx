@@ -232,11 +232,20 @@ export interface CaseCounts {
   breached: number;
   /** Held on the board's Status column: the customer's hold. */
   heldByCustomer: number;
-  /** Held on Sup Status only: RAASPAL's own hold. */
+  /**
+   * Held on Sup Status only. Not a hold in the team's sense — RAASPAL does not put a
+   * customer's case on hold — so it is counted in {@link raaspalPending}.
+   */
   heldByRaaspal: number;
   /** Held on a row frozen before the owner was recorded, or set to On Hold by hand. */
   heldUnsplit: number;
   unknown: number;
+  /**
+   * Every case waiting on RAASPAL's action — a technician's schedule, a spare part:
+   * within SLA, over SLA, no verdict, and Sup Status holds. With the customer's holds
+   * and the unsplit ones, it makes up the total.
+   */
+  raaspalPending: number;
 }
 
 /** Counts the rows on the sheet. Pass the sheet, not the stored list: removed rows are not cases. */
@@ -244,14 +253,18 @@ export function countCases(sheet: CaseReportRow[]): CaseCounts {
   const held = sheet.filter((r) => r.sla === 'ON_HOLD');
   const heldByCustomer = held.filter((r) => r.heldBy === 'CUSTOMER').length;
   const heldByRaaspal = held.filter((r) => r.heldBy === 'RAASPAL').length;
+  const within = sheet.filter((r) => r.sla === 'WITHIN').length;
+  const breached = sheet.filter((r) => r.sla === 'BREACHED').length;
+  const unknown = sheet.filter((r) => r.sla === 'UNKNOWN').length;
   return {
     total: sheet.length,
-    within: sheet.filter((r) => r.sla === 'WITHIN').length,
-    breached: sheet.filter((r) => r.sla === 'BREACHED').length,
+    within,
+    breached,
     heldByCustomer,
     heldByRaaspal,
     heldUnsplit: held.length - heldByCustomer - heldByRaaspal,
-    unknown: sheet.filter((r) => r.sla === 'UNKNOWN').length,
+    unknown,
+    raaspalPending: within + breached + unknown + heldByRaaspal,
   };
 }
 
@@ -404,7 +417,7 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
   // stay whole-sheet, so "12 cases" means the report, not the current view.
   const onBoard = showBoard && boardFilter !== 'all' ? sheet.filter((r) => r.board === boardFilter) : sheet;
   const visible = showRemoved ? [...onBoard, ...removedRows] : onBoard;
-  const { breached, heldByCustomer, heldByRaaspal, heldUnsplit, unknown } = countCases(sheet);
+  const { breached, heldByCustomer, heldUnsplit, unknown, raaspalPending } = countCases(sheet);
   const edited = sheet.filter((r) => r.edited && !isManualCaseRow(r)).length;
   const added = sheet.filter(isManualCaseRow).length;
 
@@ -548,6 +561,11 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
               {removedRows.length} removed by hand
             </button>
           )}
+          {raaspalPending > 0 && (
+            <span className="rounded-lg bg-[var(--app-brand-soft)] px-3 py-1.5 font-semibold text-[var(--app-brand-dark)]">
+              {raaspalPending} RAASPAL pending
+            </span>
+          )}
           {breached > 0 && (
             <span className="rounded-lg bg-red-50 px-3 py-1.5 font-semibold text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-900">
               {breached} over SLA
@@ -556,7 +574,6 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
           {(
             [
               [heldByCustomer, `${report.holdOwner} on hold`],
-              [heldByRaaspal, 'RaasPal on hold'],
               [heldUnsplit, 'on hold'],
             ] as const
           ).map(([count, label]) =>
