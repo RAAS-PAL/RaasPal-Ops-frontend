@@ -485,6 +485,8 @@ export interface RobotUnitResponse {
   brand: string;
   model: string | null;
   name: string | null;
+  /** CLEANING or DELIVERY. Delivery robots are left out of the cleaning report email. */
+  robotType: RobotType;
   /** Null when the robot is registered but not deployed to a customer. */
   deployment: DeploymentInfo | null;
 }
