@@ -10,9 +10,9 @@
  * shortcut that used to sit here was removed because a preview with invented
  * numbers next to the real Send button invited mistakes.
  *
- * Sharing and emailing stay monthly-only: a report link is keyed on robot+month,
- * so a weekly report has nowhere to be sent yet. The buttons are disabled rather
- * than hidden, so it is obvious *why* rather than looking like they vanished.
+ * Sharing and emailing work for either period: a report link is keyed on the
+ * robot plus a period key ("2026-08" or "2026-W38"), and the email names the
+ * period the same way the report does.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -48,10 +48,6 @@ const PERIOD_TABS: { kind: PeriodKind; label: string }[] = [
   { kind: 'month', label: 'Monthly' },
   { kind: 'week', label: 'Weekly' },
 ];
-
-/** Why sharing and email are unavailable on a weekly report. */
-const WEEKLY_SEND_NOTE =
-  'Report links are keyed to a month, so weekly reports cannot be shared or emailed yet — switch to Monthly to send one.';
 
 const PERIOD_INPUT_CLASS =
   'h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]';
@@ -161,7 +157,7 @@ export function ReportPreviewPanel() {
 
   // Mint (or reuse) the public token and open the standalone customer link in a new tab.
   const linkMutation = useMutation({
-    mutationFn: () => reportApi.createLink(robotSn!, month).then((r) => r.data.data),
+    mutationFn: () => reportApi.createLink(robotSn!, periodParam).then((r) => r.data.data),
     onSuccess: (data) => {
       if (data?.token) window.open(`/${locale}/report/${data.token}`, '_blank', 'noopener,noreferrer');
     },
@@ -169,7 +165,7 @@ export function ReportPreviewPanel() {
 
   // Email the report link to the customer's contact email.
   const emailMutation = useMutation({
-    mutationFn: () => reportApi.sendEmail(robotSn!, month).then((r) => r.data),
+    mutationFn: () => reportApi.sendEmail(robotSn!, periodParam).then((r) => r.data),
   });
 
   const report: MonthlyPerformanceReport | null | undefined = robotReport;
@@ -247,12 +243,8 @@ export function ReportPreviewPanel() {
               <button
                 type="button"
                 onClick={() => linkMutation.mutate()}
-                disabled={linkMutation.isPending || isWeekly}
-                title={
-                  isWeekly
-                    ? WEEKLY_SEND_NOTE
-                    : 'Open the standalone customer report link (real data) in a new tab — same link the monthly email uses'
-                }
+                disabled={linkMutation.isPending}
+                title="Open the standalone customer report link (real data) in a new tab — the same link the report email carries"
                 className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm font-semibold text-[var(--app-brand-dark)] transition hover:border-[var(--app-brand)] disabled:opacity-50"
               >
                 {linkMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
@@ -276,8 +268,8 @@ export function ReportPreviewPanel() {
                     ),
                   }).then((ok) => ok && emailMutation.mutate())
                 }
-                disabled={emailMutation.isPending || isWeekly}
-                title={isWeekly ? WEEKLY_SEND_NOTE : "Email this report link to the customer's contact email"}
+                disabled={emailMutation.isPending}
+                title="Email this report link to the customer's contact email"
                 className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
               >
                 {emailMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
@@ -286,13 +278,6 @@ export function ReportPreviewPanel() {
             )}
           </div>
         </div>
-
-        {isRobot && isWeekly && (
-          <p className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            {WEEKLY_SEND_NOTE}
-          </p>
-        )}
 
         {isRobot && syncMutation.isSuccess && (
           <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">

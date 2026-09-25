@@ -439,10 +439,10 @@ export const reportApi = {
       params: { serialNumber, ...period },
     }),
 
-  /** Mint (or reuse) the shareable public link token for a robot+month. */
-  createLink: (serialNumber: string, month: string) =>
+  /** Mint (or reuse) the shareable public link token for a robot and a month or ISO week. */
+  createLink: (serialNumber: string, period: { month: string } | { week: string }) =>
     api.post<ApiResponse<{ token: string }>>('/api/v1/reports/links', null, {
-      params: { serialNumber, month },
+      params: { serialNumber, ...period },
     }),
 
   /** Public, no-auth report for a shared token (used by /report/{token}). */
@@ -461,12 +461,12 @@ export const reportApi = {
       params: { customerProfileId, month },
     }),
 
-  /** Email the report link for a robot+month to its customer's contact email. */
-  sendEmail: (serialNumber: string, month: string) =>
+  /** Email the report link for a robot and a month or ISO week to its customer's contact email. */
+  sendEmail: (serialNumber: string, period: { month: string } | { week: string }) =>
     api.post<ApiResponse<{ recipient: string; customerName: string; url: string }>>(
       '/api/v1/reports/email',
       null,
-      { params: { serialNumber, month } },
+      { params: { serialNumber, ...period } },
     ),
 
   /**
