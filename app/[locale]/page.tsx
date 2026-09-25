@@ -5,6 +5,7 @@ import { AppTopBar } from '@/components/AppTopBar';
 import { BrandTicketHealthCard } from '@/components/BrandTicketHealthCard';
 import { CvteStatusSummary } from '@/components/CvteStatusSummary';
 import { MonthlyDeliveryCard } from '@/components/MonthlyDeliveryCard';
+import { ReportCadenceStats } from '@/components/ReportCadenceStats';
 import { RecentDeliveries } from '@/components/RecentDeliveries';
 import { ReportDeliveryStats } from '@/components/ReportDeliveryStats';
 import { Link } from '@/i18n/navigation';
@@ -65,6 +66,9 @@ export default async function LocaleHomePage() {
 
             {/* Report delivery KPI tiles */}
             <ReportDeliveryStats />
+
+            {/* How many robots are on each report cadence, and who that actually emails */}
+            <ReportCadenceStats />
 
             {/* Delivery status centerpiece + recent deliveries */}
             <div className="grid gap-4 lg:grid-cols-2">

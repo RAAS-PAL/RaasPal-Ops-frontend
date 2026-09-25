@@ -10,7 +10,8 @@ import { previousMonth } from '@/lib/report-month';
 
 const REFRESH_MS = 60_000;
 
-function StatTile({
+/** One dashboard KPI tile. Shared with the report-cadence row so the two rows match. */
+export function StatTile({
   icon: Icon,
   label,
   value,

@@ -255,6 +255,16 @@
       "customers": "Customers",
       "customersHint": "Report recipients"
     },
+    "cadence": {
+      "heading": "Report cadence",
+      "manage": "Change in Tools → Robots",
+      "monthly": "Monthly",
+      "weekly": "Weekly",
+      "off": "Off",
+      "customersEmailed": "{count, plural, =0 {No customer emailed} one {# customer emailed} other {# customers emailed}}",
+      "deliveryNotEmailed": "{count} delivery not emailed",
+      "offHint": "No report email"
+    },
     "delivery": {
       "heading": "Monthly delivery",
       "reportPeriod": "Report period · {month}",
