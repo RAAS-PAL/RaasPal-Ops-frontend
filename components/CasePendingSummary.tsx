@@ -15,44 +15,80 @@ import type { CaseReportSpec } from './CasePendingPanel';
  * date.
  */
 
-const TILE_TONE = {
-  neutral: 'border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text)]',
-  within: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300',
-  breached: 'border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300',
-  held: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300',
+/**
+ * One colour per slice of the total. The bar and the box a slice belongs to share it,
+ * so each box's swatch is the bar's legend entry. Checked with the dataviz palette
+ * validator in both modes - light amber/emerald/red 500 on white, dark amber 600 /
+ * emerald 600 / red 500 on the dark panel: neighbouring slices stay apart under
+ * red-green colour blindness, helped by the 2px surface gap between them. Text never
+ * takes these colours; it stays in the app's ink so it reads in either mode.
+ */
+const SLICE = {
+  held: 'bg-amber-500 dark:bg-amber-600',
+  within: 'bg-emerald-500 dark:bg-emerald-600',
+  breached: 'bg-red-500',
+  other: 'bg-slate-400 dark:bg-slate-500',
 } as const;
+type Slice = keyof typeof SLICE;
 
-function Tile({
-  label,
-  value,
-  tone,
-  note,
-  className = '',
-  children,
-}: {
+/** The soft fill behind a box, so the verdict reads at a glance as it did before. */
+const BOX_TONE: Record<Slice, string> = {
+  held: 'border-amber-200 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950/30',
+  within: 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-900 dark:bg-emerald-950/30',
+  breached: 'border-red-200 bg-red-50/70 dark:border-red-900 dark:bg-red-950/30',
+  other: 'border-[var(--app-border)] bg-[var(--app-bg)]',
+};
+
+interface Part {
+  slice: Slice;
   label: string;
   value: number;
-  tone: keyof typeof TILE_TONE;
-  note?: string;
-  className?: string;
-  children?: React.ReactNode;
-}) {
+}
+
+function Swatch({ slice }: { slice: Slice }) {
+  return <span aria-hidden className={`inline-block h-2.5 w-2.5 shrink-0 rounded-sm ${SLICE[slice]}`} />;
+}
+
+function PartLabel({ part }: { part: Part }) {
   return (
-    <div className={`flex flex-col gap-1 rounded-xl border p-4 ${TILE_TONE[tone]} ${className}`}>
-      <span className="text-xs font-semibold uppercase tracking-wide opacity-80">{label}</span>
-      <span className="text-3xl font-bold tabular-nums">{value}</span>
-      {note && <span className="text-xs opacity-80">{note}</span>}
-      {children}
+    <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">
+      <Swatch slice={part.slice} />
+      {part.label}
+    </span>
+  );
+}
+
+/**
+ * The total as one bar split into its parts, in the order of the boxes below. Sized by
+ * flex-grow so the 2px gaps come out of the width instead of pushing the last slice
+ * off the end; a slice of one case in hundreds keeps a 4px minimum so it stays visible.
+ */
+function CompositionBar({ parts, total }: { parts: Part[]; total: number }) {
+  const shown = parts.filter((p) => p.value > 0);
+  return (
+    <div
+      role="img"
+      aria-label={shown.map((p) => `${p.label}: ${p.value}`).join(', ')}
+      className="flex h-3 w-full gap-[2px] overflow-hidden rounded-full"
+    >
+      {shown.map((p) => (
+        <div
+          key={p.label}
+          title={`${p.label}: ${p.value} of ${total} (${Math.round((p.value / total) * 100)}%)`}
+          className={`min-w-1 basis-0 ${SLICE[p.slice]}`}
+          style={{ flexGrow: p.value }}
+        />
+      ))}
     </div>
   );
 }
 
-/** One part of the RAASPAL Pending total, in the colour the sheet uses for that verdict. */
-function PartOf({ label, value, tone }: { label: string; value: number; tone: keyof typeof TILE_TONE }) {
+/** One of RAASPAL Pending's parts: a compact box, number to the right of its label. */
+function SubBox({ part }: { part: Part }) {
   return (
-    <div className={`flex items-baseline justify-between gap-3 rounded-lg border px-3 py-2 ${TILE_TONE[tone]}`}>
-      <span className="text-xs font-semibold uppercase tracking-wide opacity-80">{label}</span>
-      <span className="text-xl font-bold tabular-nums">{value}</span>
+    <div className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 ${BOX_TONE[part.slice]}`}>
+      <PartLabel part={part} />
+      <span className="text-2xl font-semibold text-[var(--app-text)]">{part.value}</span>
     </div>
   );
 }
@@ -66,6 +102,21 @@ export function CasePendingSummary({ report }: { report: CaseReportSpec }) {
   // Removed rows are kept for restoring but are not cases; count what the Excel holds.
   const counts = countCases(rows.filter((r) => !r.removed));
   const heldNote = report.heldElsewhere ? 'Held cases are listed on the On Hold tab' : undefined;
+
+  // The total's parts, in the order the boxes and the bar show them. The last two of
+  // RAASPAL Pending appear only when there is something in them.
+  const held: Part = { slice: 'held', label: `${report.holdOwner} on hold`, value: counts.heldByCustomer };
+  const pendingParts: Part[] = [
+    { slice: 'within', label: 'Within SLA', value: counts.within },
+    { slice: 'breached', label: 'Over SLA', value: counts.breached },
+    ...(counts.heldByRaaspal > 0
+      ? [{ slice: 'other' as const, label: 'Sup Status On Hold', value: counts.heldByRaaspal }]
+      : []),
+    ...(counts.unknown > 0 ? [{ slice: 'other' as const, label: 'No SLA verdict', value: counts.unknown }] : []),
+  ];
+  // Held rows from before the owner was recorded: in the total, in neither part.
+  const unsplit: Part[] =
+    counts.heldUnsplit > 0 ? [{ slice: 'other', label: 'On hold, owner not recorded', value: counts.heldUnsplit }] : [];
 
   return (
     <div className="space-y-4">
@@ -143,34 +194,49 @@ export function CasePendingSummary({ report }: { report: CaseReportSpec }) {
         )
       ) : (
         <>
-          {/* Total = the customer's holds + RAASPAL Pending. Within and over SLA are parts
-              of RAASPAL Pending, not totals beside it: both are cases waiting on RAASPAL,
-              only one of them is late. */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Tile label="Total cases" value={counts.total} tone="neutral" />
-            <Tile
-              label={`${report.holdOwner} on hold`}
-              value={counts.heldByCustomer}
-              tone="held"
-              note={heldNote ?? 'Status is On Hold: waiting on the customer'}
-            />
-            <Tile
-              label="RAASPAL Pending"
-              value={counts.raaspalPending}
-              tone="neutral"
-              note="Waiting on RAASPAL: technician schedule or spare parts"
-              className="sm:col-span-2"
-            >
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                <PartOf label="Within SLA" value={counts.within} tone="within" />
-                <PartOf label="Over SLA" value={counts.breached} tone="breached" />
-                {counts.unknown > 0 && <PartOf label="No SLA verdict" value={counts.unknown} tone="neutral" />}
-                {counts.heldByRaaspal > 0 && (
-                  <PartOf label="Sup Status On Hold" value={counts.heldByRaaspal} tone="neutral" />
-                )}
+          {/* One card. Total is the headline and the bar shows what it is made of; below,
+              its two parts - the customer's holds and RAASPAL Pending - each sized to what
+              it holds. Within and Over SLA are parts of RAASPAL Pending, not totals
+              beside it: both are cases waiting on RAASPAL, only one of them is late. */}
+          <section className="@container rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4 sm:p-5">
+            <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
+              <div className="shrink-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">Total cases</p>
+                <p className="mt-1 text-5xl font-semibold leading-none text-[var(--app-text)]">{counts.total}</p>
               </div>
-            </Tile>
-          </div>
+              <div className="min-w-[14rem] flex-1 space-y-2 pb-0.5">
+                <p className="text-sm text-[var(--app-muted)]">
+                  <span className="font-semibold text-[var(--app-text)]">{counts.heldByCustomer}</span> on hold with{' '}
+                  {report.holdOwner} &middot;{' '}
+                  <span className="font-semibold text-[var(--app-text)]">{counts.raaspalPending}</span> RAASPAL Pending
+                </p>
+                <CompositionBar parts={[held, ...pendingParts, ...unsplit]} total={counts.total} />
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 @3xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+              <div className={`flex flex-col justify-center gap-1 rounded-xl border p-4 ${BOX_TONE.held}`}>
+                <PartLabel part={held} />
+                <span className="text-3xl font-semibold text-[var(--app-text)]">{held.value}</span>
+                <span className="text-xs text-[var(--app-muted)]">
+                  {heldNote ?? 'Status is On Hold: waiting on the customer'}
+                </span>
+              </div>
+
+              <div className="@container flex flex-col gap-3 rounded-xl border border-[var(--app-border)] p-4 @xl:flex-row @xl:items-center">
+                <div className="shrink-0 @xl:w-48">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">RAASPAL Pending</p>
+                  <p className="mt-1 text-3xl font-semibold text-[var(--app-text)]">{counts.raaspalPending}</p>
+                  <p className="text-xs text-[var(--app-muted)]">Technician schedule or spare parts</p>
+                </div>
+                <div className="grid flex-1 gap-2 @sm:grid-cols-2">
+                  {pendingParts.map((part) => (
+                    <SubBox key={part.label} part={part} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
 
           {/* The tiles above should add up to the total; say what makes up any gap. */}
           {(counts.unknown > 0 || counts.heldUnsplit > 0) && (
