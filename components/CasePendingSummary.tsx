@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AlertTriangle, ArrowRight, CalendarDays, Download, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
-import { countCases, errorMessage, todayInBangkok, useCaseReport } from './CasePendingPanel';
+import { CaseReportFreshness, countCases, errorMessage, todayInBangkok, useCaseReport } from './CasePendingPanel';
 import type { CaseReportSpec } from './CasePendingPanel';
 
 /**
@@ -95,7 +95,7 @@ function SubBox({ part }: { part: Part }) {
 
 export function CasePendingSummary({ report }: { report: CaseReportSpec }) {
   const [asOf, setAsOf] = useState<string>(todayInBangkok());
-  const { query, regenerate, exportExcel } = useCaseReport(report, asOf);
+  const { query, regenerate, exportExcel, runInfo, live } = useCaseReport(report, asOf);
   const { data: rows = [], isFetching, isError, error, refetch } = query;
   const busy = isFetching || regenerate.isPending;
 
@@ -194,6 +194,8 @@ export function CasePendingSummary({ report }: { report: CaseReportSpec }) {
         )
       ) : (
         <>
+          <CaseReportFreshness info={runInfo} live={live} />
+
           {/* One card. Total is the headline and the bar shows what it is made of; below,
               its two parts - the customer's holds and RAASPAL Pending - each sized to what
               it holds. Within and Over SLA are parts of RAASPAL Pending, not totals

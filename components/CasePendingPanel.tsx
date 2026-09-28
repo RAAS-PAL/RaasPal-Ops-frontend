@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
   CalendarDays,
+  Clock,
   Download,
   ExternalLink,
   Loader2,
@@ -19,7 +20,7 @@ import { caseReportApi } from '@/lib/api';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import type { CaseReportSlug } from '@/lib/api';
 import { isManualCaseRow } from '@/types/api';
-import type { CaseBoard, CaseReportRow, CaseRowEdit, SlaStatus } from '@/types/api';
+import type { CaseBoard, CaseReportRow, CaseReportRunInfo, CaseRowEdit, SlaStatus } from '@/types/api';
 import { CaseRowEditDialog } from './CaseRowEditDialog';
 
 /**
@@ -276,12 +277,20 @@ export function countCases(sheet: CaseReportRow[]): CaseCounts {
 export function useCaseReport(report: CaseReportSpec, asOf: string) {
   const queryClient = useQueryClient();
   const queryKey = ['case-report', report.slug, asOf];
+  const runKey = ['case-report-run', report.slug, asOf];
+
+  // Today's sheet is regenerated on the server every 15 minutes. Reading the stored copy
+  // is cheap (no monday call), so an open page re-reads it every minute and is never far
+  // behind the server. Only while the tab is in front — the query layer's default — and
+  // never for a past date, which is settled.
+  const live = asOf === todayInBangkok();
 
   const query = useQuery({
     queryKey,
     queryFn: async () => (await caseReportApi.rows(report.slug, asOf)).data.data ?? [],
     staleTime: 0,
     refetchOnWindowFocus: false,
+    refetchInterval: live ? LIVE_POLL_MS : false,
     // The first call for a date generates the sheet: minutes of monday and model calls.
     // A timeout is "still working", not a blip, and the query layer's default three
     // retries fired three more generations of the same sheet. The server now joins a
@@ -293,7 +302,19 @@ export function useCaseReport(report: CaseReportSpec, asOf: string) {
   // is why this needs no confirmation: it cannot undo anyone's work.
   const regenerate = useMutation({
     mutationFn: async () => (await caseReportApi.rows(report.slug, asOf, true)).data.data ?? [],
-    onSuccess: (fresh) => queryClient.setQueryData(queryKey, fresh),
+    onSuccess: (fresh) => {
+      queryClient.setQueryData(queryKey, fresh);
+      void queryClient.invalidateQueries({ queryKey: runKey });
+    },
+  });
+
+  // When the stored copy was last generated, for "Updated 10:45". Polled with the rows.
+  const runInfo = useQuery({
+    queryKey: runKey,
+    queryFn: async () => (await caseReportApi.run(report.slug, asOf)).data.data ?? null,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    refetchInterval: live ? LIVE_POLL_MS : false,
   });
 
   // Download, not a link: the token lives in localStorage and only the axios
@@ -312,7 +333,37 @@ export function useCaseReport(report: CaseReportSpec, asOf: string) {
     },
   });
 
-  return { queryKey, query, regenerate, exportExcel };
+  return { queryKey, query, regenerate, exportExcel, runInfo: runInfo.data ?? null, live };
+}
+
+/** How often an open page re-reads today's stored sheet. The server refreshes it every 15 min. */
+const LIVE_POLL_MS = 60_000;
+
+/**
+ * How fresh the sheet on screen is: "Updated 10:45 · refreshes from monday every 15
+ * minutes" for today, "Final — last updated 23:45" for a settled date. Nothing until the
+ * date has been generated.
+ */
+export function CaseReportFreshness({ info, live }: { info: CaseReportRunInfo | null; live: boolean }) {
+  if (!info?.exists || !info.generatedAt) return null;
+  const at = new Date(info.generatedAt);
+  if (Number.isNaN(at.getTime())) return null;
+  const time = at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+  return (
+    <p className="flex items-center gap-1.5 text-xs text-[var(--app-muted)]">
+      <Clock className="h-3.5 w-3.5 shrink-0" />
+      {live ? (
+        <span>
+          Updated <span className="font-semibold text-[var(--app-text)]">{time}</span> · refreshes from
+          monday every 15 minutes until midnight
+        </span>
+      ) : (
+        <span>
+          Final for this date · last updated <span className="font-semibold text-[var(--app-text)]">{time}</span>
+        </span>
+      )}
+    </p>
+  );
 }
 
 /**
@@ -336,7 +387,7 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
   // Removed rows are hidden by default; the chip toggles them into view for restoring.
   const [showRemoved, setShowRemoved] = useState(false);
   const queryClient = useQueryClient();
-  const { queryKey, query, regenerate, exportExcel } = useCaseReport(report, asOf);
+  const { queryKey, query, regenerate, exportExcel, runInfo, live } = useCaseReport(report, asOf);
   const { data: rows = [], isFetching, isError, error, refetch } = query;
 
   const closeDialog = () => {
@@ -537,6 +588,8 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
           </span>
         </div>
       )}
+
+      <CaseReportFreshness info={runInfo} live={live} />
 
       {/* Totals. Deliberately above the table: on a 30-row report the count of breached
           cases is the thing someone wants first, and scrolling to tally them by eye is

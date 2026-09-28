@@ -1037,6 +1037,20 @@ export interface CaseReportRow {
   removed?: boolean;
 }
 
+/**
+ * A date's stored sheet: whether it exists and when it was last generated. The server
+ * regenerates today's sheets every 15 minutes (07:00-23:45 Bangkok), so generatedAt is
+ * how fresh the page is. An ISO instant with offset; empty when never generated.
+ */
+export interface CaseReportRunInfo {
+  runDate: string;
+  exists: boolean;
+  status?: string;
+  ticketCount?: number;
+  generatedAt?: string;
+  replaceable?: boolean;
+}
+
 /** Prefix of the ids the backend gives rows added by hand. */
 export const MANUAL_CASE_ROW_PREFIX = 'manual-';
 

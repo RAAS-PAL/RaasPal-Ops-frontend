@@ -78,6 +78,7 @@ import type {
 } from './kpi/api-types';
 import type {
   CaseReportRow,
+  CaseReportRunInfo,
   CaseRowEdit,
   ApiResponse,
   AutoxingDeliveryReport,
@@ -868,6 +869,14 @@ export const caseReportApi = {
       timeout: 300_000,
       skipRetry: true,
     }),
+
+  /**
+   * Whether a date's sheet is stored and when it was last generated. Cheap: no monday
+   * read. The server refreshes today's sheets every 15 minutes, so the page polls this
+   * and the rows to stay current.
+   */
+  run: (report: CaseReportSlug, asOf: string) =>
+    api.get<ApiResponse<CaseReportRunInfo>>(`/api/v1/case-reports/${report}/run`, { params: { asOf } }),
 
   /** Overwrite one row of the stored draft for a date. Refused once it has been sent. */
   editRow: (report: CaseReportSlug, asOf: string, sourceItemId: string, body: CaseRowEdit) =>
