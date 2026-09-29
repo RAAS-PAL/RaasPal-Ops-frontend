@@ -76,9 +76,9 @@ export function TicketKpiTiles({
       />
       <Tile
         icon={Timer}
-        tone={k?.slaWithin7Pct == null ? 'muted' : k.slaWithin7Pct >= 80 ? 'success' : 'danger'}
-        label={t('sla')}
-        value={pct(k?.slaWithin7Pct)}
+        tone={k?.slaWithinPct == null ? 'muted' : k.slaWithinPct >= 80 ? 'success' : 'danger'}
+        label={k ? t('sla', { days: k.slaDays }) : t('slaPending')}
+        value={pct(k?.slaWithinPct)}
         hint={k ? t('sample', { n: k.actionSample }) : undefined}
         title={d?.slaDays}
         loading={loading}

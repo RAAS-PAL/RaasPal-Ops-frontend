@@ -163,7 +163,9 @@ import type {
 import type {
   BrandSyncStatus,
   BrandTicket,
+  BrandTicketComment,
   BrandTicketSummary,
+  TicketBrandRef,
   TicketScope,
 } from '@/lib/tickets/types';
 
@@ -993,7 +995,7 @@ export interface PmSyncStatus {
   }[];
 }
 
-/* ─── Per-brand service tickets (AutoXing today) ──────────────────────────── */
+/* ─── Per-brand service tickets (AutoXing, Gausium) ───────────────────────── */
 
 /**
  * One robot brand's tickets off the monday delivery board, as stored by the
@@ -1001,6 +1003,13 @@ export interface PmSyncStatus {
  * omitted means all time.
  */
 export const brandTicketApi = {
+  /** The configured brands, in order — the page's tabs. */
+  brands: () => api.get<ApiResponse<TicketBrandRef[]>>('/api/v1/ticket-brands'),
+
+  /** One ticket's thread, fetched when its row is opened; the list carries only counts. */
+  comments: (brand: string, ticketId: string) =>
+    api.get<ApiResponse<BrandTicketComment[]>>(`/api/v1/tickets/${brand}/${ticketId}/comments`),
+
   summary: (brand: string, from?: string | null, to?: string | null) =>
     api.get<ApiResponse<BrandTicketSummary>>(`/api/v1/tickets/${brand}/summary`, {
       params: { ...(from ? { from } : {}), ...(to ? { to } : {}) },
@@ -1014,10 +1023,16 @@ export const brandTicketApi = {
   syncStatus: (brand: string) =>
     api.get<ApiResponse<BrandSyncStatus>>(`/api/v1/tickets/${brand}/sync/status`),
 
-  /** One monday call; a few seconds. Not retried — a timeout is "still running". */
+  /**
+   * A listing, then only the tickets that changed: about 80 s for Gausium on a normal
+   * day, most of it monday listing 2,600 tickets. 170 s sits just under nginx's 180 s
+   * proxy_read_timeout. A brand's first load takes minutes and outlives both; the
+   * server finishes it anyway. Not retried — a timeout is "still running", and a 409
+   * means a sync of this brand already is.
+   */
   sync: (brand: string) =>
     api.post<ApiResponse<BrandSyncStatus>>(`/api/v1/tickets/${brand}/sync`, null, {
-      timeout: 120_000,
+      timeout: 170_000,
       skipRetry: true,
     }),
 

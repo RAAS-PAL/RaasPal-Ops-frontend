@@ -12,6 +12,7 @@ import { AgingList, RepeatRobotsList, TopSitesList } from '@/components/tickets/
 import { TicketTable } from '@/components/tickets/TicketTable';
 import { TicketPanel } from '@/components/tickets/TicketPanel';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Link } from '@/i18n/navigation';
 import { brandTicketApi } from '@/lib/api';
 import { RANGE_KEYS, resolveRange, type RangeKey } from '@/lib/tickets/range';
 import type { TicketScope } from '@/lib/tickets/types';
@@ -19,7 +20,9 @@ import type { TicketScope } from '@/lib/tickets/types';
 /**
  * The brand's service-ticket analysis: headline KPIs, volume over time, why
  * things break, where they break, which robots keep breaking, and the tickets
- * themselves. The Team Dashboard shows a preview of this page and links here.
+ * themselves. One brand at a time, picked by the tabs along the top; the tabs
+ * come from the backend's brand list. The Team Dashboard shows a preview of this
+ * page and links here.
  */
 export function TicketsClient({
   brand,
@@ -42,6 +45,12 @@ export function TicketsClient({
     const params = new URLSearchParams({ brand, range: rangeKey, scope });
     window.history.replaceState(null, '', `?${params.toString()}`);
   }, [brand, rangeKey, scope]);
+
+  const brands = useQuery({
+    queryKey: ['ticket-brands'],
+    queryFn: () => brandTicketApi.brands().then((r) => r.data.data ?? []),
+    staleTime: Infinity,
+  });
 
   const summary = useQuery({
     queryKey: ['brand-tickets', brand, 'summary', range.from, range.to],
@@ -77,6 +86,7 @@ export function TicketsClient({
   const syncedAt = summary.data?.lastSyncedAt;
   const stamp = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const notFound = summary.isError && (summary.error as { response?: { status?: number } })?.response?.status === 404;
+  const syncBusy = sync.isError && (sync.error as { response?: { status?: number } })?.response?.status === 409;
 
   return (
     <main className="min-h-dvh bg-[var(--app-bg)] text-[var(--app-text)] transition-colors">
@@ -86,6 +96,30 @@ export function TicketsClient({
           <AppTopBar eyebrow={t('eyebrow')} title={t('title', { brand: label })} />
 
           <div className="mx-auto w-full max-w-[1500px] space-y-4 p-4 sm:p-6">
+            {/* Brand tabs: links, so a brand's view can be bookmarked and shared.
+                Range and scope carry over, since the reader is usually comparing. */}
+            {(brands.data?.length ?? 0) > 1 && (
+              <nav aria-label={t('brandTabs')} className="flex flex-wrap gap-1 border-b border-[var(--app-border)]">
+                {brands.data!.map((b) => {
+                  const active = b.key === brand;
+                  return (
+                    <Link
+                      key={b.key}
+                      href={{ pathname: '/tickets', query: { brand: b.key, range: rangeKey, scope } }}
+                      aria-current={active ? 'page' : undefined}
+                      className={`-mb-px inline-flex items-center border-b-2 px-3 py-2 text-sm font-semibold transition ${
+                        active
+                          ? 'border-[var(--app-brand)] text-[var(--app-brand-dark)]'
+                          : 'border-transparent text-[var(--app-muted)] hover:text-[var(--app-text)]'
+                      }`}
+                    >
+                      {b.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
+
             {/* Controls: range on the left, data actions on the right */}
             <div className="flex flex-wrap items-center gap-2">
               <div className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] p-0.5">
@@ -133,7 +167,7 @@ export function TicketsClient({
             {(sync.isError || exportExcel.isError || (summary.isError && !notFound)) && (
               <p className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
-                {sync.isError ? t('syncFailed') : exportExcel.isError ? t('exportFailed') : t('loadFailed')}
+                {syncBusy ? t('syncRunning') : sync.isError ? t('syncFailed') : exportExcel.isError ? t('exportFailed') : t('loadFailed')}
               </p>
             )}
 
@@ -199,7 +233,12 @@ export function TicketsClient({
                       <Skeleton className="h-9 w-full" />
                     </div>
                   ) : (
-                    <TicketTable tickets={tickets.data ?? []} loading={tickets.isLoading} />
+                    <TicketTable
+                      key={`${brand}-${rangeKey}-${scope}`}
+                      brand={brand}
+                      tickets={tickets.data ?? []}
+                      loading={tickets.isLoading}
+                    />
                   )}
                 </TicketPanel>
               </>

@@ -66,7 +66,11 @@ export function BrandTicketHealthCard({ brand = DEFAULT_TICKET_BRAND }: { brand?
               loading={summary.isLoading}
               delta={k?.monthDeltaPct ?? null}
             />
-            <Stat label={t('sla')} value={k?.slaWithin7Pct == null ? null : `${k.slaWithin7Pct}%`} loading={summary.isLoading} />
+            <Stat
+              label={k ? t('sla', { days: k.slaDays }) : t('slaPending')}
+              value={k?.slaWithinPct == null ? null : `${k.slaWithinPct}%`}
+              loading={summary.isLoading}
+            />
             <Stat label={t('repeat')} value={k?.repeatRatePct == null ? null : `${k.repeatRatePct}%`} loading={summary.isLoading} />
           </div>
 

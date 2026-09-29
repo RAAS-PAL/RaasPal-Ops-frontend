@@ -1,22 +1,41 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronDown, ChevronRight, ExternalLink, MessageSquare } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ExternalLink, MessageSquare } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { brandTicketApi } from '@/lib/api';
 import type { BrandTicket } from '@/lib/tickets/types';
 import { PanelEmpty } from './TicketPanel';
 
 /**
- * The tickets behind the numbers. One row each; click to open the comment
- * thread beneath it. Age is coloured as a status (icon + text, never colour
- * alone) so an old open case is visible from across the room.
+ * Rows per page. A year of Gausium is a thousand tickets; rendering them all at
+ * once made the page slow to open for a table nobody reads past the first screen.
  */
-export function TicketTable({ tickets, loading }: { tickets: BrandTicket[]; loading: boolean }) {
+const PAGE_SIZE = 50;
+
+/**
+ * The tickets behind the numbers. One row each; click to open the comment
+ * thread beneath it, fetched then rather than with the list. Age is coloured as
+ * a status (icon + text, never colour alone) so an old open case is visible from
+ * across the room.
+ *
+ * The parent keys this on brand, range and scope, so a new list starts on page 1.
+ */
+export function TicketTable({ brand, tickets, loading }: { brand: string; tickets: BrandTicket[]; loading: boolean }) {
   const t = useTranslations('tickets.table');
   const locale = useLocale();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
 
   if (!loading && tickets.length === 0) return <PanelEmpty>{t('empty')}</PanelEmpty>;
+
+  const pages = Math.max(1, Math.ceil(tickets.length / PAGE_SIZE));
+  const current = Math.min(page, pages - 1);
+  const first = current * PAGE_SIZE;
+  const visible = tickets.slice(first, first + PAGE_SIZE);
+  const count = new Intl.NumberFormat(locale);
 
   const day = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' });
   const stamp = new Intl.DateTimeFormat(locale, {
@@ -48,11 +67,12 @@ export function TicketTable({ tickets, loading }: { tickets: BrandTicket[]; load
           </tr>
         </thead>
         <tbody>
-          {tickets.map((row) => {
+          {visible.map((row) => {
             const expanded = openId === row.id;
             return (
               <TicketRow
                 key={row.id}
+                brand={brand}
                 row={row}
                 expanded={expanded}
                 onToggle={() => setOpenId(expanded ? null : row.id)}
@@ -63,17 +83,52 @@ export function TicketTable({ tickets, loading }: { tickets: BrandTicket[]; load
           })}
         </tbody>
       </table>
+
+      {pages > 1 && (
+        <nav
+          aria-label={t('pagination')}
+          className="flex items-center justify-end gap-2 px-4 pt-3 text-xs text-[var(--app-muted)] sm:px-5"
+        >
+          <span className="tabular-nums">
+            {t('showing', {
+              from: count.format(first + 1),
+              to: count.format(first + visible.length),
+              total: count.format(tickets.length),
+            })}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage(current - 1)}
+            disabled={current === 0}
+            aria-label={t('previous')}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text)] transition hover:border-[var(--app-brand)] disabled:opacity-40 disabled:hover:border-[var(--app-border)]"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setPage(current + 1)}
+            disabled={current >= pages - 1}
+            aria-label={t('next')}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text)] transition hover:border-[var(--app-brand)] disabled:opacity-40 disabled:hover:border-[var(--app-border)]"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </nav>
+      )}
     </div>
   );
 }
 
 function TicketRow({
+  brand,
   row,
   expanded,
   onToggle,
   fmtDay,
   stamp,
 }: {
+  brand: string;
   row: BrandTicket;
   expanded: boolean;
   onToggle: () => void;
@@ -123,7 +178,7 @@ function TicketRow({
         <td className="whitespace-nowrap px-2 py-2.5 text-right text-xs text-[var(--app-muted)]">
           <span className="inline-flex items-center gap-1">
             <MessageSquare className="h-3.5 w-3.5" />
-            {row.comments.length}
+            {row.commentCount}
           </span>
         </td>
       </tr>
@@ -160,35 +215,56 @@ function TicketRow({
               </dl>
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">
-                  {t('thread', { n: row.comments.length })}
+                  {t('thread', { n: row.commentCount })}
                 </p>
-                {row.comments.length === 0 ? (
-                  <p className="text-xs text-[var(--app-muted)]">{t('noComments')}</p>
-                ) : (
-                  <ol className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                    {row.comments.map((c) => (
-                      <li
-                        key={c.id}
-                        className={`rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-3 py-2 text-xs ${
-                          c.parentId ? 'ml-5' : ''
-                        }`}
-                      >
-                        <p className="mb-1 flex items-center gap-2 text-[var(--app-muted)]">
-                          <span className="font-semibold text-[var(--app-text)]">{c.author ?? 'unknown'}</span>
-                          {c.parentId && <span>↳ {t('reply')}</span>}
-                          <span className="ml-auto whitespace-nowrap">{c.postedAt ? stamp.format(new Date(c.postedAt)) : ''}</span>
-                        </p>
-                        <p className="whitespace-pre-wrap text-[var(--app-text)]">{c.body?.trim() || '—'}</p>
-                      </li>
-                    ))}
-                  </ol>
-                )}
+                <Thread brand={brand} row={row} stamp={stamp} />
               </div>
             </div>
           </td>
         </tr>
       )}
     </>
+  );
+}
+
+/** The row's comments, fetched when the row is first opened and cached after. */
+function Thread({ brand, row, stamp }: { brand: string; row: BrandTicket; stamp: Intl.DateTimeFormat }) {
+  const t = useTranslations('tickets.table');
+  const thread = useQuery({
+    queryKey: ['brand-tickets', brand, 'thread', row.id],
+    queryFn: () => brandTicketApi.comments(brand, row.id).then((r) => r.data.data ?? []),
+    enabled: row.commentCount > 0,
+  });
+
+  if (row.commentCount === 0) return <p className="text-xs text-[var(--app-muted)]">{t('noComments')}</p>;
+  if (thread.isLoading) {
+    return (
+      <div className="space-y-2" aria-label={t('threadLoading')}>
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+      </div>
+    );
+  }
+  if (thread.isError) return <p className="text-xs text-red-600 dark:text-red-400">{t('threadFailed')}</p>;
+
+  return (
+    <ol className="max-h-72 space-y-2 overflow-y-auto pr-1">
+      {(thread.data ?? []).map((c) => (
+        <li
+          key={c.id}
+          className={`rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-3 py-2 text-xs ${
+            c.parentId ? 'ml-5' : ''
+          }`}
+        >
+          <p className="mb-1 flex items-center gap-2 text-[var(--app-muted)]">
+            <span className="font-semibold text-[var(--app-text)]">{c.author ?? 'unknown'}</span>
+            {c.parentId && <span>↳ {t('reply')}</span>}
+            <span className="ml-auto whitespace-nowrap">{c.postedAt ? stamp.format(new Date(c.postedAt)) : ''}</span>
+          </p>
+          <p className="whitespace-pre-wrap text-[var(--app-text)]">{c.body?.trim() || '—'}</p>
+        </li>
+      ))}
+    </ol>
   );
 }
 

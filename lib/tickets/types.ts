@@ -1,12 +1,19 @@
 /**
  * Per-brand service-ticket analytics — mirrors the backend's
- * `casereport/brand/dto` records. The brand slug comes from `app.tickets.brands`
- * (today: `autoxing`).
+ * `casereport/brand/dto` records. The brand slugs come from `app.tickets.brands`
+ * (today: `autoxing`, `gausium`), listed by `GET /api/v1/ticket-brands`, so a
+ * brand added on the backend needs no change here.
  */
 
-export type TicketBrand = 'autoxing';
+export type TicketBrand = string;
 
 export const DEFAULT_TICKET_BRAND: TicketBrand = 'autoxing';
+
+/** One entry of the page's brand tabs. */
+export interface TicketBrandRef {
+  key: string;
+  label: string;
+}
 
 export interface BrandTicketComment {
   id: string;
@@ -46,6 +53,8 @@ export interface BrandTicket {
   firstSeenAt: string | null;
   lastSyncedAt: string | null;
   mondayUrl: string | null;
+  /** Stored comments and replies. The list sends `comments` empty; a row fetches its thread when opened. */
+  commentCount: number;
   comments: BrandTicketComment[];
 }
 
@@ -91,7 +100,9 @@ export interface BrandTicketSummary {
     monthDeltaPct: number | null;
     medianDaysToAction: number | null;
     actionSample: number;
-    slaWithin7Pct: number | null;
+    /** The brand's SLA in days: 7 for AutoXing, 3 for Gausium. */
+    slaDays: number;
+    slaWithinPct: number | null;
     repeatRatePct: number | null;
     repeatSample: number;
   };
@@ -122,6 +133,8 @@ export interface BrandSyncStatus {
       newComments: number;
       statusChanges: number;
     } | null;
+    /** Tickets fetched in full; the rest of `result.seen` were already current. */
+    changed: number;
     error: string | null;
     ok: boolean;
   } | null;
