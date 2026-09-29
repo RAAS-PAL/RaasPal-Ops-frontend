@@ -30,28 +30,7 @@ const solutionConfig = {
 
 type SolutionType = keyof typeof solutionConfig;
 
-const flowSteps = [
-  {
-    number: '01',
-    title: 'Upload survey file',
-    description: 'Upload the customer\'s requirements document — Excel, PDF, PNG, or JPG.',
-  },
-  {
-    number: '02',
-    title: 'AI extracts requirements',
-    description: 'Our AI reads the document and extracts structured customer requirements automatically.',
-  },
-  {
-    number: '03',
-    title: 'Review robot recommendations',
-    description: 'The system compares requirements against the RAASPAL verified robot catalog and ranks the best fits.',
-  },
-  {
-    number: '04',
-    title: 'Generate proposal',
-    description: 'Select the recommended robot and generate a draft customer proposal in seconds.',
-  },
-];
+const FLOW_STEPS = ['step1', 'step2', 'step3', 'step4'] as const;
 
 export function generateStaticParams() {
   return Object.keys(solutionConfig).map((solutionType) => ({ solutionType }));
@@ -112,21 +91,21 @@ export default async function SolutionTypePage({
 
             {/* Flow steps */}
             <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-sm">
-              <p className="mb-4 text-xs font-semibold uppercase text-[var(--app-muted)]">How it works</p>
+              <p className="mb-4 text-xs font-semibold uppercase text-[var(--app-muted)]">{t('flow.howItWorks')}</p>
               <div className="space-y-4">
-                {flowSteps.map((step, index) => (
-                  <div key={step.number} className="flex gap-4">
+                {FLOW_STEPS.map((step, index) => (
+                  <div key={step} className="flex gap-4">
                     <div className="flex flex-col items-center">
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--app-brand-soft)] text-xs font-bold text-[var(--app-brand-dark)]">
-                        {step.number}
+                        {String(index + 1).padStart(2, '0')}
                       </span>
-                      {index < flowSteps.length - 1 && (
+                      {index < FLOW_STEPS.length - 1 && (
                         <div className="mt-2 h-full w-px bg-[var(--app-border)]" />
                       )}
                     </div>
                     <div className="pb-4">
-                      <p className="font-semibold text-[var(--app-text)]">{step.title}</p>
-                      <p className="mt-1 text-sm leading-5 text-[var(--app-muted)]">{step.description}</p>
+                      <p className="font-semibold text-[var(--app-text)]">{t(`flow.${step}Title`)}</p>
+                      <p className="mt-1 text-sm leading-5 text-[var(--app-muted)]">{t(`flow.${step}Body`)}</p>
                     </div>
                   </div>
                 ))}
@@ -139,12 +118,12 @@ export default async function SolutionTypePage({
               href={`/generate-solution/${solutionType}/upload`}
             >
               <Upload className="h-5 w-5" />
-              Start — Upload customer survey
+              {t('flow.cta')}
               <ArrowRight className="h-5 w-5" />
             </Link>
 
             <p className="text-center text-xs text-[var(--app-muted)]">
-              AI-generated recommendations require RAASPAL team review before sending to customers.
+              {t('flow.disclaimer')}
             </p>
           </div>
         </section>

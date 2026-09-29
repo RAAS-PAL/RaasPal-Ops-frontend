@@ -33,7 +33,10 @@
     "cleaningCoverageRate": "Cleaning Coverage Rate",
     "brush": "Brush",
     "filter": "Filter",
-    "squeegee": "Squeegee"
+    "squeegee": "Squeegee",
+    "loading": "Loading report…",
+    "unavailable": "Report not available",
+    "unavailableBody": "This report link is invalid or has expired. Please request a new link."
   },
   "customers": {
     "searchPlaceholder": "Search customers…",
@@ -169,7 +172,8 @@
     "confirm": "Confirm",
     "delete": "Delete",
     "edit": "Edit",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "searchPlaceholder": "Search…"
   },
   "dashboard": {
     "title": "Dashboard"
@@ -426,7 +430,9 @@
       "disclaimer": "AI extraction requires RAASPAL verification before the proposal is sent to the customer.",
       "solutionNameLabel": "Solution name",
       "solutionNamePlaceholder": "e.g. ABC Mall Cleaning Project",
-      "solutionNameRequired": "Please enter a solution name before generating."
+      "solutionNameRequired": "Please enter a solution name before generating.",
+      "uploadFailed": "File upload failed",
+      "extractionFailed": "Requirement extraction failed"
     },
     "recommendation": {
       "eyebrow": "Generate solution · Recommendations",
@@ -447,7 +453,49 @@
       "limitations": "Limitations",
       "rankBest": "Best match",
       "rank2": "2nd option",
-      "rank3": "3rd option"
+      "rank3": "3rd option",
+      "specs": {
+        "bodySize": "Body Size",
+        "cleaningWidth": "Cleaning Width",
+        "tanks": "Tanks (Clean/Waste)",
+        "batterySweep": "Battery (Sweep)",
+        "batteryScrub": "Battery (Scrub)",
+        "chargeTime": "Charge Time",
+        "navigation": "Navigation",
+        "lidar2d": "2D LiDAR",
+        "lidar3d": "3D LiDAR",
+        "vslam": "VSLAM",
+        "minPassWidth": "Min Pass Width",
+        "speed": "Speed",
+        "ipRating": "IP Rating",
+        "autoDock": "Auto Dock",
+        "yes": "Yes",
+        "no": "No",
+        "effSweepScrub": "Efficiency (Sweep+Scrub)",
+        "effSweep": "Efficiency (Sweep)",
+        "effScrub": "Efficiency (Scrub)",
+        "noise": "Noise",
+        "hours": "{value} hr"
+      },
+      "fitBadge": "{level} Fit",
+      "fitLevel": {
+        "HIGH": "High",
+        "MEDIUM": "Medium",
+        "LOW": "Low"
+      },
+      "rental": "Rental:",
+      "perMonth": "/mo",
+      "buy": "Buy:",
+      "purchase": "Purchase:",
+      "whyThis": "Why this robot?",
+      "viewDetails": "View full details",
+      "keySpecs": "Key Specs",
+      "businessValue": "Business Value",
+      "missingInfo": "Missing Information",
+      "nextStep": "Suggested Next Step",
+      "clickHint": "Click any option to view full details and select it.",
+      "backToEnglish": "Back to English",
+      "translateToThai": "แปลเป็นภาษาไทย"
     },
     "proposal": {
       "eyebrow": "Generate solution · Proposal",
@@ -469,6 +517,19 @@
       "noContent": "No content returned. The backend AI provider may need configuration.",
       "verificationTitle": "⚠ RAASPAL Verification Required",
       "verificationBody": "This proposal was AI-generated from customer requirements and the robot catalog. Final specifications, pricing, and site suitability must be confirmed by RAASPAL team and an on-site survey before presenting to the customer."
+    },
+    "flow": {
+      "howItWorks": "How it works",
+      "step1Title": "Upload survey file",
+      "step1Body": "Upload the customer’s requirements document — Excel, PDF, PNG, or JPG.",
+      "step2Title": "AI extracts requirements",
+      "step2Body": "Our AI reads the document and extracts structured customer requirements automatically.",
+      "step3Title": "Review robot recommendations",
+      "step3Body": "The system compares requirements against the RAASPAL verified robot catalog and ranks the best fits.",
+      "step4Title": "Generate proposal",
+      "step4Body": "Select the recommended robot and generate a draft customer proposal in seconds.",
+      "cta": "Start — Upload customer survey",
+      "disclaimer": "AI-generated recommendations require RAASPAL team review before sending to customers."
     }
   },
   "proposals": {
@@ -2895,5 +2956,18 @@
     "importing": "Importing…",
     "importFile": "Import File",
     "importFailed": "Import failed. Check that your file matches the required column format."
+  },
+  "proposalView": {
+    "eyebrow": "Proposals",
+    "title": "View Proposal",
+    "back": "Back to proposals",
+    "badge": "Proposal",
+    "heading": "Customer Proposal",
+    "intro": "AI-generated proposal. Review and verify with the RAASPAL team before presenting to the customer.",
+    "loading": "Loading proposal…",
+    "loadFailed": "Failed to load proposal. It may have been deleted or the ID is invalid.",
+    "preparingPdf": "Preparing PDF…",
+    "downloadPdf": "Download PDF",
+    "noContent": "No content available."
   }
 }

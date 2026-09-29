@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -13,6 +14,7 @@ import {
   Printer,
 } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
+import { intlLocale } from '@/lib/intlLocale';
 import { proposalApi } from '@/lib/api';
 import { exportProposalToPdf } from '@/lib/pdf-export';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -25,6 +27,10 @@ interface ProposalViewClientProps {
 }
 
 export function ProposalViewClient({ id }: ProposalViewClientProps) {
+  const t = useTranslations('proposalView');
+  const tp = useTranslations('proposals');
+  const tg = useTranslations('generateSolution.proposal');
+  const locale = useLocale();
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadingPptx, setDownloadingPptx] = useState(false);
@@ -76,9 +82,9 @@ export function ProposalViewClient({ id }: ProposalViewClientProps) {
 
         <section className="flex min-w-0 flex-1 flex-col">
           <AppTopBar
-            eyebrow="Proposals"
-            searchPlaceholder="Search proposals…"
-            title="View Proposal"
+            eyebrow={t('eyebrow')}
+            searchPlaceholder={tp('searchPlaceholder')}
+            title={t('title')}
           />
 
           <div className="mx-auto w-full max-w-3xl space-y-6 p-4 sm:p-6">
@@ -89,7 +95,7 @@ export function ProposalViewClient({ id }: ProposalViewClientProps) {
               href="/solutions?tab=proposals"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to proposals
+              {t('back')}
             </Link>
 
             {/* Header banner — Bold & Premium (customer-facing) */}
@@ -97,11 +103,11 @@ export function ProposalViewClient({ id }: ProposalViewClientProps) {
               <div className="relative z-10">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-blue-200 ring-1 ring-white/20 backdrop-blur-sm">
                   <FileText className="h-3.5 w-3.5" />
-                  Proposal
+                  {t('badge')}
                 </span>
-                <h2 className="mt-3 text-2xl font-bold sm:text-3xl">Customer Proposal</h2>
+                <h2 className="mt-3 text-2xl font-bold sm:text-3xl">{t('heading')}</h2>
                 <p className="mt-2 max-w-lg text-sm leading-6 text-white/75">
-                  AI-generated proposal. Review and verify with the RAASPAL team before presenting to the customer.
+                  {t('intro')}
                 </p>
               </div>
             </div>
@@ -110,14 +116,14 @@ export function ProposalViewClient({ id }: ProposalViewClientProps) {
             {isLoading && (
               <div className="flex flex-col items-center gap-4 py-16">
                 <Loader2 className="h-10 w-10 animate-spin text-[var(--app-brand)]" />
-                <p className="font-semibold text-[var(--app-text)]">Loading proposal…</p>
+                <p className="font-semibold text-[var(--app-text)]">{t('loading')}</p>
               </div>
             )}
 
             {/* Error */}
             {isError && (
               <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
-                Failed to load proposal. It may have been deleted or the ID is invalid.
+                {t('loadFailed')}
               </div>
             )}
 
@@ -131,9 +137,9 @@ export function ProposalViewClient({ id }: ProposalViewClientProps) {
                       <FileText className="h-5 w-5" />
                     </span>
                     <div>
-                      <p className="font-semibold text-[var(--app-text)]">{proposal.title ?? 'Proposal'}</p>
+                      <p className="font-semibold text-[var(--app-text)]">{proposal.title ?? tp('untitled')}</p>
                       <p className="text-xs text-[var(--app-muted)]">
-                        Generated {new Date(proposal.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {tp('generated', { date: new Date(proposal.createdAt).toLocaleDateString(intlLocale(locale), { day: '2-digit', month: 'short', year: 'numeric' }) })}
                       </p>
                     </div>
                   </div>
@@ -158,9 +164,9 @@ export function ProposalViewClient({ id }: ProposalViewClientProps) {
                     type="button"
                   >
                     {downloading ? (
-                      <><Loader2 className="h-4 w-4 animate-spin" />Preparing PDF…</>
+                      <><Loader2 className="h-4 w-4 animate-spin" />{t('preparingPdf')}</>
                     ) : (
-                      <><Download className="h-4 w-4" />Download PDF</>
+                      <><Download className="h-4 w-4" />{t('downloadPdf')}</>
                     )}
                   </Button>
                   <Button
@@ -171,9 +177,9 @@ export function ProposalViewClient({ id }: ProposalViewClientProps) {
                     variant="outline"
                   >
                     {downloadingPptx ? (
-                      <><Loader2 className="h-4 w-4 animate-spin" />Preparing PPTX…</>
+                      <><Loader2 className="h-4 w-4 animate-spin" />{tg('preparingPptx')}</>
                     ) : (
-                      <><Presentation className="h-4 w-4" />Download PowerPoint</>
+                      <><Presentation className="h-4 w-4" />{tg('downloadPptx')}</>
                     )}
                   </Button>
                   <Button
@@ -183,9 +189,9 @@ export function ProposalViewClient({ id }: ProposalViewClientProps) {
                     variant="outline"
                   >
                     {copied ? (
-                      <><CheckCircle2 className="h-4 w-4 text-emerald-500" />Copied!</>
+                      <><CheckCircle2 className="h-4 w-4 text-emerald-500" />{tg('copied')}</>
                     ) : (
-                      <><ClipboardCopy className="h-4 w-4" />Copy text</>
+                      <><ClipboardCopy className="h-4 w-4" />{tg('copyText')}</>
                     )}
                   </Button>
                   <Button
@@ -195,7 +201,7 @@ export function ProposalViewClient({ id }: ProposalViewClientProps) {
                     variant="outline"
                   >
                     <Printer className="h-4 w-4" />
-                    Print
+                    {tg('print')}
                   </Button>
                 </div>
 
@@ -207,18 +213,14 @@ export function ProposalViewClient({ id }: ProposalViewClientProps) {
                       {proposal.proposalContent}
                     </pre>
                   ) : (
-                    <p className="text-sm italic text-[var(--app-muted)]">No content available.</p>
+                    <p className="text-sm italic text-[var(--app-muted)]">{t('noContent')}</p>
                   )}
                 </div>
 
                 {/* Disclaimer */}
                 <div className="rounded-xl border border-amber-200/60 bg-amber-50/50 px-5 py-4 text-sm text-amber-700 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-400">
-                  <p className="font-semibold">⚠ RAASPAL Verification Required</p>
-                  <p className="mt-1">
-                    This proposal was AI-generated from customer requirements and the robot catalog.
-                    Final specifications, pricing, and site suitability must be confirmed by the RAASPAL
-                    team and an on-site survey before presenting to the customer.
-                  </p>
+                  <p className="font-semibold">{tg('verificationTitle')}</p>
+                  <p className="mt-1">{tg('verificationBody')}</p>
                 </div>
               </>
             )}

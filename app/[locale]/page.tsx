@@ -13,6 +13,7 @@ import { Link } from '@/i18n/navigation';
 
 export default async function LocaleHomePage() {
   const t = await getTranslations('teamDashboard');
+  const tc = await getTranslations('common');
 
   const steps = [
     { number: '1', title: t('reportFlow.step1Title'), description: t('reportFlow.step1Description') },
@@ -36,7 +37,7 @@ export default async function LocaleHomePage() {
         <section className="flex min-w-0 flex-1 flex-col">
           <AppTopBar
             eyebrow={t('eyebrow')}
-            searchPlaceholder="Search…"
+            searchPlaceholder={tc('searchPlaceholder')}
             title={t('title')}
           />
 
