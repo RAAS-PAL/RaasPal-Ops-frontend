@@ -1385,7 +1385,8 @@
       "done": "Done",
       "stillOpen": "Still open",
       "tickets": "Tickets",
-      "other": "Other"
+      "other": "Other",
+      "legend": "Legend"
     },
     "breakdowns": {
       "empty": "Nothing in this range",
@@ -1439,7 +1440,9 @@
       "reply": "reply",
       "daysShort": "{n} d",
       "ageOpen": "Days since Open Date",
-      "ageDone": "Days from Open Date to RE Action"
+      "ageDone": "Days from Open Date to RE Action",
+      "statusOpen": "Open",
+      "statusDone": "Done"
     }
   },
   "deliveryReport": {
@@ -2449,6 +2452,12 @@
       "createHint": "Create one from the “New report” tab and it will appear here.",
       "ticketNo": "Ticket {no}",
       "showing": "Showing {shown} of {total}"
+    },
+    "signatureError": {
+      "notImage": "Please choose an image file (JPG, PNG, or HEIC).",
+      "unsupported": "Could not process the image in this browser.",
+      "tooDetailed": "That image is too detailed to store. Try a tighter crop of just the signature.",
+      "unreadable": "That image could not be read. Try a different photo."
     }
   },
   "customerEmail": {

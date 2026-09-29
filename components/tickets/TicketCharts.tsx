@@ -177,8 +177,9 @@ export function RootCauseChart({ counts }: { counts: CountPoint[] }) {
 }
 
 function Legend({ items }: { items: { label: string; swatch: string }[] }) {
+  const t = useTranslations('tickets.charts');
   return (
-    <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--app-muted)]" aria-label="Legend">
+    <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--app-muted)]" aria-label={t('legend')}>
       {items.map((i) => (
         <li key={i.label} className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-sm" style={{ background: i.swatch }} />

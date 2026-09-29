@@ -1385,7 +1385,8 @@
       "done": "ปิดแล้ว",
       "stillOpen": "ยังค้าง",
       "tickets": "เคส",
-      "other": "อื่น ๆ"
+      "other": "อื่น ๆ",
+      "legend": "คำอธิบายสัญลักษณ์"
     },
     "breakdowns": {
       "empty": "ไม่มีข้อมูลในช่วงนี้",
@@ -1439,7 +1440,9 @@
       "reply": "ตอบกลับ",
       "daysShort": "{n} วัน",
       "ageOpen": "จำนวนวันนับจาก Open Date",
-      "ageDone": "จำนวนวันจาก Open Date ถึง RE Action"
+      "ageDone": "จำนวนวันจาก Open Date ถึง RE Action",
+      "statusOpen": "ค้างอยู่",
+      "statusDone": "ปิดแล้ว"
     }
   },
   "deliveryReport": {
@@ -2449,6 +2452,12 @@
       "createHint": "สร้างรายงานจากแท็บ “สร้างรายงานใหม่” แล้วจะแสดงที่นี่",
       "ticketNo": "เคส {no}",
       "showing": "แสดง {shown} จาก {total}"
+    },
+    "signatureError": {
+      "notImage": "กรุณาเลือกไฟล์รูปภาพ (JPG, PNG หรือ HEIC)",
+      "unsupported": "เบราว์เซอร์นี้ประมวลผลรูปภาพไม่ได้",
+      "tooDetailed": "รูปภาพนี้มีรายละเอียดมากเกินกว่าจะจัดเก็บ ลองครอบเฉพาะส่วนลายเซ็นให้แคบลง",
+      "unreadable": "อ่านรูปภาพนี้ไม่ได้ ลองใช้รูปอื่น"
     }
   },
   "customerEmail": {

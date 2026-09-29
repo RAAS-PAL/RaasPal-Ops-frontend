@@ -28,7 +28,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { cmReportApi } from '@/lib/api';
-import { fileToSignatureDataUrl } from '@/lib/signature-image';
+import { fileToSignatureDataUrl, SignatureImageError } from '@/lib/signature-image';
 import { todayIso } from '@/lib/thai-date';
 import { CorrectiveMaintenanceReportView } from '@/components/report/CorrectiveMaintenanceReportView';
 import { CmTicketPicker } from '@/components/CmTicketPicker';
@@ -191,7 +191,13 @@ function SignatureField({
     try {
       onChange(await fileToSignatureDataUrl(file));
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('imageUnreadable'));
+      setError(
+        e instanceof SignatureImageError
+          ? t(`signatureError.${e.code}`)
+          : e instanceof Error
+            ? e.message
+            : t('imageUnreadable'),
+      );
     } finally {
       setBusy(false);
       // Clear the input so re-picking the same file fires onChange again.

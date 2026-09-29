@@ -20,14 +20,26 @@ const MAX_EDGE_PX = 600;
 export const MAX_SIGNATURE_BYTES = 512 * 1024;
 
 /**
+ * Why a signature image was refused. The message is English for logs; a screen shows the
+ * `cmReport.signatureError.<code>` message in the reader's language.
+ */
+export class SignatureImageError extends Error {
+  constructor(
+    readonly code: 'notImage' | 'unsupported' | 'tooDetailed' | 'unreadable',
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+/**
  * Reads an image file and returns a downscaled PNG data URI.
  *
- * Rejects with a user-facing message if the file isn't an image or can't be
- * decoded — callers surface it directly.
+ * Rejects with a `SignatureImageError` if the file isn't an image or can't be decoded.
  */
 export async function fileToSignatureDataUrl(file: File): Promise<string> {
   if (!file.type.startsWith('image/')) {
-    throw new Error('Please choose an image file (JPG, PNG, or HEIC).');
+    throw new SignatureImageError('notImage', 'Please choose an image file (JPG, PNG, or HEIC).');
   }
 
   const bitmap = await loadBitmap(file);
@@ -41,12 +53,12 @@ export async function fileToSignatureDataUrl(file: File): Promise<string> {
     canvas.height = height;
 
     const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Could not process the image in this browser.');
+    if (!ctx) throw new SignatureImageError('unsupported', 'Could not process the image in this browser.');
     ctx.drawImage(bitmap, 0, 0, width, height);
 
     const dataUrl = canvas.toDataURL('image/png');
     if (dataUrl.length > MAX_SIGNATURE_BYTES) {
-      throw new Error('That image is too detailed to store. Try a tighter crop of just the signature.');
+      throw new SignatureImageError('tooDetailed', 'That image is too detailed to store. Try a tighter crop of just the signature.');
     }
     return dataUrl;
   } finally {
@@ -75,7 +87,7 @@ async function loadBitmap(file: File): Promise<ImageBitmap> {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image();
       el.onload = () => resolve(el);
-      el.onerror = () => reject(new Error('That image could not be read. Try a different photo.'));
+      el.onerror = () => reject(new SignatureImageError('unreadable', 'That image could not be read. Try a different photo.'));
       el.src = url;
     });
     return await createImageBitmap(img);
