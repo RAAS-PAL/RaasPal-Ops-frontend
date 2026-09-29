@@ -77,6 +77,12 @@ import type {
   CsatWorkbookUploadResult,
 } from './kpi/api-types';
 import type {
+  AotSheetOpenCases,
+  AotSheetPreview,
+  AotSheetRefreshOutcome,
+  AotSheetSettings,
+  AotSheetSettingsRequest,
+  CaseSyncResult,
   CaseReportRow,
   CaseReportRunInfo,
   CaseRowEdit,
@@ -923,6 +929,47 @@ export const caseReportApi = {
       params: { asOf },
       responseType: 'blob',
       timeout: 120_000,
+      skipRetry: true,
+    }),
+};
+
+/**
+ * The AOT team's Google Sheet, read beside monday. The link and column choices are saved
+ * in the database; the Google key is not, it stays in the server's environment.
+ */
+export const aotSheetApi = {
+  settings: () => api.get<ApiResponse<AotSheetSettings>>('/api/v1/case-reports/aot-sheet/settings'),
+
+  saveSettings: (body: AotSheetSettingsRequest) =>
+    api.put<ApiResponse<AotSheetSettings>>('/api/v1/case-reports/aot-sheet/settings', body),
+
+  /** Unlinks the sheet until a link is saved again. */
+  removeSettings: () => api.delete<ApiResponse<AotSheetSettings>>('/api/v1/case-reports/aot-sheet/settings'),
+
+  /**
+   * Syncs the sheet if it is more than a few minutes old; the AOT tab calls this when it
+   * opens. Skips on its own when the sync is off, fresh, or already running.
+   */
+  refresh: () =>
+    api.post<ApiResponse<AotSheetRefreshOutcome>>('/api/v1/case-reports/aot-sheet/refresh', null, {
+      timeout: 300_000,
+      skipRetry: true,
+    }),
+
+  /** The linked sheet's open cases as last synced. No call to Google. */
+  openCases: () => api.get<ApiResponse<AotSheetOpenCases>>('/api/v1/case-reports/aot-sheet/cases'),
+
+  /** Reads the sheet and reports how it maps. Writes nothing. */
+  preview: (sample = 5) =>
+    api.get<ApiResponse<AotSheetPreview>>('/api/v1/case-reports/aot-sheet/preview', {
+      params: { sample },
+      timeout: 120_000,
+      skipRetry: true,
+    }),
+
+  sync: () =>
+    api.post<ApiResponse<CaseSyncResult>>('/api/v1/case-reports/aot-sheet/sync', null, {
+      timeout: 300_000,
       skipRetry: true,
     }),
 };
