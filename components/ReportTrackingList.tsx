@@ -6,6 +6,7 @@ import { AlertTriangle, ChevronRight, ListChecks, MailX, Search } from 'lucide-r
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from '@/i18n/navigation';
 import { monthLabel } from '@/lib/report-month';
+import { intlLocale } from '@/lib/intlLocale';
 import { weekRangeLabel } from '@/lib/report-week';
 import type { CustomerTracking, PeriodTracking } from '@/lib/report-tracking';
 import { useReportTracking } from '@/lib/use-report-tracking';
@@ -48,7 +49,7 @@ export function ReportTrackingList() {
   const period: PeriodTracking | null = tab === 'weekly' ? weekly : monthly;
   const scope =
     tab === 'weekly'
-      ? weekly && t('weeklyScope', { week: weekRangeLabel(week), due: weekly.due })
+      ? weekly && t('weeklyScope', { week: weekRangeLabel(week, intlLocale(locale)), due: weekly.due })
       : monthly && t('monthlyScope', { month: monthLabel(month, locale), due: monthly.due });
 
   const empty = { notSent: t('emptyNotSent'), failed: t('emptyFailed'), sent: t('emptySent'), weekly: t('emptyWeekly') }[tab];

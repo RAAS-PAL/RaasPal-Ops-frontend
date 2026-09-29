@@ -5,6 +5,7 @@ import { AlertTriangle, CalendarRange, CheckCircle2, Hourglass } from 'lucide-re
 import type { LucideIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { monthLabel } from '@/lib/report-month';
+import { intlLocale } from '@/lib/intlLocale';
 import { weekRangeLabel } from '@/lib/report-week';
 import { useReportTracking } from '@/lib/use-report-tracking';
 
@@ -67,7 +68,7 @@ export function ReportDeliveryStats() {
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">{t('heading')}</h3>
         <p className="text-xs text-[var(--app-muted)]">
-          {t('periods', { month: monthLabel(month, locale), week: weekRangeLabel(week) })}
+          {t('periods', { month: monthLabel(month, locale), week: weekRangeLabel(week, intlLocale(locale)) })}
         </p>
       </div>
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">

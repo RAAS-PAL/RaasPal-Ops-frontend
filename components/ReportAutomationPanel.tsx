@@ -13,6 +13,7 @@
  *   - resend a single customer whose delivery failed.
  */
 import { useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -29,6 +30,7 @@ import {
 } from 'lucide-react';
 import { customerApi, reportApi } from '@/lib/api';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { intlLocale } from '@/lib/intlLocale';
 import { previousIsoWeek, weekRangeLabel } from '@/lib/report-week';
 import type { CustomerResponse, ReportSend } from '@/types/api';
 
@@ -50,9 +52,9 @@ function errorMessage(e: unknown, fallback: string): string {
   return ax?.response?.data?.message ?? fallback;
 }
 
-function formatSentAt(iso: string): string {
+function formatSentAt(iso: string, locale: string): string {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(intlLocale(locale));
 }
 
 const STATUS_STYLE: Record<ReportSend['status'], string> = {
@@ -68,6 +70,8 @@ const STATUS_ICON: Record<ReportSend['status'], React.ReactNode> = {
 };
 
 export function ReportAutomationPanel() {
+  const t = useTranslations('reportAutomation');
+  const locale = useLocale();
   const { confirm, confirmDialog } = useConfirm();
   const [periodKind, setPeriodKind] = useState<'month' | 'week'>('month');
   const [month, setMonth] = useState(previousMonth);
@@ -83,8 +87,9 @@ export function ReportAutomationPanel() {
   const periodValue = isWeekly ? week : month;
   const periodParam = isWeekly ? { week } : { month };
   /** How the period reads in a sentence — the raw month as before, a date range for a week. */
-  const periodName = isWeekly ? weekRangeLabel(week) : month;
-  const unit = isWeekly ? 'week' : 'month';
+  const periodName = isWeekly ? weekRangeLabel(week, intlLocale(locale)) : month;
+  const unit = t(isWeekly ? 'unitWeek' : 'unitMonth');
+  const bold = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
   const queryClient = useQueryClient();
 
   // The bulk run executes in the background on the server (it syncs every robot
@@ -156,12 +161,10 @@ export function ReportAutomationPanel() {
         </span>
         <div>
           <p className="text-sm font-semibold text-[var(--app-text)]">
-            {isWeekly ? 'Automated weekly report delivery' : 'Automated monthly report delivery'}
+            {t(isWeekly ? 'headerWeek' : 'headerMonth')}
           </p>
           <p className="text-xs text-[var(--app-muted)]">
-            {isWeekly
-              ? 'One link per customer, covering their robots set to Weekly — auto every Monday for the week before, or run a week below.'
-              : 'One link per customer — auto on the 2nd, or run a month below.'}
+            {t(isWeekly ? 'descWeek' : 'descMonth')}
           </p>
         </div>
       </div>
@@ -171,7 +174,7 @@ export function ReportAutomationPanel() {
         <div className="flex flex-wrap items-center gap-3">
           <div
             role="group"
-            aria-label="Report period"
+            aria-label={t('periodAria')}
             className="flex items-center gap-0.5 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] p-0.5"
           >
             {(['month', 'week'] as const).map((kind) => (
@@ -186,12 +189,12 @@ export function ReportAutomationPanel() {
                     : 'rounded-md px-3 py-1.5 text-sm font-semibold text-[var(--app-muted)] transition hover:text-[var(--app-text)]'
                 }
               >
-                {kind === 'month' ? 'Monthly' : 'Weekly'}
+                {kind === 'month' ? t('monthly') : t('weekly')}
               </button>
             ))}
           </div>
           <label className="flex items-center gap-2 text-sm text-[var(--app-muted)]">
-            {isWeekly ? 'Report week' : 'Report month'}
+            {t(isWeekly ? 'reportWeek' : 'reportMonth')}
             <input
               type={isWeekly ? 'week' : 'month'}
               value={periodValue}
@@ -205,29 +208,21 @@ export function ReportAutomationPanel() {
           type="button"
           onClick={() =>
             void confirm({
-              title: `Send this ${unit}'s reports to every customer?`,
+              title: t('confirmAllTitle', { unit }),
               kind: 'send',
-              confirmLabel: 'Send to all customers',
-              message: (
-                <>
-                  Every eligible customer receives their {periodName} performance report by email
-                  {excludedIds.size > 0 ? ` — except the ${excludedIds.size} you excluded` : ''}.
-                  Customers already sent this {unit} are skipped. This cannot be recalled once it
-                  starts.
-                </>
-              ),
+              confirmLabel: t('confirmAllLabel'),
+              message:
+                excludedIds.size > 0
+                  ? t('confirmAllBodyExcept', { period: periodName, unit, count: excludedIds.size })
+                  : t('confirmAllBody', { period: periodName, unit }),
             }).then((ok) => ok && runMutation.mutate())
           }
           disabled={runMutation.isPending || running}
-          title={
-            excludedIds.size > 0
-              ? `Send this ${unit}'s bundle to every eligible customer except ${excludedIds.size} excluded (already-sent are also skipped). Runs in the background.`
-              : `Send this ${unit}'s bundle to every eligible customer (already-sent are skipped). Runs in the background — progress appears in the history below.`
-          }
+          title={excludedIds.size > 0 ? t('runTitleExcept', { unit, count: excludedIds.size }) : t('runTitle', { unit })}
           className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
         >
           {runMutation.isPending || running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-          {running ? 'Run in progress…' : 'Run delivery now'}
+          {running ? t('runInProgress') : t('runNow')}
         </button>
       </div>
 
@@ -236,20 +231,19 @@ export function ReportAutomationPanel() {
           a site whose robots aren't fully registered yet. */}
       <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-[var(--app-text)]">Exclude from this run (optional)</p>
+          <p className="text-sm font-semibold text-[var(--app-text)]">{t('excludeTitle')}</p>
           {excludedIds.size > 0 && (
             <button
               type="button"
               onClick={() => setExcludedIds(new Set())}
               className="text-xs font-semibold text-[var(--app-brand-dark)] hover:underline"
             >
-              Clear ({excludedIds.size})
+              {t('clear', { count: excludedIds.size })}
             </button>
           )}
         </div>
         <p className="mt-1 text-xs text-[var(--app-muted)]">
-          Excluded customers are skipped entirely this run — not synced, not emailed — and stay eligible for a
-          later run once ready.
+          {t('excludeHint')}
         </p>
 
         {excludedCustomers.length > 0 && (
@@ -263,7 +257,7 @@ export function ReportAutomationPanel() {
                 <button
                   type="button"
                   onClick={() => toggleExcluded(c.id)}
-                  aria-label={`Remove ${customerLabel(c)} from exclusions`}
+                  aria-label={t('removeExclusion', { name: customerLabel(c) })}
                   className="rounded-full hover:opacity-70"
                 >
                   <X className="h-3 w-3" />
@@ -279,14 +273,14 @@ export function ReportAutomationPanel() {
             type="text"
             value={excludeQuery}
             onChange={(e) => setExcludeQuery(e.target.value)}
-            placeholder="Search customers to exclude…"
+            placeholder={t('excludeSearch')}
             className="h-9 w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] pl-9 pr-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
           />
         </div>
 
         <ul className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-[var(--app-border)]">
           {excludeCandidates.length === 0 && (
-            <li className="px-3 py-2 text-xs text-[var(--app-muted)]">No customers match.</li>
+            <li className="px-3 py-2 text-xs text-[var(--app-muted)]">{t('noMatch')}</li>
           )}
           {excludeCandidates.map((c) => (
             <li key={c.id} className="border-b border-[var(--app-border)] last:border-b-0">
@@ -301,7 +295,7 @@ export function ReportAutomationPanel() {
                   <span className="truncate">{customerLabel(c)}</span>
                 </span>
                 <span className="shrink-0 text-xs text-[var(--app-muted)]">
-                  {c.robotCount} robot{c.robotCount === 1 ? '' : 's'}
+                  {t('robotCount', { count: c.robotCount })}
                 </span>
               </label>
             </li>
@@ -312,29 +306,32 @@ export function ReportAutomationPanel() {
       {running && (
         <p className="flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700 dark:border-sky-900/40 dark:bg-sky-950/30 dark:text-sky-300">
           <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-          Delivery run in progress for {runStatus?.month ?? periodValue} — syncing robots and sending emails. The
-          history below updates automatically; this can take several minutes.
+          {t('runningNote', { period: runStatus?.month ?? periodValue })}
         </p>
       )}
       {!running && runStatus?.lastSummary && (
         <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
-          Last run ({runStatus.lastSummary.month}) — {runStatus.lastSummary.sent} sent,{' '}
-          {runStatus.lastSummary.skipped} skipped, {runStatus.lastSummary.failed} failed.
+          {t('lastRun', {
+            period: runStatus.lastSummary.month,
+            sent: runStatus.lastSummary.sent,
+            skipped: runStatus.lastSummary.skipped,
+            failed: runStatus.lastSummary.failed,
+          })}
         </p>
       )}
 
       {/* Send to one customer — for testing before the full run. Recorded in
           history, so "Run delivery now" later skips anyone already sent here. */}
       <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
-        <p className="mb-2 text-sm font-semibold text-[var(--app-text)]">Send to one customer (test)</p>
+        <p className="mb-2 text-sm font-semibold text-[var(--app-text)]">{t('sendOneTitle')}</p>
         <div className="flex flex-wrap items-center gap-3">
           <select
             value={customerId}
             onChange={(e) => setCustomerId(e.target.value)}
             className="h-9 min-w-64 flex-1 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
           >
-            <option value="">Select a customer…</option>
+            <option value="">{t('selectCustomer')}</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>{customerLabel(c)}</option>
             ))}
@@ -345,80 +342,74 @@ export function ReportAutomationPanel() {
               const target = customers.find((c) => c.id === customerId);
               if (!target) return;
               void confirm({
-                title: 'Email this report to the customer?',
+                title: t('confirmOneTitle'),
                 kind: 'send',
-                confirmLabel: 'Send report',
-                message: (
-                  <>
-                    <strong>{customerLabel(target)}</strong> receives their {periodName} performance
-                    report by email. The send is recorded, so the full run skips them.
-                  </>
-                ),
+                confirmLabel: t('sendReport'),
+                message: t.rich('confirmOneBody', { name: customerLabel(target), period: periodName, b: bold }),
               }).then((ok) => ok && sendMutation.mutate(customerId));
             }}
             disabled={!customerId || sendMutation.isPending || running}
-            title={`Email this customer their bundle for the selected ${unit} (recorded so the full run skips them)`}
+            title={t('oneTitle', { unit })}
             className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
           >
             {sendMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            {sendMutation.isPending ? 'Sending…' : 'Send report'}
+            {sendMutation.isPending ? t('sending') : t('sendReport')}
           </button>
         </div>
         <p className="mt-2 text-xs text-[var(--app-muted)]">
-          Sends one customer their report for the selected {unit}. This is recorded in the history below, so a
-          later “Run delivery now” will skip anyone already sent — no duplicate emails.
+          {t('oneHint', { unit })}
         </p>
       </div>
 
       {sendMutation.isSuccess && sendMutation.data && (
         <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
-          {sendMutation.data.message ?? 'Send started — the result will appear in the history below.'}
+          {sendMutation.data.message ?? t('sendStarted')}
         </p>
       )}
       {sendMutation.isError && (
         <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          {errorMessage(sendMutation.error, 'Send failed — check the customer has a contact email and SMTP is configured.')}
+          {errorMessage(sendMutation.error, t('sendFailed'))}
         </p>
       )}
 
       {runMutation.isError && (
         <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          {errorMessage(runMutation.error, 'Delivery run failed — check SMTP credentials and the backend logs.')}
+          {errorMessage(runMutation.error, t('runFailed'))}
         </p>
       )}
 
       {/* History */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-[var(--app-text)]">Delivery history</p>
+          <p className="text-sm font-semibold text-[var(--app-text)]">{t('historyTitle')}</p>
           <button
             type="button"
             onClick={invalidate}
             className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 py-1.5 text-xs font-semibold text-[var(--app-brand-dark)] transition hover:border-[var(--app-brand)]"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            Refresh
+            {t('refresh')}
           </button>
         </div>
 
         {isLoading && (
           <div className="flex items-center gap-2 py-8 text-sm text-[var(--app-muted)]">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading history…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t('loadingHistory')}
           </div>
         )}
 
         {isError && (
           <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
-            Could not load delivery history. Check that you are signed in and the backend is running.
+            {t('historyError')}
           </p>
         )}
 
         {!isLoading && !isError && history.length === 0 && (
           <div className="rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-panel)] py-10 text-center text-sm text-[var(--app-muted)]">
-            No deliveries recorded for this {unit} yet. Use “Run delivery now” to send.
+            {t('historyEmpty', { unit })}
           </div>
         )}
 
@@ -435,14 +426,14 @@ export function ReportAutomationPanel() {
                       className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${STATUS_STYLE[row.status]}`}
                     >
                       {STATUS_ICON[row.status]}
-                      {row.status}
+                      {t(`status.${row.status}`)}
                     </span>
                     {/* What went out. A robot report is one machine's page from the
                         preview tab, not the month's bundle - it does not make the
                         customer "delivered", so the badge keeps the two apart. */}
                     {row.kind === 'ROBOT_REPORT' && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-[var(--app-faint)] px-2 py-0.5 text-xs font-semibold text-[var(--app-muted)]">
-                        Robot report
+                        {t('robotReport')}
                         {row.robotSerial && <span className="font-mono font-normal">{row.robotSerial}</span>}
                       </span>
                     )}
@@ -455,7 +446,7 @@ export function ReportAutomationPanel() {
                         {row.recipientEmail}
                       </span>
                     )}
-                    <span>{formatSentAt(row.sentAt)}</span>
+                    <span>{formatSentAt(row.sentAt, locale)}</span>
                     {row.errorMessage && (
                       <span className="text-red-600 dark:text-red-400">{row.errorMessage}</span>
                     )}
@@ -468,15 +459,10 @@ export function ReportAutomationPanel() {
                     type="button"
                     onClick={() =>
                       void confirm({
-                        title: 'Resend this report?',
+                        title: t('resendTitle'),
                         kind: 'send',
-                        confirmLabel: 'Send report',
-                        message: (
-                          <>
-                            <strong>{row.customerName}</strong> receives their {periodName} performance
-                            report by email.
-                          </>
-                        ),
+                        confirmLabel: t('sendReport'),
+                        message: t.rich('resendBody', { name: row.customerName, period: periodName, b: bold }),
                       }).then((ok) => ok && sendMutation.mutate(row.customerProfileId))
                     }
                     disabled={sendMutation.isPending}
@@ -487,7 +473,7 @@ export function ReportAutomationPanel() {
                     ) : (
                       <Mail className="h-4 w-4" />
                     )}
-                    Resend
+                    {t('resend')}
                   </button>
                 )}
               </li>
