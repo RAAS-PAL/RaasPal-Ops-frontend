@@ -1080,3 +1080,117 @@ export interface CaseRowEdit {
   sla: SlaStatus | null;
   province: string | null;
 }
+
+/* ─── AOT Google Sheet (second case source) ───────────────────────────────── */
+
+/** Where the AOT sheet is and how to read it, as saved on the AOT tab of Pending cases. */
+export interface AotSheetSettings {
+  sheetUrl: string | null;
+  spreadsheetId: string | null;
+  tab: string;
+  headerRow: number;
+  rowIdHeader: string | null;
+  statusHeader: string | null;
+  /** Comma-separated values of the status column that mean closed. */
+  closedStatuses: string | null;
+  closeDateHeader: string | null;
+  syncEnabled: boolean;
+  /** False while nothing has been saved and the server's config file is all there is. */
+  savedInConsole: boolean;
+  /** Whether the server has a Google service-account key at all. */
+  credentialsConfigured: boolean;
+  /** The address the sheet must be shared with; null without a key. */
+  shareWith: string | null;
+  notReadyForSync: string[];
+  updatedBy: string | null;
+  updatedAt: string | null;
+}
+
+export interface AotSheetSettingsRequest {
+  sheetUrl: string;
+  tab: string;
+  headerRow: number;
+  rowIdHeader: string;
+  statusHeader: string;
+  closedStatuses: string;
+  closeDateHeader: string;
+  syncEnabled: boolean;
+}
+
+export interface AotSheetCase {
+  sheetRow: number;
+  rowId: string | null;
+  ticketNo: string | null;
+  openDate: string | null;
+  serialNumbers: string | null;
+  model: string | null;
+  site: string | null;
+  problem: string | null;
+  status: string | null;
+  closed: boolean | null;
+}
+
+/** What a sync would see, read from the sheet without writing anything. */
+export interface AotSheetPreview {
+  spreadsheetId: string;
+  tab: string;
+  shareWith: string | null;
+  syncEnabled: boolean;
+  headers: string[];
+  missingHeaders: string[];
+  notReadyForSync: string[];
+  rows: number;
+  rowsWithoutId: number;
+  duplicateIds: string[];
+  openDateUnreadable: number;
+  open: number | null;
+  closed: number | null;
+  sample: AotSheetCase[];
+}
+
+export interface CaseSyncResult {
+  boardId: string;
+  seen: number;
+  created: number;
+  updated: number;
+  closed: number;
+  newComments: number;
+  statusChanges: number;
+}
+
+/** One open case on the linked AOT sheet, as the last sync stored it. */
+export interface AotSheetOpenCase {
+  /** The sheet's own case id. */
+  rowId: string | null;
+  ticketNo: string | null;
+  openDate: string | null;
+  /** Whole days since the open date, not counting it. */
+  days: number | null;
+  site: string | null;
+  model: string | null;
+  serialNumbers: string | null;
+  problem: string | null;
+  requestedPart: string | null;
+  repairBy: string | null;
+  verifyNote: string | null;
+  status: string | null;
+}
+
+/** The linked sheet's open cases. Only the sheet linked now; `linked` false when none is. */
+export interface AotSheetOpenCases {
+  linked: boolean;
+  spreadsheetId: string | null;
+  /** When the sheet was last copied in; null if it never has been. */
+  lastSyncedAt: string | null;
+  cases: AotSheetOpenCase[];
+}
+
+/** What opening the AOT tab did about the sheet: synced it, or why not. */
+export interface AotSheetRefreshOutcome {
+  synced: boolean;
+  /** Tried and refused (sheet unshared, a column renamed, an empty read). */
+  failed: boolean;
+  reason: string | null;
+  result: CaseSyncResult | null;
+  lastSynced: string | null;
+}

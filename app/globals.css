@@ -198,11 +198,18 @@ a.rounded-2xl.border-\[var\(--app-border\)\]:hover {
 
 /* ─── Base styles ─────────────────────────────────────────────────────────── */
 
-*,
-*::before,
-*::after {
-  border-color: var(--edge);
-  box-sizing: border-box;
+/* In the base layer, not unlayered: an unlayered rule beats every Tailwind utility, so
+   this one used to paint every border near-black (--edge is a dark value even in the
+   light theme, see the scrollbar note below) whatever colour class it asked for -
+   border-amber-200, divide-[…], an input's border-[var(--app-border)]. In the layer, a
+   border colour class wins, and a border without one still gets --edge. */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--edge);
+    box-sizing: border-box;
+  }
 }
 
 html {

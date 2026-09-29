@@ -10,13 +10,26 @@ const VALID_TABS: readonly string[] = [
   'pudu',
   'cm-new',
   'cm-history',
+  'case-internal',
   'case-mk',
-  'case-cleaning',
+  'case-aot',
+  'case-pcs',
   'case-makro',
-  'case-aotga',
-  'case-delivery',
+  'case-its',
   'case-on-hold',
 ];
+
+/**
+ * Pending-case tabs that were folded into others, so an old bookmark still lands on the
+ * cases it showed: Cleaning and Delivery are the two halves of Internal now, and AOTGA is
+ * the AOT tab.
+ */
+const RENAMED_TABS: Record<string, string> = {
+  'case-cleaning': 'case-internal',
+  'case-delivery': 'case-internal',
+  'case-aotga': 'case-aot',
+  'case-summary': 'case-internal',
+};
 
 export default async function ReportsPage({
   params,
@@ -34,7 +47,8 @@ export default async function ReportsPage({
     const { locale } = await params;
     redirect({ href: `/tools?tab=${tab}`, locale });
   }
-  const initialTab: ReportTab = VALID_TABS.includes(tab ?? '') ? (tab as ReportTab) : 'automation';
+  const wanted = RENAMED_TABS[tab ?? ''] ?? tab ?? '';
+  const initialTab: ReportTab = VALID_TABS.includes(wanted) ? (wanted as ReportTab) : 'automation';
   // `customer` opens that customer's company report straight away — the dashboard's
   // tracking list links each not-yet-sent customer here.
   return <ReportsClient initialTab={initialTab} initialCustomerId={customer ?? null} />;

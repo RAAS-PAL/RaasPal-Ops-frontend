@@ -811,6 +811,15 @@
       "correctiveMaintenance": "การซ่อมบำรุงแก้ไข",
       "pendingCases": "เคสค้าง"
     },
+    "pendingTabs": {
+      "internal": "ภายใน (ทั้งหมด)",
+      "mk": "MK",
+      "aot": "AOT",
+      "pcs": "PCS",
+      "makro": "Makro",
+      "its": "ITS",
+      "onHold": "เคสพักไว้ (On Hold)"
+    },
     "tabs": {
       "automation": "จัดการอัตโนมัติ",
       "company": "รายงานรายบริษัท",

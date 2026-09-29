@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Building2, CalendarClock, CalendarX2, ClipboardList, FileSearch, Gauge, History, PauseCircle, Wrench } from 'lucide-react';
+import { Building2, CalendarClock, CalendarX2, ClipboardList, FileSearch, Gauge, History, Layers, PauseCircle, Plane, Wrench } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { ReportAutomationPanel } from '@/components/ReportAutomationPanel';
@@ -12,8 +12,13 @@ import { AutoxingReportPanel } from '@/components/AutoxingReportPanel';
 import { ZeroDataPanel } from '@/components/ZeroDataPanel';
 import { CmReportPanel } from '@/components/CmReportPanel';
 import { CmReportHistoryPanel } from '@/components/CmReportHistoryPanel';
-import { CASE_REPORTS } from '@/components/CasePendingPanel';
+import { CASE_REPORTS, todayInBangkok } from '@/components/CasePendingPanel';
 import { CasePendingSummary } from '@/components/CasePendingSummary';
+import { CaseAotPanel, CaseCustomerPanel } from '@/components/CasePendingViews';
+import { AotSheetStatusPill } from '@/components/AotSheetPanel';
+import { CasePeriodPicker } from '@/components/CasePeriodPicker';
+import { initialChoice, resolvePeriod, type PeriodChoice } from '@/lib/casePeriod';
+import type { CaseScope } from '@/lib/caseCustomerViews';
 import { EmptyState } from '@/components/ui/empty-state';
 
 const REPORT_TABS = [
@@ -25,11 +30,12 @@ const REPORT_TABS = [
   'pudu',
   'cm-new',
   'cm-history',
+  'case-internal',
   'case-mk',
-  'case-cleaning',
+  'case-aot',
+  'case-pcs',
   'case-makro',
-  'case-aotga',
-  'case-delivery',
+  'case-its',
   'case-on-hold',
 ] as const;
 
@@ -52,11 +58,12 @@ const TAB_GROUP: Record<ReportTab, 'performance' | 'cm' | 'case'> = {
   pudu: 'performance',
   'cm-new': 'cm',
   'cm-history': 'cm',
+  'case-internal': 'case',
   'case-mk': 'case',
-  'case-cleaning': 'case',
+  'case-aot': 'case',
+  'case-pcs': 'case',
   'case-makro': 'case',
-  'case-aotga': 'case',
-  'case-delivery': 'case',
+  'case-its': 'case',
   'case-on-hold': 'case',
 };
 
@@ -65,7 +72,7 @@ type ReportGroup = 'performance' | 'cm' | 'case';
 const GROUP_DEFAULT_TAB: Record<ReportGroup, ReportTab> = {
   performance: 'automation',
   cm: 'cm-new',
-  case: 'case-mk',
+  case: 'case-internal',
 };
 
 /**
@@ -108,6 +115,15 @@ export function ReportsClient({
 }) {
   const t = useTranslations('reports');
   const [tab, setTab] = useState<ReportTab>(initialTab);
+  // One period for every pending-case tab, so switching from Internal to MK keeps the
+  // week or month being looked at.
+  const today = todayInBangkok();
+  const [periodChoice, setPeriodChoice] = useState<PeriodChoice>(() => initialChoice(today));
+  const period = resolvePeriod(periodChoice, today);
+  // Both boards or one, on the tabs whose cases span both; kept across those tabs too.
+  const [scope, setScope] = useState<CaseScope>('BOTH');
+  const scoped = tab === 'case-internal' || tab === 'case-pcs' || tab === 'case-its' || tab === 'case-on-hold';
+  const board = scope === 'BOTH' ? undefined : scope;
   const group = TAB_GROUP[tab];
   const brand = TAB_BRAND[tab];
 
@@ -150,13 +166,16 @@ export function ReportsClient({
       { id: 'cm-new', label: t('tabs.cmNew'), icon: <Wrench className="h-4 w-4" /> },
       { id: 'cm-history', label: t('tabs.cmHistory'), icon: <History className="h-4 w-4" /> },
     ],
+    // Internal first: it is every case, as Delivery and Cleaning. Then one tab per
+    // customer the team reports to, and On Hold.
     case: [
-      { id: 'case-mk', label: t('tabs.caseMk'), icon: <ClipboardList className="h-4 w-4" /> },
-      { id: 'case-cleaning', label: t('tabs.caseCleaning'), icon: <ClipboardList className="h-4 w-4" /> },
-      { id: 'case-makro', label: t('tabs.caseMakro'), icon: <ClipboardList className="h-4 w-4" /> },
-      { id: 'case-aotga', label: t('tabs.caseAotga'), icon: <ClipboardList className="h-4 w-4" /> },
-      { id: 'case-delivery', label: t('tabs.caseDelivery'), icon: <ClipboardList className="h-4 w-4" /> },
-      { id: 'case-on-hold', label: t('tabs.caseOnHold'), icon: <PauseCircle className="h-4 w-4" /> },
+      { id: 'case-internal', label: t('pendingTabs.internal'), icon: <Layers className="h-4 w-4" /> },
+      { id: 'case-mk', label: t('pendingTabs.mk'), icon: <ClipboardList className="h-4 w-4" /> },
+      { id: 'case-aot', label: t('pendingTabs.aot'), icon: <Plane className="h-4 w-4" /> },
+      { id: 'case-pcs', label: t('pendingTabs.pcs'), icon: <ClipboardList className="h-4 w-4" /> },
+      { id: 'case-makro', label: t('pendingTabs.makro'), icon: <ClipboardList className="h-4 w-4" /> },
+      { id: 'case-its', label: t('pendingTabs.its'), icon: <ClipboardList className="h-4 w-4" /> },
+      { id: 'case-on-hold', label: t('pendingTabs.onHold'), icon: <PauseCircle className="h-4 w-4" /> },
     ],
   };
 
@@ -257,12 +276,30 @@ export function ReportsClient({
             )}
             {tab === 'cm-new' && <CmReportPanel />}
             {tab === 'cm-history' && <CmReportHistoryPanel />}
-            {tab === 'case-mk' && <CasePendingSummary report={CASE_REPORTS.mk} />}
-            {tab === 'case-cleaning' && <CasePendingSummary report={CASE_REPORTS.cleaning} />}
-            {tab === 'case-makro' && <CasePendingSummary report={CASE_REPORTS.makro} />}
-            {tab === 'case-aotga' && <CasePendingSummary report={CASE_REPORTS.aotga} />}
-            {tab === 'case-delivery' && <CasePendingSummary report={CASE_REPORTS.delivery} />}
-            {tab === 'case-on-hold' && <CasePendingSummary report={CASE_REPORTS['on-hold']} />}
+            {group === 'case' && (
+              <CasePeriodPicker
+                choice={periodChoice}
+                today={today}
+                onChange={setPeriodChoice}
+                scope={scoped ? scope : undefined}
+                onScopeChange={scoped ? setScope : undefined}
+                leading={tab === 'case-aot' ? <AotSheetStatusPill /> : undefined}
+              />
+            )}
+            {tab === 'case-internal' && <CaseCustomerPanel view="internal" period={period} scope={scope} onScopeChange={setScope} />}
+            {tab === 'case-mk' && <CasePendingSummary report={CASE_REPORTS.mk} title="MK" period={period} />}
+            {tab === 'case-aot' && <CaseAotPanel period={period} />}
+            {tab === 'case-pcs' && <CaseCustomerPanel view="pcs" period={period} scope={scope} />}
+            {tab === 'case-makro' && <CaseCustomerPanel view="makro" period={period} />}
+            {tab === 'case-its' && <CaseCustomerPanel view="its" period={period} scope={scope} />}
+            {tab === 'case-on-hold' && (
+              <CasePendingSummary
+                report={CASE_REPORTS['on-hold']}
+                title={board ? `On Hold — ${board === 'CLEANING' ? 'cleaning' : 'delivery'}` : 'On Hold'}
+                period={period}
+                board={board}
+              />
+            )}
           </div>
         </section>
       </div>
