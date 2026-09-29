@@ -71,7 +71,7 @@ const SLA_STYLE: Record<SlaStatus, string> = {
   UNKNOWN: 'bg-[var(--app-bg)] text-[var(--app-muted)] ring-[var(--app-border)]',
 };
 
-function SlaCell({ row }: { row: CaseReportRow }) {
+export function SlaCell({ row }: { row: CaseReportRow }) {
   // A blank verdict is a question, not a value: say what is missing so somebody can fix
   // it, rather than showing an empty cell that reads as a rendering bug.
   if (row.sla === 'UNKNOWN') {
@@ -195,7 +195,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
 };
 
 /** Cleaning and delivery are different monday boards; the ticket link needs the right one. */
-const BOARD_IDS: Record<CaseBoard, string> = {
+export const BOARD_IDS: Record<CaseBoard, string> = {
   CLEANING: '3451717331',
   DELIVERY: '1647612496',
 };
@@ -211,7 +211,7 @@ function serialLines(serialNumber: string): string[] {
  * Where a wrong value actually gets fixed. Without this, a reviewer who spots a bad
  * value has to go and find the ticket by hand. A row added by hand has no ticket to open.
  */
-function TicketLink({ row, boardId }: { row: CaseReportRow; boardId: string }) {
+export function TicketLink({ row, boardId }: { row: CaseReportRow; boardId: string }) {
   if (!row.sourceItemId || isManualCaseRow(row)) return null;
   return (
     <a
@@ -270,33 +270,42 @@ export function countCases(sheet: CaseReportRow[]): CaseCounts {
 }
 
 /**
+ * How one date's stored sheet is read. Shared by every view that shows it, so the
+ * combined views (Internal, PCS, ...) and a sheet's details page read one cached copy.
+ */
+export function caseSheetQuery(slug: CaseReportSlug, asOf: string) {
+  // Today's sheet is regenerated on the server every 15 minutes. Reading the stored copy
+  // is cheap (no monday call), so an open page re-reads it every minute and is never far
+  // behind the server. Only while the tab is in front — the query layer's default — and
+  // never for a past date, which is settled.
+  const live = asOf === todayInBangkok();
+  return {
+    queryKey: ['case-report', slug, asOf],
+    queryFn: async () => (await caseReportApi.rows(slug, asOf)).data.data ?? [],
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    refetchInterval: live ? LIVE_POLL_MS : (false as const),
+    // The first call for a date generates the sheet: minutes of monday and model calls.
+    // A timeout is "still working", not a blip, and the query layer's default three
+    // retries fired three more generations of the same sheet. The server now joins a
+    // duplicate onto the running one, but the client should not send it at all.
+    retry: false,
+  };
+}
+
+/**
  * One date's stored sheet, and the two whole-sheet actions the summary and the details
  * page both offer. One query key for both, so opening the details after Generate reads
  * the cached rows instead of asking again.
  */
 export function useCaseReport(report: CaseReportSpec, asOf: string) {
   const queryClient = useQueryClient();
-  const queryKey = ['case-report', report.slug, asOf];
+  const sheet = caseSheetQuery(report.slug, asOf);
+  const queryKey = sheet.queryKey;
   const runKey = ['case-report-run', report.slug, asOf];
-
-  // Today's sheet is regenerated on the server every 15 minutes. Reading the stored copy
-  // is cheap (no monday call), so an open page re-reads it every minute and is never far
-  // behind the server. Only while the tab is in front — the query layer's default — and
-  // never for a past date, which is settled.
   const live = asOf === todayInBangkok();
 
-  const query = useQuery({
-    queryKey,
-    queryFn: async () => (await caseReportApi.rows(report.slug, asOf)).data.data ?? [],
-    staleTime: 0,
-    refetchOnWindowFocus: false,
-    refetchInterval: live ? LIVE_POLL_MS : false,
-    // The first call for a date generates the sheet: minutes of monday and model calls.
-    // A timeout is "still working", not a blip, and the query layer's default three
-    // retries fired three more generations of the same sheet. The server now joins a
-    // duplicate onto the running one, but the client should not send it at all.
-    retry: false,
-  });
+  const query = useQuery(sheet);
 
   // Re-read the board into the stored draft. Edited rows come through untouched, which
   // is why this needs no confirmation: it cannot undo anyone's work.
@@ -317,23 +326,27 @@ export function useCaseReport(report: CaseReportSpec, asOf: string) {
     refetchInterval: live ? LIVE_POLL_MS : false,
   });
 
-  // Download, not a link: the token lives in localStorage and only the axios
-  // interceptor attaches it, so an <a href> to the endpoint would arrive anonymous.
-  const exportExcel = useMutation({
-    mutationFn: async () => {
-      const res = await caseReportApi.exportExcel(report.slug, asOf);
-      const disposition = String(res.headers['content-disposition'] ?? '');
-      const named = /filename="?([^";]+)"?/.exec(disposition)?.[1];
-      const url = URL.createObjectURL(res.data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = named ?? `${report.slug}-pending-${asOf}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(url);
-    },
-  });
+  const exportExcel = useMutation({ mutationFn: () => downloadCaseSheet(report.slug, asOf) });
 
   return { queryKey, query, regenerate, exportExcel, runInfo: runInfo.data ?? null, live };
+}
+
+/**
+ * One sheet's Excel for one date, exactly as stored — corrections included.
+ *
+ * <p>Download, not a link: the token lives in localStorage and only the axios
+ * interceptor attaches it, so an <a href> to the endpoint would arrive anonymous.
+ */
+export async function downloadCaseSheet(slug: CaseReportSlug, asOf: string): Promise<void> {
+  const res = await caseReportApi.exportExcel(slug, asOf);
+  const disposition = String(res.headers['content-disposition'] ?? '');
+  const named = /filename="?([^";]+)"?/.exec(disposition)?.[1];
+  const url = URL.createObjectURL(res.data);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = named ?? `${slug}-pending-${asOf}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 /** How often an open page re-reads today's stored sheet. The server refreshes it every 15 min. */

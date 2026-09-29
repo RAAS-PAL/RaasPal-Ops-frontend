@@ -8,13 +8,13 @@ import { CASE_REPORTS, CaseReportSheet } from '@/components/CasePendingPanel';
 import { Link } from '@/i18n/navigation';
 import type { CaseReportSlug } from '@/lib/api';
 
-/** The Reports tab each sheet belongs to, and its name there. */
+/** The Reports tab each sheet is reached from, and the sheet's name. */
 const TAB: Record<CaseReportSlug, { tab: string; labelKey: string }> = {
   mk: { tab: 'case-mk', labelKey: 'tabs.caseMk' },
-  cleaning: { tab: 'case-cleaning', labelKey: 'tabs.caseCleaning' },
+  cleaning: { tab: 'case-internal', labelKey: 'tabs.caseCleaning' },
   makro: { tab: 'case-makro', labelKey: 'tabs.caseMakro' },
-  aotga: { tab: 'case-aotga', labelKey: 'tabs.caseAotga' },
-  delivery: { tab: 'case-delivery', labelKey: 'tabs.caseDelivery' },
+  aotga: { tab: 'case-aot', labelKey: 'tabs.caseAotga' },
+  delivery: { tab: 'case-internal', labelKey: 'tabs.caseDelivery' },
   'on-hold': { tab: 'case-on-hold', labelKey: 'tabs.caseOnHold' },
 };
 

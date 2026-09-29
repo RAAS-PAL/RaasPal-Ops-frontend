@@ -811,6 +811,15 @@
       "correctiveMaintenance": "Corrective maintenance",
       "pendingCases": "Pending cases"
     },
+    "pendingTabs": {
+      "internal": "Internal",
+      "mk": "MK",
+      "aot": "AOT",
+      "pcs": "PCS",
+      "makro": "Makro",
+      "its": "ITS",
+      "onHold": "On Hold"
+    },
     "tabs": {
       "automation": "Manage automation",
       "company": "Company report",
