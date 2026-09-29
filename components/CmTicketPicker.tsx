@@ -10,6 +10,7 @@
  * answers on every keystroke beats one that waits for the server.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, CheckCircle2, Loader2, MessageSquare, RefreshCw, Search } from 'lucide-react';
 import { cmReportApi } from '@/lib/api';
@@ -40,6 +41,7 @@ export function CmTicketPicker({
   /** The ticket being drafted right now, so its row shows a spinner and the rest wait. */
   busyId: string | null;
 }) {
+  const tx = useTranslations('cmReport.picker');
   const [board, setBoard] = useState<BoardFilter>('all');
   const [search, setSearch] = useState('');
 
@@ -58,7 +60,7 @@ export function CmTicketPicker({
   const rows = all.filter((t) => (board === 'all' || t.board === board) && (!needle || matches(t, needle)));
 
   const chips: { id: BoardFilter; label: string; count: number }[] = [
-    { id: 'all', label: 'All', count: counts.all },
+    { id: 'all', label: tx('all'), count: counts.all },
     { id: 'CLEANING', label: 'Cleaning', count: counts.CLEANING },
     { id: 'DELIVERY', label: 'Delivery', count: counts.DELIVERY },
   ];
@@ -67,8 +69,8 @@ export function CmTicketPicker({
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
-          Board
-          <div role="radiogroup" aria-label="Filter tickets by board" className="inline-flex overflow-hidden rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] text-sm font-normal">
+          {tx('board')}
+          <div role="radiogroup" aria-label={tx('filterAria')} className="inline-flex overflow-hidden rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] text-sm font-normal">
             {chips.map((chip) => {
               const active = board === chip.id;
               return (
@@ -89,14 +91,14 @@ export function CmTicketPicker({
         </div>
 
         <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
-          Search
+          {tx('search')}
           <span className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--app-muted)]" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Case ID, ticket, customer, branch or serial…"
+              placeholder={tx('searchPlaceholder')}
               className="h-9 w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] pl-9 pr-3 text-sm font-normal text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
             />
           </span>
@@ -109,14 +111,14 @@ export function CmTicketPicker({
           className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 text-sm font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)] disabled:opacity-50"
         >
           {query.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Refresh
+          {tx('refresh')}
         </button>
       </div>
 
       {query.isError && (
         <p className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          Could not load the tickets — try again.
+          {tx('loadFailed')}
         </p>
       )}
 
@@ -125,15 +127,15 @@ export function CmTicketPicker({
           <thead className="sticky top-0 z-10 border-b border-[var(--app-border)] bg-[var(--app-panel)] text-xs uppercase tracking-wide text-[var(--app-muted)]">
             <tr>
               <th className="px-3 py-2.5 font-semibold">Case ID</th>
-              <th className="px-3 py-2.5 font-semibold">Ticket</th>
-              <th className="px-3 py-2.5 font-semibold">Board</th>
-              <th className="px-3 py-2.5 font-semibold">Robot</th>
-              <th className="px-3 py-2.5 font-semibold">Status</th>
-              <th className="px-3 py-2.5 font-semibold">Opened</th>
-              <th className="px-3 py-2.5 text-right font-semibold" title="Comments on the ticket">
+              <th className="px-3 py-2.5 font-semibold">{tx('ticket')}</th>
+              <th className="px-3 py-2.5 font-semibold">{tx('board')}</th>
+              <th className="px-3 py-2.5 font-semibold">{tx('robot')}</th>
+              <th className="px-3 py-2.5 font-semibold">{tx('status')}</th>
+              <th className="px-3 py-2.5 font-semibold">{tx('opened')}</th>
+              <th className="px-3 py-2.5 text-right font-semibold" title={tx('commentsTitle')}>
                 <MessageSquare className="inline h-3.5 w-3.5" />
               </th>
-              <th className="px-3 py-2.5 font-semibold">Report</th>
+              <th className="px-3 py-2.5 font-semibold">{tx('report')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--app-border)]">
@@ -171,7 +173,7 @@ export function CmTicketPicker({
                   <td className="px-3 py-2.5 text-xs">
                     {t.hasReport ? (
                       <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> done
+                        <CheckCircle2 className="h-3.5 w-3.5" /> {tx('done')}
                       </span>
                     ) : (
                       <span className="text-[var(--app-muted)]">—</span>
@@ -183,7 +185,7 @@ export function CmTicketPicker({
             {query.data && rows.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
-                  {all.length === 0 ? 'No tickets synced yet — the morning sync fills this list.' : 'No tickets match.'}
+                  {all.length === 0 ? tx('emptyAll') : tx('noMatch')}
                 </td>
               </tr>
             )}
@@ -199,7 +201,7 @@ export function CmTicketPicker({
       </div>
       {query.data && (
         <p className="text-xs text-[var(--app-muted)]">
-          Showing {rows.length} of {all.length} · click a ticket to draft its report. Tickets marked <b>done</b> already have one — picking them starts another.
+          {tx.rich('footer', { shown: rows.length, total: all.length, b: (chunks) => <b>{chunks}</b> })}
         </p>
       )}
     </div>

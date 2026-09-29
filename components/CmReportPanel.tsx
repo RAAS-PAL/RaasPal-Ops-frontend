@@ -11,6 +11,7 @@
  * only ever fills the form — the form is the source of truth for what gets saved.
  */
 import { useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -112,12 +113,10 @@ function printAs(filename: string) {
   window.print();
 }
 
-function errorMessage(e: unknown, fallback: string): string {
+function errorMessage(e: unknown, fallback: string, slow: string): string {
   const ax = e as { response?: { data?: { message?: string } }; code?: string; message?: string };
   if (ax?.response?.data?.message) return ax.response.data.message;
-  if (ax?.code === 'ECONNABORTED' || !ax?.response) {
-    return 'This is taking longer than expected — it may still be running on the server. Wait a moment, then try again.';
-  }
+  if (ax?.code === 'ECONNABORTED' || !ax?.response) return slow;
   return ax?.message ?? fallback;
 }
 
@@ -179,6 +178,7 @@ function SignatureField({
   value: string;
   onChange: (dataUrl: string) => void;
 }) {
+  const t = useTranslations('cmReport');
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -191,7 +191,7 @@ function SignatureField({
     try {
       onChange(await fileToSignatureDataUrl(file));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not read that image.');
+      setError(e instanceof Error ? e.message : t('imageUnreadable'));
     } finally {
       setBusy(false);
       // Clear the input so re-picking the same file fires onChange again.
@@ -206,7 +206,7 @@ function SignatureField({
     if (!image) {
       // Most often a screenshot that went to a file instead of the clipboard, or
       // copied text — say which, rather than failing silently.
-      setError('No image on the clipboard. Take a screenshot (Win+Shift+S), then paste here.');
+      setError(t('noClipboardImage'));
       return;
     }
     e.preventDefault();
@@ -225,7 +225,7 @@ function SignatureField({
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         role="group"
-        aria-label={`${label} — click and press Ctrl+V to paste a screenshot, or upload a file`}
+        aria-label={t('signatureAria', { label })}
         className={`flex items-center gap-3 rounded-lg border border-dashed bg-[var(--app-panel-alt)] p-2 outline-none transition ${
           focused
             ? 'border-[var(--app-brand)] ring-2 ring-[var(--app-brand-soft)]'
@@ -238,14 +238,9 @@ function SignatureField({
         ) : (
           <span className="px-1 text-xs text-[var(--app-muted)]">
             {focused ? (
-              <span className="font-semibold text-[var(--app-brand-dark)]">
-                Press Ctrl+V to paste your screenshot
-              </span>
+              <span className="font-semibold text-[var(--app-brand-dark)]">{t('pastePrompt')}</span>
             ) : (
-              <>
-                Click here and press <kbd className="font-semibold">Ctrl+V</kbd> to paste a
-                screenshot, or upload a file. Leave empty to sign on paper.
-              </>
+              t.rich('pasteHint', { kbd: (chunks) => <kbd className="font-semibold">{chunks}</kbd> })
             )}
           </span>
         )}
@@ -258,13 +253,13 @@ function SignatureField({
             className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)] disabled:opacity-50"
           >
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-            {value ? 'Replace' : 'Upload'}
+            {value ? t('replace') : t('upload')}
           </button>
           {value && (
             <button
               type="button"
               onClick={() => onChange('')}
-              aria-label={`Remove ${label}`}
+              aria-label={t('removeSignature', { label })}
               className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--app-border)] text-[var(--app-muted)] transition hover:border-red-300 hover:text-red-600"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -293,7 +288,9 @@ export function CmReportPanel({
   initialReport?: CmReportResponse;
   onSaved?: (report: CmReportResponse) => void;
 }) {
+  const t = useTranslations('cmReport');
   const queryClient = useQueryClient();
+  const slow = t('slowResponse');
 
   const [sourceText, setSourceText] = useState(initialReport?.sourceText ?? '');
   const [form, setForm] = useState<CmReportRequest>(
@@ -320,7 +317,7 @@ export function CmReportPanel({
   // A ticket starts a report from scratch: a field the previous ticket filled must
   // not survive into this one, so the draft lands on an empty form, not the current one.
   const parseTicketMutation = useMutation({
-    mutationFn: (t: CmTicketSummary) => cmReportApi.parseTicket(t.caseTicketId).then((r) => r.data.data),
+    mutationFn: (picked: CmTicketSummary) => cmReportApi.parseTicket(picked.caseTicketId).then((r) => r.data.data),
     onSuccess: (d) => {
       if (!d) return;
       setTicket(d.ticket);
@@ -353,11 +350,11 @@ export function CmReportPanel({
   function submit() {
     setFormError(null);
     if (!form.customerName.trim()) {
-      setFormError('Customer name is required.');
+      setFormError(t('customerRequired'));
       return;
     }
     if (!form.reportDate) {
-      setFormError('Report date is required.');
+      setFormError(t('dateRequired'));
       return;
     }
     saveMutation.mutate({ ...form, sourceText });
@@ -397,10 +394,10 @@ export function CmReportPanel({
           </span>
           <div>
             <p className="text-sm font-semibold text-[var(--app-text)]">
-              {savedId ? 'Edit corrective maintenance report' : 'New corrective maintenance report'}
+              {savedId ? t('titleEdit') : t('titleNew')}
             </p>
             <p className="text-xs text-[var(--app-muted)]">
-              Pick the monday ticket, check the extracted fields, attach the signatures, then print.
+              {t('subtitle')}
             </p>
           </div>
         </div>
@@ -411,24 +408,24 @@ export function CmReportPanel({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
                 <ClipboardList className="h-4 w-4 text-[var(--app-brand-dark)]" />
-                Tickets from monday
+                {t('ticketsFromMonday')}
               </p>
               <button
                 type="button"
                 onClick={() => setPasteMode(true)}
                 className="text-xs font-semibold text-[var(--app-muted)] underline-offset-2 hover:text-[var(--app-brand-dark)] hover:underline"
               >
-                Paste ticket text instead
+                {t('pasteInstead')}
               </button>
             </div>
             {parseTicketMutation.isError && (
               <p className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                {errorMessage(parseTicketMutation.error, 'Could not draft the report from that ticket. Try again, or paste the ticket text.')}
+                {errorMessage(parseTicketMutation.error, t('draftFailed'), slow)}
               </p>
             )}
             <CmTicketPicker
-              onPick={(t) => parseTicketMutation.mutate(t)}
+              onPick={(picked) => parseTicketMutation.mutate(picked)}
               busyId={parseTicketMutation.isPending ? parseTicketMutation.variables?.caseTicketId ?? null : null}
             />
           </div>
@@ -441,10 +438,10 @@ export function CmReportPanel({
                   <span className="font-mono">{ticket.caseId}</span> · {ticket.itemName ?? '—'}
                 </p>
                 <p className="text-xs text-[var(--app-muted)]">
-                  {ticket.board === 'DELIVERY' ? 'Delivery Tickets' : 'Cleaning Tickets'}
+                  {ticket.board === 'DELIVERY' ? t('boardDelivery') : t('boardCleaning')}
                   {[ticket.project, ticket.branch].filter(Boolean).length > 0 && ` · ${[ticket.project, ticket.branch].filter(Boolean).join(' · ')}`}
                   {ticket.serialNumbers && ` · ${ticket.serialNumbers}`}
-                  {` · ${ticket.commentCount} comment${ticket.commentCount === 1 ? '' : 's'}`}
+                  {` · ${t('commentCount', { count: ticket.commentCount })}`}
                 </p>
               </div>
               {!savedId && (
@@ -454,7 +451,7 @@ export function CmReportPanel({
                   className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-2.5 text-xs font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
-                  Choose another ticket
+                  {t('chooseAnother')}
                 </button>
               )}
             </div>
@@ -466,11 +463,11 @@ export function CmReportPanel({
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--app-muted)] underline-offset-2 hover:text-[var(--app-brand-dark)] hover:underline"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              Pick a ticket from monday instead
+              {t('pickInstead')}
             </button>
           )}
           <label className="flex flex-col gap-1.5 text-xs font-semibold text-[var(--app-muted)]">
-            {ticket ? 'Ticket content from monday — columns and comments, as read' : 'Ticket content from Monday'}
+            {ticket ? t('sourceTicket') : t('sourcePasted')}
             <textarea
               rows={8}
               value={sourceText}
@@ -492,12 +489,12 @@ export function CmReportPanel({
               ) : (
                 <Sparkles className="h-4 w-4" />
               )}
-              {parseMutation.isPending ? 'Extracting…' : 'Extract fields'}
+              {parseMutation.isPending ? t('extracting') : t('extract')}
             </button>
             {((parseMutation.isSuccess && !parseMutation.isPending) || (ticket && parseTicketMutation.isSuccess)) && (
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                 <Check className="h-3.5 w-3.5" />
-                Fields filled — check them below
+                {t('filled')}
               </span>
             )}
           </div>
@@ -505,7 +502,7 @@ export function CmReportPanel({
           {parseMutation.isError && (
             <p className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              {errorMessage(parseMutation.error, 'Could not extract the fields. Fill them in below instead.')}
+              {errorMessage(parseMutation.error, t('extractFailed'), slow)}
             </p>
           )}
         </div>
@@ -513,7 +510,7 @@ export function CmReportPanel({
 
         {/* Step 2 — review + edit */}
         <div className="space-y-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
-          <p className="text-sm font-semibold text-[var(--app-text)]">Report fields</p>
+          <p className="text-sm font-semibold text-[var(--app-text)]">{t('reportFields')}</p>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
@@ -598,7 +595,7 @@ export function CmReportPanel({
               onChange={(e) => field('correctiveActions', e.target.value)}
               className={`${textareaClass} font-normal`}
             />
-            <span className="font-normal">One step per line — the report numbers them for you.</span>
+            <span className="font-normal">{t('stepsHint')}</span>
           </label>
           <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
             ผลการทดสอบ · Test result
@@ -632,7 +629,7 @@ export function CmReportPanel({
           {saveMutation.isError && (
             <p className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              {errorMessage(saveMutation.error, 'Could not save the report.')}
+              {errorMessage(saveMutation.error, t('saveFailed'), slow)}
             </p>
           )}
 
@@ -648,7 +645,7 @@ export function CmReportPanel({
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              {savedId ? 'Save changes' : 'Save report'}
+              {savedId ? t('saveChanges') : t('saveReport')}
             </button>
             <button
               type="button"
@@ -656,12 +653,12 @@ export function CmReportPanel({
               className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 text-sm font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
             >
               <Printer className="h-4 w-4" />
-              Print / PDF
+              {t('print')}
             </button>
             {saveMutation.isSuccess && !saveMutation.isPending && (
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                 <Check className="h-3.5 w-3.5" />
-                Saved
+                {t('saved')}
               </span>
             )}
           </div>
@@ -669,7 +666,7 @@ export function CmReportPanel({
 
         <div className="flex items-center gap-2 px-1">
           <FileText className="h-3.5 w-3.5 text-[var(--app-muted)]" />
-          <p className="text-xs text-[var(--app-muted)]">Preview — this is exactly what prints.</p>
+          <p className="text-xs text-[var(--app-muted)]">{t('preview')}</p>
         </div>
       </div>
 
