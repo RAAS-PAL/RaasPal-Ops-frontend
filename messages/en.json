@@ -143,12 +143,8 @@
     "proposals": "Proposals",
     "reports": "Reports",
     "robots": "Robot Catalog",
-    "cvteStatus": "CVTE C3 Status",
     "tools": "Tools",
-    "users": "Users",
     "login": "Login",
-    "logout": "Logout",
-    "settings": "Settings",
     "kpi": "KPI",
     "kpiReport": "KPI Report",
     "kpiUtilization": "Utilization",
@@ -165,8 +161,6 @@
     "signedInAs": "Signed in as"
   },
   "common": {
-    "welcome": "Welcome to RaasPal",
-    "tagline": "AI-powered robot recommendation for your workspace",
     "loading": "Loading...",
     "error": "Something went wrong",
     "save": "Save",
@@ -174,14 +168,10 @@
     "confirm": "Confirm",
     "delete": "Delete",
     "edit": "Edit",
-    "back": "Back",
-    "viewAll": "View all",
-    "learnMore": "Learn more"
+    "viewAll": "View all"
   },
   "dashboard": {
-    "title": "Dashboard",
-    "subtitle": "RAASPAL x Octagon",
-    "overview": "Overview"
+    "title": "Dashboard"
   },
   "teamDashboard": {
     "eyebrow": "RAAS PAL team destination",
@@ -206,41 +196,19 @@
       "failedToLoad": "Couldn't load recent solutions.",
       "processing": "Processing…"
     },
-    "stats": {
-      "customerProfiles": "Customer profiles",
-      "customerProfilesDetail": "+5 onboarded this week",
-      "testedRobots": "Tested robots",
-      "testedRobotsDetail": "+18 verified this month",
-      "solutionsGenerated": "Solutions generated",
-      "solutionsGeneratedDetail": "Generated this month",
-      "monthlySolutions": "Monthly solutions",
-      "monthlySolutionsDetail": "Generated this month"
-    },
     "queue": {
-      "kicker": "Team intake queue",
-      "title": "Customer solution inputs",
-      "viewAll": "View all",
-      "workspace": "{area} workspace"
+      "title": "Customer solution inputs"
     },
     "shortlist": {
-      "kicker": "Recommendation review",
-      "title": "Current shortlist",
-      "fit": "{fit}% fit"
+      "title": "Current shortlist"
     },
     "scoring": {
       "title": "Scoring distribution"
     },
     "activity": {
-      "title": "Activity",
-      "items": {
-        "importedDatasheet": "RAAS PAL team imported robot datasheet",
-        "agodaReady": "Agoda requirement marked ready for matching",
-        "templateUpdated": "Recommendation report template updated",
-        "specsVerified": "3 robot specs verified by team"
-      }
+      "title": "Activity"
     },
     "hero": {
-      "eyebrow": "Get started",
       "title": "Monthly report automation",
       "description": "Deliver every customer one link covering all their robots for the month — run, monitor, and resend deliveries from one place.",
       "cta": "Manage delivery"
@@ -324,34 +292,14 @@
       "step4Description": "The scheduler emails each customer one link on the 2nd — or run it manually anytime."
     },
     "solutionShortcut": {
-      "label": "Generate a robot solution",
       "description": "Upload a customer survey and let AI recommend robots and draft a proposal."
-    },
-    "howItWorks": {
-      "heading": "How it works",
-      "step1Title": "Upload customer survey",
-      "step1Description": "Upload an Excel, PDF, or image of the customer requirements form.",
-      "step2Title": "AI extracts requirements",
-      "step2Description": "Claude AI reads the survey and structures the customer requirements automatically.",
-      "step3Title": "Review robot recommendations",
-      "step3Description": "The AI compares requirements against the verified robot catalog and ranks the best options.",
-      "step4Title": "Generate the proposal",
-      "step4Description": "Select a robot option and the AI drafts a full customer proposal ready for review."
     },
     "quickAccess": {
       "heading": "Quick access",
-      "solutionsLabel": "Solutions",
-      "solutionsDesc": "View all past recommendations",
-      "proposalsLabel": "Proposals",
-      "proposalsDesc": "Browse generated proposals",
       "robotsLabel": "Robots",
-      "robotsDesc": "Register robots to customers",
       "emailLabel": "Email customers",
-      "emailDesc": "Send a report link by email",
       "previewLabel": "Report preview",
-      "previewDesc": "Preview a robot's monthly report",
-      "customersLabel": "Customers",
-      "customersDesc": "Manage report recipients"
+      "customersLabel": "Customers"
     },
     "cvteSummary": {
       "heading": "Robot Online Status",
@@ -390,7 +338,6 @@
       "proposal": "Generate proposal"
     },
     "workspace": {
-      "kicker": "Solution builder",
       "title": "Create a robot solution from customer inputs.",
       "description": "Capture the customer profile, operating environment, and cleaning priorities before generating a ranked robot recommendation."
     },
@@ -417,47 +364,11 @@
         }
       }
     },
-    "siteFactors": {
-      "area": "Cleaning area",
-      "surface": "Surface type",
-      "shift": "Operation"
-    },
     "progress": {
-      "kicker": "Generation flow",
-      "title": "Solution readiness",
-      "steps": {
-        "profile": {
-          "title": "Customer profile",
-          "detail": "Basic account and site data captured"
-        },
-        "criteria": {
-          "title": "Solution criteria",
-          "detail": "Cleaning scope and constraints selected"
-        },
-        "matching": {
-          "title": "Robot matching",
-          "detail": "Run scoring against tested robots"
-        },
-        "proposal": {
-          "title": "Solution report",
-          "detail": "Prepare customer-facing recommendation"
-        }
-      }
+      "title": "Solution readiness"
     },
     "customer": {
-      "title": "Customer profile",
-      "fields": {
-        "company": "Company",
-        "industry": "Industry",
-        "site": "Site name",
-        "contact": "Contact person"
-      },
-      "placeholders": {
-        "company": "Central Retail",
-        "industry": "Retail, hotel, office",
-        "site": "Bangkok flagship branch",
-        "contact": "Operations manager"
-      }
+      "title": "Customer profile"
     },
     "forms": {
       "back": "Back to solution types",
@@ -466,100 +377,35 @@
         "title": "Solution for Cleaning",
         "kicker": "Cleaning robot workflow",
         "headline": "Enter cleaning requirements to generate robot recommendations.",
-        "description": "Use this form when the customer needs autonomous cleaning for malls, hotels, offices, warehouses, or shared facilities.",
-        "detailsTitle": "Cleaning Robot Details",
-        "fields": {
-          "area": "Cleaning area",
-          "surface": "Surface type",
-          "schedule": "Operating schedule",
-          "priority": "Top priority"
-        },
-        "placeholders": {
-          "area": "8,900 sqm",
-          "surface": "Polished tile, carpet, concrete",
-          "schedule": "2 shifts per day",
-          "priority": "Runtime, quiet mode, narrow access"
-        }
+        "description": "Use this form when the customer needs autonomous cleaning for malls, hotels, offices, warehouses, or shared facilities."
       },
       "delivery": {
         "eyebrow": "Delivery solution intake",
         "title": "Solution for Delivery",
         "kicker": "Delivery robot workflow",
         "headline": "Enter delivery requirements to generate robot recommendations.",
-        "description": "Use this form when the customer needs robots for food, parcels, amenities, medicine, or indoor item transport.",
-        "detailsTitle": "Delivery details",
-        "fields": {
-          "payload": "Payload",
-          "route": "Delivery route",
-          "traffic": "Traffic level",
-          "handoff": "Handoff method"
-        },
-        "placeholders": {
-          "payload": "10 kg, 4 trays, sealed box",
-          "route": "Kitchen to guest rooms",
-          "traffic": "Busy lunch and dinner periods",
-          "handoff": "Staff pickup, customer PIN, elevator handoff"
-        }
+        "description": "Use this form when the customer needs robots for food, parcels, amenities, medicine, or indoor item transport."
       },
       "mowing": {
         "eyebrow": "Mowing solution intake",
         "title": "Solution for Mowing",
         "kicker": "Mowing robot workflow",
         "headline": "Enter mowing requirements to generate robot recommendations.",
-        "description": "Use this form when the customer needs autonomous mowing for lawns, parks, golf courses, or outdoor areas.",
-        "detailsTitle": "Mowing details",
-        "fields": {
-          "visitorVolume": "Area size",
-          "languages": "Terrain type",
-          "tasks": "Mowing tasks",
-          "location": "Operating location"
-        },
-        "placeholders": {
-          "visitorVolume": "5,000 sqm lawn",
-          "languages": "Flat grass, slopes",
-          "tasks": "Mowing, trimming, edge cutting",
-          "location": "Park, golf course, resort grounds"
-        }
+        "description": "Use this form when the customer needs autonomous mowing for lawns, parks, golf courses, or outdoor areas."
       },
       "concierge": {
         "eyebrow": "Factory solution intake",
         "title": "Solution for Factory",
         "kicker": "Factory robot workflow",
         "headline": "Enter factory or warehouse requirements to generate robot recommendations.",
-        "description": "Use this form when the customer needs robots for industrial environments — material handling, patrol, or warehouse operations.",
-        "detailsTitle": "Factory details",
-        "fields": {
-          "visitorVolume": "Visitor volume",
-          "languages": "Languages",
-          "tasks": "Service tasks",
-          "location": "Operating location"
-        },
-        "placeholders": {
-          "visitorVolume": "300 visitors per day",
-          "languages": "Thai, English, Chinese",
-          "tasks": "Greeting, wayfinding, queue support",
-          "location": "Lobby, showroom, hospital entrance"
-        }
+        "description": "Use this form when the customer needs robots for industrial environments — material handling, patrol, or warehouse operations."
       }
     },
     "cleaningDetails": {
-      "title": "Cleaning details",
-      "fields": {
-        "area": "Cleaning area",
-        "surface": "Surface",
-        "operation": "Operating schedule",
-        "priority": "Top priority"
-      },
-      "placeholders": {
-        "area": "8,900 sqm",
-        "surface": "Polished tile, carpet, concrete",
-        "operation": "2 shifts per day",
-        "priority": "Runtime, quiet mode, narrow access"
-      }
+      "title": "Cleaning details"
     },
     "preview": {
-      "title": "Solution preview",
-      "action": "Generate solution"
+      "title": "Solution preview"
     },
     "upload": {
       "eyebrow": "Generate solution · Upload",
@@ -626,7 +472,6 @@
   },
   "proposals": {
     "eyebrow": "History",
-    "pageTitle": "Proposals",
     "searchPlaceholder": "Search proposals…",
     "title": "Solutions",
     "new": "New Solution",
@@ -650,7 +495,6 @@
   },
   "solutions": {
     "eyebrow": "History",
-    "pageTitle": "Solutions",
     "searchPlaceholder": "Search solutions…",
     "loading": "Loading…",
     "count": "{count, plural, one {# solution} other {# solutions}}",
@@ -681,7 +525,6 @@
     "pageRange": "{start}–{end} of {total}",
     "searchPlaceholder": "Search by brand or model…",
     "searchResults": "{count, plural, one {# result} other {# results}} for \"{query}\"",
-    "clearSearch": "Clear search",
     "types": {
       "all": "All",
       "cleaning": "Cleaning",
@@ -738,15 +581,13 @@
     "searchPlaceholder": "Robot monitoring, customers and registration",
     "tabs": {
       "monitor": "Monitor robots",
-      "reports": "Manage report automation",
       "email": "Email customers",
       "preview": "Report Preview",
       "customers": "Customers",
       "robots": "Robots",
       "contracts": "Contracts",
       "partners": "Partners"
-    },
-    "automationComingSoon": "Scheduled report automation is coming soon."
+    }
   },
   "partnersPanel": {
     "intro": "Distributor / service partners and their API access",
@@ -785,11 +626,9 @@
     "clientIdLabel": "Client ID",
     "clientSecretLabel": "Client secret",
     "copyBoth": "Copy both",
-    "copy": "Copy",
     "copied": "Copied",
     "dismiss": "Dismiss",
     "robotsTitle": "Serviced robots",
-    "assignRobot": "Assign a robot…",
     "assign": "Assign",
     "assignSearchPlaceholder": "Search robots by name, serial, or customer…",
     "selectAllFiltered": "Select all ({count})",
@@ -856,18 +695,6 @@
     "select": "Language",
     "en": "English",
     "th": "Thai"
-  },
-  "home": {
-    "heroTitle": "Find the Right Robot for Your Business",
-    "heroSubtitle": "Tell us about your workspace and our AI engine will match you with the best-fit cleaning robots from our verified catalog.",
-    "feature1Title": "Smart Matching",
-    "feature1Desc": "AI scores every robot against your hard constraints and soft preferences.",
-    "feature2Title": "Verified Catalog",
-    "feature2Desc": "Every robot spec is tested and validated by the RAASPAL team.",
-    "feature3Title": "Full Proposals",
-    "feature3Desc": "Get a detailed proposal with ranked robots, scores, and AI explanations.",
-    "currentLocale": "Current language",
-    "i18nStatus": "i18n is working"
   },
   "kpi": {
     "eyebrow": "Team performance",
@@ -1206,7 +1033,6 @@
       "back": "Back to report",
       "howCalculated": "How it's calculated",
       "formula": "Formula",
-      "arithmetic": "Arithmetic",
       "windows": "Windows",
       "notes": "Notes",
       "monthly": "Monthly breakdown",
@@ -1671,13 +1497,6 @@
       "noDifficulty": "Difficulty not set",
       "needs": "needs",
       "assumed": "Difficulty assumed",
-      "email": {
-        "NOT_SENT": "email not sent",
-        "SENT": "email sent",
-        "FAILED": "email failed",
-        "DISABLED": "email off",
-        "NO_ADDRESS": "no email address"
-      },
       "approve": "Approve",
       "choose": "Choose…",
       "holdHint": "Take this ticket out of auto-suggestion",
