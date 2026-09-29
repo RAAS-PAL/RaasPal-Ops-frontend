@@ -52,6 +52,7 @@
     "cancel": "Cancel",
     "companyRequired": "Company name is required.",
     "saveError": "Could not save the customer.",
+    "delete": "Delete",
     "deleteError": "Could not delete the customer.",
     "loadError": "Could not load customers. Check that you are signed in and the backend is running.",
     "loading": "Loading customers…",
