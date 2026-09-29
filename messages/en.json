@@ -156,7 +156,7 @@
     "kpiCsat": "CSAT",
     "pmPlanning": "PM Planning",
     "soon": "Soon",
-    "tickets": "Service Tickets",
+    "tickets": "Service Analysis",
     "reAssignment": "RE Assignment"
   },
   "sidebar": {
@@ -1438,7 +1438,7 @@
     }
   },
   "tickets": {
-    "eyebrow": "Service analytics",
+    "eyebrow": "Service analysis",
     "title": "{brand} service tickets",
     "range": {
       "month": "This month",
