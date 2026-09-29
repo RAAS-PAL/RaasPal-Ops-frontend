@@ -2245,5 +2245,76 @@
     "resend": "Resend",
     "resendTitle": "Resend this report?",
     "resendBody": "<b>{name}</b> receives their {period} performance report by email."
+  },
+  "zeroData": {
+    "reason": {
+      "SYNC_FAILING": {
+        "label": "Sync failing",
+        "hint": "We tried to sync this robot this month and the last attempt failed. Our side — fix the sync before contacting the customer."
+      },
+      "NEVER_SYNCED": {
+        "label": "Never synced",
+        "hint": "No task has ever arrived for this robot. Check the serial number and brand on the registration."
+      },
+      "NO_TASKS": {
+        "label": "No tasks",
+        "hint": "Synced fine and genuinely logged nothing. The robot was off, in storage, or its contract is over."
+      }
+    },
+    "reasonUnknown": "Unknown",
+    "reasonUnknownHint": "Reported by the backend in a form this console does not recognise.",
+    "status": {
+      "TO_CONTACT": "To contact",
+      "CONTACTED": "Contacted",
+      "RESOLVED": "Resolved"
+    },
+    "outcome": {
+      "ROBOT_OFFLINE": "Robot offline",
+      "IN_STORAGE": "In storage",
+      "CONTRACT_ENDED": "Contract ended",
+      "REGISTRATION_ERROR": "Registration error",
+      "SYNC_PROBLEM": "Sync problem (ours)",
+      "OTHER": "Other"
+    },
+    "contractEnded": "Contract ended",
+    "endedOn": "Ended {date}",
+    "endsIn": "Ends in {days} d",
+    "endsOn": "Ends {date}",
+    "outcomePlaceholder": "Outcome…",
+    "saveNeedsOutcome": "Pick an outcome to resolve",
+    "saveTitle": "Save follow-up",
+    "save": "Save",
+    "notePlaceholder": "What the customer said…",
+    "saveFailed": "Could not save — try again.",
+    "title": "Robots with no data",
+    "description": "Every robot under contract in the month that logged no task. Find out why, contact the customer, record the outcome.",
+    "month": "Month",
+    "refresh": "Refresh",
+    "summary": "<b>{zero}</b> of {inScope} robots · {month}",
+    "toContact": "{count} to contact",
+    "contacted": "{count} contacted",
+    "resolved": "{count} resolved",
+    "loadFailed": "Could not load the list — check the month and try again.",
+    "allGood": "Every robot under contract in {month} logged at least one task.",
+    "col": {
+      "robot": "Robot",
+      "customer": "Customer",
+      "why": "Why",
+      "lastData": "Last data",
+      "followup": "Follow-up",
+      "actions": "Actions"
+    },
+    "excludedFromReport": "Excluded from report",
+    "never": "never",
+    "daysAgo": "({days} d)",
+    "syncedOn": "synced {date}",
+    "excludeTitle": "Hold this robot back from the customer's report for this month",
+    "excluded": "Excluded",
+    "excludeBtn": "Exclude from report",
+    "resyncTitle": "Pull this robot's tasks for the month again from the brand cloud",
+    "resync": "Re-sync month",
+    "editTitle": "Open Tools → Robots to edit the serial, brand or contract dates",
+    "edit": "Edit robot",
+    "footnote": "Robots whose contract ended before the month are not listed. A follow-up is saved per robot per month; a resolved one needs an outcome. Excluding a robot uses the same per-robot exclusion as the Company report tab."
   }
 }

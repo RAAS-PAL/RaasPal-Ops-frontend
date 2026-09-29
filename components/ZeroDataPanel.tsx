@@ -13,6 +13,7 @@
  * Defaults to last month, the one the nightly sync has just finished.
  */
 import { useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -26,6 +27,7 @@ import {
 } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { telemetryApi } from '@/lib/api';
+import { intlLocale } from '@/lib/intlLocale';
 import type {
   FollowupOutcome,
   FollowupStatus,
@@ -41,52 +43,39 @@ function isoMonth(monthsAgo = 0): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-const REASON: Record<ZeroDataRobot['reason'], { label: string; hint: string; tone: string }> = {
-  SYNC_FAILING: {
-    label: 'Sync failing',
-    hint: 'We tried to sync this robot this month and the last attempt failed. Our side — fix the sync before contacting the customer.',
-    tone: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/30 dark:text-red-300 dark:ring-red-900/40',
-  },
-  NEVER_SYNCED: {
-    label: 'Never synced',
-    hint: 'No task has ever arrived for this robot. Check the serial number and brand on the registration.',
-    tone: 'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-900/40',
-  },
-  NO_TASKS: {
-    label: 'No tasks',
-    hint: 'Synced fine and genuinely logged nothing. The robot was off, in storage, or its contract is over.',
-    tone: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/40',
-  },
+type T = ReturnType<typeof useTranslations>;
+
+/** The colour of each reason's badge; its wording is `zeroData.reason.*`. */
+const REASON_TONE: Record<ZeroDataRobot['reason'], string> = {
+  SYNC_FAILING: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/30 dark:text-red-300 dark:ring-red-900/40',
+  NEVER_SYNCED: 'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-900/40',
+  NO_TASKS: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/40',
 };
 
-const STATUS_LABEL: Record<FollowupStatus, string> = {
-  TO_CONTACT: 'To contact',
-  CONTACTED: 'Contacted',
-  RESOLVED: 'Resolved',
-};
-
-const OUTCOME_LABEL: Record<FollowupOutcome, string> = {
-  ROBOT_OFFLINE: 'Robot offline',
-  IN_STORAGE: 'In storage',
-  CONTRACT_ENDED: 'Contract ended',
-  REGISTRATION_ERROR: 'Registration error',
-  SYNC_PROBLEM: 'Sync problem (ours)',
-  OTHER: 'Other',
-};
+const FOLLOWUP_STATUSES: FollowupStatus[] = ['TO_CONTACT', 'CONTACTED', 'RESOLVED'];
+const FOLLOWUP_OUTCOMES: FollowupOutcome[] = [
+  'ROBOT_OFFLINE',
+  'IN_STORAGE',
+  'CONTRACT_ENDED',
+  'REGISTRATION_ERROR',
+  'SYNC_PROBLEM',
+  'OTHER',
+];
 
 /**
  * The reason's badge copy, or a neutral fallback for a value this build does not
  * know — an older backend sends the reason as free text, and a newer one may add a
  * case. Either way the row must render, not take the page down.
  */
-function reasonOf(reason: string): { label: string; hint: string; tone: string } {
-  return (
-    REASON[reason as ZeroDataRobot['reason']] ?? {
-      label: reason || 'Unknown',
-      hint: 'Reported by the backend in a form this console does not recognise.',
-      tone: 'bg-[var(--app-faint)] text-[var(--app-muted)] ring-[var(--app-border)]',
-    }
-  );
+function reasonOf(t: T, reason: string): { label: string; hint: string; tone: string } {
+  if (reason in REASON_TONE) {
+    return { label: t(`reason.${reason}.label`), hint: t(`reason.${reason}.hint`), tone: REASON_TONE[reason as ZeroDataRobot['reason']] };
+  }
+  return {
+    label: reason || t('reasonUnknown'),
+    hint: t('reasonUnknownHint'),
+    tone: 'bg-[var(--app-faint)] text-[var(--app-muted)] ring-[var(--app-border)]',
+  };
 }
 
 function Badge({ label, tone, title }: { label: string; tone: string; title?: string }) {
@@ -101,11 +90,12 @@ function Badge({ label, tone, title }: { label: string; tone: string; title?: st
 }
 
 function ContractBadge({ r }: { r: ZeroDataRobot }) {
+  const t = useTranslations('zeroData');
   if (r.contractStatus === 'ENDED') {
-    return <Badge label="Contract ended" tone={REASON.SYNC_FAILING.tone} title={`Ended ${r.contractEndDate}`} />;
+    return <Badge label={t('contractEnded')} tone={REASON_TONE.SYNC_FAILING} title={t('endedOn', { date: r.contractEndDate ?? '' })} />;
   }
   if (r.contractStatus === 'ENDING_SOON') {
-    return <Badge label={`Ends in ${r.daysToContractEnd} d`} tone={REASON.NO_TASKS.tone} title={`Ends ${r.contractEndDate}`} />;
+    return <Badge label={t('endsIn', { days: r.daysToContractEnd ?? 0 })} tone={REASON_TONE.NO_TASKS} title={t('endsOn', { date: r.contractEndDate ?? '' })} />;
   }
   return null;
 }
@@ -123,6 +113,8 @@ function FollowupEditor({
   month: string;
   onSaved: (data: ZeroDataRobotsResponse) => void;
 }) {
+  const t = useTranslations('zeroData');
+  const locale = useLocale();
   const [status, setStatus] = useState<FollowupStatus>(robot.followupStatus ?? 'TO_CONTACT');
   const [outcome, setOutcome] = useState<FollowupOutcome | ''>(robot.followupOutcome ?? '');
   const [note, setNote] = useState(robot.followupNote ?? '');
@@ -149,15 +141,15 @@ function FollowupEditor({
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
         <select value={status} onChange={(e) => setStatus(e.target.value as FollowupStatus)} className={field}>
-          {(Object.keys(STATUS_LABEL) as FollowupStatus[]).map((s) => (
-            <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+          {FOLLOWUP_STATUSES.map((s) => (
+            <option key={s} value={s}>{t(`status.${s}`)}</option>
           ))}
         </select>
         {status === 'RESOLVED' && (
           <select value={outcome} onChange={(e) => setOutcome(e.target.value as FollowupOutcome | '')} className={field}>
-            <option value="">Outcome…</option>
-            {(Object.keys(OUTCOME_LABEL) as FollowupOutcome[]).map((o) => (
-              <option key={o} value={o}>{OUTCOME_LABEL[o]}</option>
+            <option value="">{t('outcomePlaceholder')}</option>
+            {FOLLOWUP_OUTCOMES.map((o) => (
+              <option key={o} value={o}>{t(`outcome.${o}`)}</option>
             ))}
           </select>
         )}
@@ -165,31 +157,33 @@ function FollowupEditor({
           type="button"
           onClick={() => save.mutate()}
           disabled={!canSave}
-          title={status === 'RESOLVED' && outcome === '' ? 'Pick an outcome to resolve' : 'Save follow-up'}
+          title={status === 'RESOLVED' && outcome === '' ? t('saveNeedsOutcome') : t('saveTitle')}
           className="inline-flex h-8 items-center gap-1 rounded-lg bg-[var(--app-brand)] px-2.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
         >
           {save.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-          Save
+          {t('save')}
         </button>
       </div>
       <input
         type="text"
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder="What the customer said…"
+        placeholder={t('notePlaceholder')}
         className={`${field} w-full min-w-56`}
       />
       {robot.followupUpdatedBy && (
         <p className="text-[11px] text-[var(--app-muted)]">
-          {robot.followupUpdatedBy} · {robot.followupUpdatedAt ? new Date(robot.followupUpdatedAt).toLocaleString() : ''}
+          {robot.followupUpdatedBy} · {robot.followupUpdatedAt ? new Date(robot.followupUpdatedAt).toLocaleString(intlLocale(locale)) : ''}
         </p>
       )}
-      {save.isError && <p className="text-[11px] text-red-600">Could not save — try again.</p>}
+      {save.isError && <p className="text-[11px] text-red-600">{t('saveFailed')}</p>}
     </div>
   );
 }
 
 export function ZeroDataPanel() {
+  const t = useTranslations('zeroData');
+  const locale = useLocale();
   const [month, setMonth] = useState(() => isoMonth(1));
   const queryClient = useQueryClient();
   const key = ['zero-data', month];
@@ -224,16 +218,16 @@ export function ZeroDataPanel() {
           <CalendarX2 className="h-4.5 w-4.5" />
         </span>
         <div>
-          <p className="text-sm font-semibold text-[var(--app-text)]">Robots with no data</p>
+          <p className="text-sm font-semibold text-[var(--app-text)]">{t('title')}</p>
           <p className="text-xs text-[var(--app-muted)]">
-            Every robot under contract in the month that logged no task. Find out why, contact the customer, record the outcome.
+            {t('description')}
           </p>
         </div>
       </div>
 
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
         <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
-          Month
+          {t('month')}
           <input
             type="month"
             value={month}
@@ -249,18 +243,18 @@ export function ZeroDataPanel() {
           className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 text-sm font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)] disabled:opacity-50"
         >
           {query.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Refresh
+          {t('refresh')}
         </button>
         {data && (
           <div className="ml-auto flex flex-wrap items-center gap-2 text-xs">
             <span className="text-[var(--app-muted)]">
-              <b className="text-[var(--app-text)]">{data.zeroData}</b> of {data.inScope} robots · {data.monthLabel}
+              {t.rich('summary', { zero: data.zeroData, inScope: data.inScope, month: data.monthLabel, b: (chunks) => <b className="text-[var(--app-text)]">{chunks}</b> })}
             </span>
             {data.toContact != null && (
               <>
-                <Badge label={`${data.toContact} to contact`} tone={REASON.NO_TASKS.tone} />
-                <Badge label={`${data.contacted} contacted`} tone="bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-950/30 dark:text-sky-300 dark:ring-sky-900/40" />
-                <Badge label={`${data.resolved} resolved`} tone="bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/40" />
+                <Badge label={t('toContact', { count: data.toContact })} tone={REASON_TONE.NO_TASKS} />
+                <Badge label={t('contacted', { count: data.contacted ?? 0 })} tone="bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-950/30 dark:text-sky-300 dark:ring-sky-900/40" />
+                <Badge label={t('resolved', { count: data.resolved ?? 0 })} tone="bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/40" />
               </>
             )}
           </div>
@@ -270,14 +264,14 @@ export function ZeroDataPanel() {
       {query.isError && (
         <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          Could not load the list — check the month and try again.
+          {t('loadFailed')}
         </p>
       )}
 
       {data && data.robots.length === 0 && (
         <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
-          Every robot under contract in {data.monthLabel} logged at least one task.
+          {t('allGood', { month: data.monthLabel })}
         </p>
       )}
 
@@ -286,12 +280,12 @@ export function ZeroDataPanel() {
           <table className="w-full min-w-[72rem] text-left text-sm">
             <thead className="border-b border-[var(--app-border)] text-xs uppercase tracking-wide text-[var(--app-muted)]">
               <tr>
-                <th className="px-3 py-2.5 font-semibold">Robot</th>
-                <th className="px-3 py-2.5 font-semibold">Customer</th>
-                <th className="px-3 py-2.5 font-semibold">Why</th>
-                <th className="px-3 py-2.5 font-semibold">Last data</th>
-                <th className="px-3 py-2.5 font-semibold">Follow-up</th>
-                <th className="px-3 py-2.5 font-semibold">Actions</th>
+                <th className="px-3 py-2.5 font-semibold">{t('col.robot')}</th>
+                <th className="px-3 py-2.5 font-semibold">{t('col.customer')}</th>
+                <th className="px-3 py-2.5 font-semibold">{t('col.why')}</th>
+                <th className="px-3 py-2.5 font-semibold">{t('col.lastData')}</th>
+                <th className="px-3 py-2.5 font-semibold">{t('col.followup')}</th>
+                <th className="px-3 py-2.5 font-semibold">{t('col.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--app-border)]">
@@ -303,7 +297,7 @@ export function ZeroDataPanel() {
                     <div className="mt-1 flex flex-wrap gap-1">
                       <ContractBadge r={r} />
                       {r.excludedFromReport && (
-                        <Badge label="Excluded from report" tone="bg-[var(--app-faint)] text-[var(--app-muted)] ring-[var(--app-border)]" />
+                        <Badge label={t('excludedFromReport')} tone="bg-[var(--app-faint)] text-[var(--app-muted)] ring-[var(--app-border)]" />
                       )}
                     </div>
                   </td>
@@ -312,7 +306,7 @@ export function ZeroDataPanel() {
                     <p className="text-xs text-[var(--app-muted)]">{r.site ?? '—'}</p>
                   </td>
                   <td className="px-3 py-2.5">
-                    <Badge label={reasonOf(r.reason).label} tone={reasonOf(r.reason).tone} title={reasonOf(r.reason).hint} />
+                    <Badge label={reasonOf(t, r.reason).label} tone={reasonOf(t, r.reason).tone} title={reasonOf(t, r.reason).hint} />
                     {r.reason === 'SYNC_FAILING' && r.lastSyncError && (
                       <p className="mt-1 max-w-[16rem] text-[11px] leading-4 text-[var(--app-muted)]" title={r.lastSyncError}>
                         <span className="line-clamp-2">{r.lastSyncError}</span>
@@ -323,13 +317,13 @@ export function ZeroDataPanel() {
                     {r.lastDataDate ? (
                       <>
                         {r.lastDataDate}
-                        {r.daysSinceLastData != null && <span className="ml-1 text-[var(--app-muted)]">({r.daysSinceLastData} d)</span>}
+                        {r.daysSinceLastData != null && <span className="ml-1 text-[var(--app-muted)]">{t('daysAgo', { days: r.daysSinceLastData })}</span>}
                       </>
                     ) : (
-                      <span className="text-[var(--app-muted)]">never</span>
+                      <span className="text-[var(--app-muted)]">{t('never')}</span>
                     )}
                     {r.lastSyncSuccessAt && (
-                      <p className="text-[11px] text-[var(--app-muted)]">synced {new Date(r.lastSyncSuccessAt).toLocaleDateString()}</p>
+                      <p className="text-[11px] text-[var(--app-muted)]">{t('syncedOn', { date: new Date(r.lastSyncSuccessAt).toLocaleDateString(intlLocale(locale)) })}</p>
                     )}
                   </td>
                   <td className="px-3 py-2.5">
@@ -341,29 +335,29 @@ export function ZeroDataPanel() {
                         type="button"
                         disabled={r.excludedFromReport || exclude.isPending}
                         onClick={() => exclude.mutate(r.robotUnitId)}
-                        title="Hold this robot back from the customer's report for this month"
+                        title={t('excludeTitle')}
                         className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)] disabled:opacity-40"
                       >
                         <EyeOff className="h-3.5 w-3.5" />
-                        {r.excludedFromReport ? 'Excluded' : 'Exclude from report'}
+                        {r.excludedFromReport ? t('excluded') : t('excludeBtn')}
                       </button>
                       <button
                         type="button"
                         disabled={resync.isPending}
                         onClick={() => resync.mutate(r.serialNumber)}
-                        title="Pull this robot's tasks for the month again from the brand cloud"
+                        title={t('resyncTitle')}
                         className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)] disabled:opacity-40"
                       >
                         {resync.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                        Re-sync month
+                        {t('resync')}
                       </button>
                       <Link
                         href="/tools?tab=robots"
                         className="inline-flex h-8 items-center gap-1 px-1 text-xs text-[var(--app-muted)] transition hover:text-[var(--app-brand-dark)]"
-                        title="Open Tools → Robots to edit the serial, brand or contract dates"
+                        title={t('editTitle')}
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
-                        Edit robot
+                        {t('edit')}
                       </Link>
                     </div>
                   </td>
@@ -375,8 +369,7 @@ export function ZeroDataPanel() {
       )}
 
       <p className="text-xs leading-5 text-[var(--app-muted)]">
-        Robots whose contract ended before the month are not listed. A follow-up is saved per robot per month; a resolved one needs an
-        outcome. Excluding a robot uses the same per-robot exclusion as the Company report tab.
+        {t('footnote')}
       </p>
     </div>
   );
