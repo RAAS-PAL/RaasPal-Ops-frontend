@@ -13,6 +13,7 @@
  * renewal (a new end date on the robot) puts it back to "not contacted".
  */
 import { useEffect, useRef, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -34,6 +35,7 @@ import {
 } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { contractsApi } from '@/lib/api';
+import { intlLocale } from '@/lib/intlLocale';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import type { ContractRenewalStatus, ExpiringContract } from '@/types/api';
 
@@ -84,6 +86,7 @@ function AttachDialog({
   onClose: () => void;
   onDone: (message: string) => void;
 }) {
+  const t = useTranslations('contracts');
   const [file, setFile] = useState<File | null>(null);
   const [applyToAll, setApplyToAll] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,8 +94,8 @@ function AttachDialog({
 
   const upload = useMutation({
     mutationFn: () => contractsApi.attachDocument(row.robotUnitId, file!, applyToAll),
-    onSuccess: (r) => onDone(r.data.message ?? 'Contract attached'),
-    onError: (e) => setError(errorMessage(e, 'Could not attach the contract.')),
+    onSuccess: (r) => onDone(r.data.message ?? t('contractAttached')),
+    onError: (e) => setError(errorMessage(e, t('attachFailed'))),
   });
 
   return (
@@ -101,13 +104,13 @@ function AttachDialog({
         <div className="flex items-start justify-between gap-3 border-b border-[var(--app-border)] px-5 py-4">
           <div>
             <p id="attach-title" className="text-sm font-semibold text-[var(--app-text)]">
-              {replacing ? 'Replace contract PDF' : 'Attach contract PDF'}
+              {replacing ? t('replaceTitle') : t('attachTitle')}
             </p>
             <p className="mt-0.5 text-xs text-[var(--app-muted)]">
               {row.customerName} · {row.serialNumber} · {row.contractStartDate ?? '…'} → {row.contractEndDate}
             </p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-1 text-[var(--app-muted)] hover:bg-[var(--app-faint)]">
+          <button type="button" onClick={onClose} aria-label={t('close')} className="rounded-lg p-1 text-[var(--app-muted)] hover:bg-[var(--app-faint)]">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -135,7 +138,7 @@ function AttachDialog({
                 <span className="text-xs text-[var(--app-muted)]">{fileSize(file.size)}</span>
               </span>
             ) : (
-              <span className="text-sm text-[var(--app-muted)]">Choose a PDF (up to 20 MB)</span>
+              <span className="text-sm text-[var(--app-muted)]">{t('choosePdf')}</span>
             )}
           </button>
 
@@ -148,8 +151,7 @@ function AttachDialog({
                 className="mt-0.5 h-4 w-4 rounded border-[var(--app-border)]"
               />
               <span>
-                Also attach to the {siblings.length} other robot{siblings.length === 1 ? '' : 's'} of {row.customerName} on the same
-                contract dates
+                {t('alsoAttach', { count: siblings.length, customer: row.customerName })}
                 <span className="block text-xs text-[var(--app-muted)]">
                   {siblings.map((s) => s.serialNumber).join(', ')}
                 </span>
@@ -165,8 +167,8 @@ function AttachDialog({
                 className="mt-0.5 h-4 w-4 rounded border-[var(--app-border)]"
               />
               <span>
-                Also attach to any other robot of {row.customerName} on the same contract dates
-                <span className="block text-xs text-[var(--app-muted)]">None are in the current window; the server checks every deployment.</span>
+                {t('alsoAttachAny', { customer: row.customerName })}
+                <span className="block text-xs text-[var(--app-muted)]">{t('noneInWindow')}</span>
               </span>
             </label>
           )}
@@ -181,7 +183,7 @@ function AttachDialog({
 
         <div className="flex items-center justify-end gap-2 border-t border-[var(--app-border)] px-5 py-3">
           <button type="button" onClick={onClose} disabled={upload.isPending} className="rounded-lg px-3 py-2 text-sm font-semibold text-[var(--app-muted)] hover:bg-[var(--app-faint)]">
-            Cancel
+            {t('cancel')}
           </button>
           <button
             type="button"
@@ -190,7 +192,7 @@ function AttachDialog({
             className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
             {upload.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
-            {upload.isPending ? 'Uploading…' : replacing ? 'Replace' : 'Attach'}
+            {upload.isPending ? t('uploading') : replacing ? t('replace') : t('attach')}
           </button>
         </div>
       </div>
@@ -206,6 +208,7 @@ function AttachDialog({
  * long enough to load; once loaded the document is the browser's.
  */
 function PdfViewer({ title, url, onClose }: { title: string; url: string; onClose: () => void }) {
+  const t = useTranslations('contracts');
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -246,12 +249,12 @@ function PdfViewer({ title, url, onClose }: { title: string; url: string; onClos
             className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 py-1.5 text-xs font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
           >
             <ExternalLink className="h-3.5 w-3.5" />
-            Open in new tab
+            {t('openInTab')}
           </a>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close viewer"
+            aria-label={t('closeViewer')}
             className="rounded-lg p-1.5 text-[var(--app-muted)] transition hover:bg-[var(--app-faint)] hover:text-[var(--app-text)]"
           >
             <X className="h-5 w-5" />
@@ -260,7 +263,7 @@ function PdfViewer({ title, url, onClose }: { title: string; url: string; onClos
         <div className="relative flex-1 bg-[var(--app-faint)]">
           {!loaded && (
             <div className="absolute inset-0 flex items-center justify-center text-sm text-[var(--app-muted)]">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading the PDF…
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('loadingPdf')}
             </div>
           )}
           <iframe src={url} title={title} onLoad={() => setLoaded(true)} className="h-full w-full border-0" />
@@ -282,6 +285,8 @@ function DocumentCell({
   onRemove: () => void;
   onError: (message: string) => void;
 }) {
+  const t = useTranslations('contracts');
+  const locale = useLocale();
   const [opening, setOpening] = useState(false);
   const [viewing, setViewing] = useState<string | null>(null);
   const doc = row.document;
@@ -291,10 +296,10 @@ function DocumentCell({
     setOpening(true);
     try {
       const url = (await contractsApi.documentUrl(row.robotUnitId)).data.data?.url;
-      if (!url) throw new Error('No link returned');
+      if (!url) throw new Error(t('noLink'));
       setViewing(url);
     } catch (e) {
-      onError(errorMessage(e, 'Could not open the contract.'));
+      onError(errorMessage(e, t('openFailed')));
     } finally {
       setOpening(false);
     }
@@ -308,12 +313,12 @@ function DocumentCell({
         className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-[var(--app-border)] px-2.5 py-1 text-xs font-semibold text-[var(--app-muted)] transition hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)]"
       >
         <Paperclip className="h-3.5 w-3.5" />
-        Attach PDF
+        {t('attachPdf')}
       </button>
     );
   }
 
-  const details = `${doc.fileName} · ${fileSize(doc.sizeBytes)} · attached ${new Date(doc.uploadedAt).toLocaleDateString()}${doc.uploadedBy ? ` by ${doc.uploadedBy}` : ''}${doc.sharedWith > 1 ? ` · shared by ${doc.sharedWith} robots` : ''}`;
+  const details = `${doc.fileName} · ${fileSize(doc.sizeBytes)} · ${t('attachedOn', { date: new Date(doc.uploadedAt).toLocaleDateString(intlLocale(locale)) })}${doc.uploadedBy ? t('attachedBy', { user: doc.uploadedBy }) : ''}${doc.sharedWith > 1 ? t('sharedBy', { count: doc.sharedWith }) : ''}`;
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
@@ -321,7 +326,7 @@ function DocumentCell({
         <FileText className="h-3.5 w-3.5 shrink-0" />
         <span className="max-w-[11rem] truncate">{doc.fileName}</span>
         {doc.sharedWith > 1 && (
-          <span className="shrink-0 rounded bg-[var(--app-faint)] px-1 text-[10px] font-semibold" title={`Shared by ${doc.sharedWith} robots on this contract`}>
+          <span className="shrink-0 rounded bg-[var(--app-faint)] px-1 text-[10px] font-semibold" title={t('sharedTitle', { count: doc.sharedWith })}>
             ×{doc.sharedWith}
           </span>
         )}
@@ -336,12 +341,12 @@ function DocumentCell({
           className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--app-brand)] px-2.5 py-1 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
         >
           {opening ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
-          View PDF
+          {t('viewPdf')}
         </button>
-        <button type="button" onClick={onAttach} title="Replace the PDF" aria-label="Replace contract PDF" className="rounded-lg p-1.5 text-[var(--app-muted)] hover:bg-[var(--app-faint)] hover:text-[var(--app-brand-dark)]">
+        <button type="button" onClick={onAttach} title={t('replaceTitleBtn')} aria-label={t('replaceTitle')} className="rounded-lg p-1.5 text-[var(--app-muted)] hover:bg-[var(--app-faint)] hover:text-[var(--app-brand-dark)]">
           <Paperclip className="h-3.5 w-3.5" />
         </button>
-        <button type="button" onClick={onRemove} title="Remove the PDF from this robot" aria-label="Remove contract PDF" className="rounded-lg p-1.5 text-[var(--app-muted)] hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/40">
+        <button type="button" onClick={onRemove} title={t('removeTitle')} aria-label={t('removeAria')} className="rounded-lg p-1.5 text-[var(--app-muted)] hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/40">
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
@@ -349,28 +354,21 @@ function DocumentCell({
   );
 }
 
-const FOLLOWUP: Record<ContractRenewalStatus, { label: string; hint: string; className: string; dot: string }> = {
+/** The colours of each follow-up status; its wording is `contracts.followup.<status>.*`. */
+const FOLLOWUP: Record<ContractRenewalStatus, { className: string; dot: string }> = {
   NOT_CONTACTED: {
-    label: 'Not contacted',
-    hint: 'Nobody has called the customer about this term yet.',
     className: 'bg-transparent text-[var(--app-muted)] ring-[var(--app-border)] ring-dashed',
     dot: 'bg-[var(--app-muted)]',
   },
   CONTACTED: {
-    label: 'Contacted',
-    hint: 'The customer has been called; waiting on their decision.',
     className: 'bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:ring-sky-900',
     dot: 'bg-sky-500',
   },
   WILL_RENEW: {
-    label: 'Will renew',
-    hint: 'The customer said yes. Extend the end date on the robot once the new contract is signed.',
     className: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900',
     dot: 'bg-emerald-500',
   },
   WILL_NOT_RENEW: {
-    label: 'Will not renew',
-    hint: 'The customer said no. The robot comes back when the contract ends.',
     className: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-900',
     dot: 'bg-red-500',
   },
@@ -379,11 +377,13 @@ const FOLLOWUP: Record<ContractRenewalStatus, { label: string; hint: string; cla
 const FOLLOWUP_ORDER: ContractRenewalStatus[] = ['NOT_CONTACTED', 'CONTACTED', 'WILL_RENEW', 'WILL_NOT_RENEW'];
 
 function FollowupBadge({ status }: { status: ContractRenewalStatus }) {
-  const f = FOLLOWUP[status] ?? FOLLOWUP.NOT_CONTACTED;
+  const t = useTranslations('contracts');
+  const key: ContractRenewalStatus = status in FOLLOWUP ? status : 'NOT_CONTACTED';
+  const f = FOLLOWUP[key];
   return (
     <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${f.className}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${f.dot}`} />
-      {f.label}
+      {t(`followup.${key}.label`)}
     </span>
   );
 }
@@ -403,14 +403,15 @@ function NoteDialog({
   onClose: () => void;
   onDone: (message: string) => void;
 }) {
+  const t = useTranslations('contracts');
   const [note, setNote] = useState(row.followup.note ?? '');
   const [applyToAll, setApplyToAll] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const save = useMutation({
     mutationFn: () => contractsApi.updateFollowup(row.robotUnitId, { status: row.followup.status, note, applyToSameContract: applyToAll }),
-    onSuccess: (r) => onDone(r.data.message ?? 'Note saved'),
-    onError: (e) => setError(errorMessage(e, 'Could not save the note.')),
+    onSuccess: (r) => onDone(r.data.message ?? t('noteSaved')),
+    onError: (e) => setError(errorMessage(e, t('noteFailed'))),
   });
 
   useEffect(() => {
@@ -424,12 +425,12 @@ function NoteDialog({
       <div className="w-full max-w-md rounded-2xl border border-[var(--app-border)] bg-[var(--app-panel)] shadow-xl">
         <div className="flex items-start justify-between gap-3 border-b border-[var(--app-border)] px-5 py-4">
           <div>
-            <p id="note-title" className="text-sm font-semibold text-[var(--app-text)]">Follow-up note</p>
+            <p id="note-title" className="text-sm font-semibold text-[var(--app-text)]">{t('noteTitle')}</p>
             <p className="mt-0.5 text-xs text-[var(--app-muted)]">
               {row.customerName} · {row.serialNumber} · <FollowupBadge status={row.followup.status} />
             </p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-1 text-[var(--app-muted)] hover:bg-[var(--app-faint)]">
+          <button type="button" onClick={onClose} aria-label={t('close')} className="rounded-lg p-1 text-[var(--app-muted)] hover:bg-[var(--app-faint)]">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -440,7 +441,7 @@ function NoteDialog({
             onChange={(e) => setNote(e.target.value.slice(0, 2000))}
             rows={4}
             autoFocus
-            placeholder="Who you spoke to, what they said, when to call back…"
+            placeholder={t('notePlaceholder')}
             className="w-full resize-y rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 py-2 text-sm outline-none focus:border-[var(--app-brand)]"
           />
 
@@ -454,13 +455,13 @@ function NoteDialog({
             <span>
               {siblings.length > 0 ? (
                 <>
-                  Also on the {siblings.length} other robot{siblings.length === 1 ? '' : 's'} of {row.customerName} on the same contract dates
+                  {t('alsoOn', { count: siblings.length, customer: row.customerName })}
                   <span className="block text-xs text-[var(--app-muted)]">{siblings.map((s) => s.serialNumber).join(', ')}</span>
                 </>
               ) : (
                 <>
-                  Also on any other robot of {row.customerName} on the same contract dates
-                  <span className="block text-xs text-[var(--app-muted)]">None are on screen; the server checks every deployment.</span>
+                  {t('alsoOnAny', { customer: row.customerName })}
+                  <span className="block text-xs text-[var(--app-muted)]">{t('noneOnScreen')}</span>
                 </>
               )}
             </span>
@@ -476,7 +477,7 @@ function NoteDialog({
 
         <div className="flex items-center justify-end gap-2 border-t border-[var(--app-border)] px-5 py-3">
           <button type="button" onClick={onClose} disabled={save.isPending} className="rounded-lg px-3 py-2 text-sm font-semibold text-[var(--app-muted)] hover:bg-[var(--app-faint)]">
-            Cancel
+            {t('cancel')}
           </button>
           <button
             type="button"
@@ -485,7 +486,7 @@ function NoteDialog({
             className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
             {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <StickyNote className="h-4 w-4" />}
-            {save.isPending ? 'Saving…' : 'Save note'}
+            {save.isPending ? t('saving') : t('saveNote')}
           </button>
         </div>
       </div>
@@ -510,15 +511,18 @@ function FollowupCell({
   onSaved: (message: string) => void;
   onError: (message: string) => void;
 }) {
+  const t = useTranslations('contracts');
+  const locale = useLocale();
   const f = row.followup;
-  const style = FOLLOWUP[f.status] ?? FOLLOWUP.NOT_CONTACTED;
-  const when = f.updatedAt ? new Date(f.updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : null;
+  const styleKey: ContractRenewalStatus = f.status in FOLLOWUP ? f.status : 'NOT_CONTACTED';
+  const style = FOLLOWUP[styleKey];
+  const when = f.updatedAt ? new Date(f.updatedAt).toLocaleDateString(intlLocale(locale), { day: 'numeric', month: 'short' }) : null;
 
   const change = useMutation({
     mutationFn: (status: ContractRenewalStatus) =>
       contractsApi.updateFollowup(row.robotUnitId, { status, note: f.note, applyToSameContract: true }),
-    onSuccess: (r) => onSaved(r.data.message ?? 'Follow-up recorded'),
-    onError: (e) => onError(errorMessage(e, `Could not update the follow-up for ${row.serialNumber}.`)),
+    onSuccess: (r) => onSaved(r.data.message ?? t('followupRecorded')),
+    onError: (e) => onError(errorMessage(e, t('followupFailed', { serial: row.serialNumber }))),
   });
 
   return (
@@ -528,13 +532,13 @@ function FollowupCell({
           value={f.status}
           disabled={change.isPending}
           onChange={(e) => change.mutate(e.target.value as ContractRenewalStatus)}
-          aria-label={`Follow-up for ${row.serialNumber}`}
-          title={style.hint}
+          aria-label={t('followupAria', { serial: row.serialNumber })}
+          title={t(`followup.${styleKey}.hint`)}
           className={`h-6 cursor-pointer appearance-none rounded-full pl-2.5 pr-6 text-xs font-semibold ring-1 ring-inset outline-none transition focus:ring-2 focus:ring-[var(--app-brand)] disabled:cursor-wait disabled:opacity-60 ${style.className}`}
         >
           {FOLLOWUP_ORDER.map((s) => (
             <option key={s} value={s}>
-              {FOLLOWUP[s].label}
+              {t(`followup.${s}.label`)}
             </option>
           ))}
         </select>
@@ -546,7 +550,7 @@ function FollowupCell({
         <button
           type="button"
           onClick={onNote}
-          title={`${f.note}\n\nClick to edit`}
+          title={t('clickToEdit', { note: f.note })}
           className="mt-1 block max-w-[16rem] text-left text-xs text-[var(--app-text)] hover:text-[var(--app-brand-dark)]"
         >
           <span className="line-clamp-2 whitespace-pre-line">{f.note}</span>
@@ -557,11 +561,11 @@ function FollowupCell({
           onClick={onNote}
           className="mt-1 inline-flex items-center gap-1 text-[11px] text-[var(--app-muted)] transition hover:text-[var(--app-brand-dark)]"
         >
-          <Plus className="h-3 w-3" /> note
+          <Plus className="h-3 w-3" /> {t('addNote')}
         </button>
       )}
       {(f.updatedBy || when) && (
-        <p className="mt-0.5 text-[11px] text-[var(--app-muted)]" title={f.updatedAt ? new Date(f.updatedAt).toLocaleString() : undefined}>
+        <p className="mt-0.5 text-[11px] text-[var(--app-muted)]" title={f.updatedAt ? new Date(f.updatedAt).toLocaleString(intlLocale(locale)) : undefined}>
           {[f.updatedBy, when].filter(Boolean).join(' · ')}
         </p>
       )}
@@ -572,29 +576,32 @@ function FollowupCell({
 type StatusFilter = 'all' | 'soon' | 'ended' | 'none';
 type FollowupFilter = 'any' | ContractRenewalStatus;
 
-const STATUS_BADGE: Record<ExpiringContract['status'], { label: string; className: string }> = {
-  ENDED: { label: 'Ended', className: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-900' },
-  ENDING_SOON: { label: 'Ending soon', className: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900' },
-  ACTIVE: { label: 'Active', className: 'bg-[var(--app-faint)] text-[var(--app-text)] ring-[var(--app-border)]' },
-  NONE: { label: 'No end date', className: 'bg-transparent text-[var(--app-muted)] ring-[var(--app-border)] ring-dashed' },
+/** The colours of each contract status; its wording is `contracts.status.*`. */
+const STATUS_BADGE: Record<ExpiringContract['status'], { className: string }> = {
+  ENDED: { className: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-900' },
+  ENDING_SOON: { className: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900' },
+  ACTIVE: { className: 'bg-[var(--app-faint)] text-[var(--app-text)] ring-[var(--app-border)]' },
+  NONE: { className: 'bg-transparent text-[var(--app-muted)] ring-[var(--app-border)] ring-dashed' },
 };
 
 function StatusBadge({ status }: { status: ExpiringContract['status'] }) {
+  const t = useTranslations('contracts');
   const s = STATUS_BADGE[status];
-  return <span className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${s.className}`}>{s.label}</span>;
+  return <span className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${s.className}`}>{t(`status.${status}`)}</span>;
 }
 
 function EndsIn({ c }: { c: ExpiringContract }) {
+  const t = useTranslations('contracts');
   if (c.daysToEnd === null) return <span className="text-[var(--app-muted)]">—</span>;
-  if (c.daysToEnd < 0) return <span className="font-semibold text-red-600">{Math.abs(c.daysToEnd)} d ago</span>;
+  if (c.daysToEnd < 0) return <span className="font-semibold text-red-600">{t('daysAgo', { days: Math.abs(c.daysToEnd) })}</span>;
   if (c.status === 'ENDING_SOON') {
     return (
       <span className={`font-semibold ${c.daysToEnd <= 7 ? 'text-red-600' : 'text-amber-600'}`}>
-        {c.daysToEnd === 0 ? 'today' : `${c.daysToEnd} d`}
+        {c.daysToEnd === 0 ? t('today') : t('days', { days: c.daysToEnd })}
       </span>
     );
   }
-  return <span className="text-[var(--app-muted)]">{c.daysToEnd} d</span>;
+  return <span className="text-[var(--app-muted)]">{t('days', { days: c.daysToEnd })}</span>;
 }
 
 function Table({
@@ -612,20 +619,22 @@ function Table({
   onSaved: (message: string) => void;
   onError: (message: string) => void;
 }) {
+  const t = useTranslations('contracts');
+  const locale = useLocale();
   return (
     <div className="overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)]">
       <table className="w-full min-w-[72rem] text-left text-sm">
         <thead className="border-b border-[var(--app-border)] text-xs uppercase tracking-wide text-[var(--app-muted)]">
           <tr>
-            <th className="px-3 py-2.5 font-semibold">Customer</th>
-            <th className="px-3 py-2.5 font-semibold">Site</th>
-            <th className="px-3 py-2.5 font-semibold">Robot</th>
-            <th className="px-3 py-2.5 font-semibold">Contract</th>
-            <th className="px-3 py-2.5 text-right font-semibold">Ends in</th>
-            <th className="px-3 py-2.5 font-semibold">Status</th>
-            <th className="px-3 py-2.5 font-semibold">Follow-up</th>
-            <th className="px-3 py-2.5 font-semibold">Contract PDF</th>
-            <th className="px-3 py-2.5"><span className="sr-only">Open</span></th>
+            <th className="px-3 py-2.5 font-semibold">{t('col.customer')}</th>
+            <th className="px-3 py-2.5 font-semibold">{t('col.site')}</th>
+            <th className="px-3 py-2.5 font-semibold">{t('col.robot')}</th>
+            <th className="px-3 py-2.5 font-semibold">{t('col.contract')}</th>
+            <th className="px-3 py-2.5 text-right font-semibold">{t('col.endsIn')}</th>
+            <th className="px-3 py-2.5 font-semibold">{t('col.status')}</th>
+            <th className="px-3 py-2.5 font-semibold">{t('col.followup')}</th>
+            <th className="px-3 py-2.5 font-semibold">{t('col.pdf')}</th>
+            <th className="px-3 py-2.5"><span className="sr-only">{t('col.open')}</span></th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--app-border)]">
@@ -646,11 +655,11 @@ function Table({
               <td className="px-3 py-2.5">
                 <StatusBadge status={c.status} />
                 {c.alertedAt ? (
-                  <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-[var(--app-muted)]" title={`Alert emailed ${new Date(c.alertedAt).toLocaleString()}`}>
-                    <Mail className="h-3 w-3" /> alert sent
+                  <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-[var(--app-muted)]" title={t('alertEmailed', { when: new Date(c.alertedAt).toLocaleString(intlLocale(locale)) })}>
+                    <Mail className="h-3 w-3" /> {t('alertSent')}
                   </p>
                 ) : c.status === 'ENDING_SOON' ? (
-                  <p className="mt-1 text-[11px] text-[var(--app-muted)]">alert pending</p>
+                  <p className="mt-1 text-[11px] text-[var(--app-muted)]">{t('alertPending')}</p>
                 ) : null}
               </td>
               <td className="px-3 py-2.5">
@@ -662,7 +671,7 @@ function Table({
               <td className="px-3 py-2.5">
                 <Link
                   href="/tools?tab=robots"
-                  title="Open Tools → Robots to extend or close the contract"
+                  title={t('openTools')}
                   className="text-[var(--app-muted)] transition hover:text-[var(--app-brand-dark)]"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
@@ -673,7 +682,7 @@ function Table({
           {rows.length === 0 && (
             <tr>
               <td colSpan={9} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
-                No contracts match.
+                {t('noMatch')}
               </td>
             </tr>
           )}
@@ -691,6 +700,7 @@ function Table({
  * this page no longer needs to open on them.
  */
 export function ContractsPanel() {
+  const t = useTranslations('contracts');
   const [windowDays, setWindowDays] = useState(90);
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
@@ -745,29 +755,29 @@ export function ContractsPanel() {
   const remove = useMutation({
     mutationFn: (row: ExpiringContract) => contractsApi.removeDocument(row.robotUnitId),
     onSuccess: async (_r, row) => {
-      setNotice({ kind: 'ok', text: `Contract PDF removed from ${row.serialNumber}.` });
+      setNotice({ kind: 'ok', text: t('removedNotice', { serial: row.serialNumber }) });
       await refresh();
     },
-    onError: (e) => setNotice({ kind: 'error', text: errorMessage(e, 'Could not remove the contract PDF.') }),
+    onError: (e) => setNotice({ kind: 'error', text: errorMessage(e, t('removeFailed')) }),
   });
 
   const askRemove = (row: ExpiringContract) => {
     const shared = (row.document?.sharedWith ?? 1) > 1;
     void confirm({
-      title: 'Remove this contract PDF?',
+      title: t('confirmRemoveTitle'),
       kind: 'delete',
-      confirmLabel: 'Remove',
+      confirmLabel: t('confirmRemove'),
       message: shared
-        ? `The PDF is detached from ${row.serialNumber} only. The other ${row.document!.sharedWith - 1} robot(s) on this contract keep it.`
-        : `The PDF is detached from ${row.serialNumber} and, as no other robot shares it, deleted from storage.`,
+        ? t('removeShared', { serial: row.serialNumber, count: row.document!.sharedWith - 1 })
+        : t('removeSole', { serial: row.serialNumber }),
     }).then((ok) => ok && remove.mutate(row));
   };
 
   const chips: { id: StatusFilter; label: string; count: number; tone: string }[] = [
-    { id: 'all', label: 'All', count: counts.all, tone: '' },
-    { id: 'soon', label: 'Ending soon', count: counts.soon, tone: counts.soon > 0 ? 'text-amber-700 dark:text-amber-300' : '' },
-    { id: 'ended', label: 'Ended', count: counts.ended, tone: counts.ended > 0 ? 'text-red-700 dark:text-red-300' : '' },
-    { id: 'none', label: 'No end date', count: counts.none, tone: '' },
+    { id: 'all', label: t('all'), count: counts.all, tone: '' },
+    { id: 'soon', label: t('status.ENDING_SOON'), count: counts.soon, tone: counts.soon > 0 ? 'text-amber-700 dark:text-amber-300' : '' },
+    { id: 'ended', label: t('status.ENDED'), count: counts.ended, tone: counts.ended > 0 ? 'text-red-700 dark:text-red-300' : '' },
+    { id: 'none', label: t('status.NONE'), count: counts.none, tone: '' },
   ];
 
   return (
@@ -777,18 +787,17 @@ export function ContractsPanel() {
           <FileSignature className="h-4.5 w-4.5" />
         </span>
         <div>
-          <p className="text-sm font-semibold text-[var(--app-text)]">Robot contracts</p>
+          <p className="text-sm font-semibold text-[var(--app-text)]">{t('title')}</p>
           <p className="text-xs text-[var(--app-muted)]">
-            Every robot&apos;s contract, soonest end first, with the signed PDF attached. Ending soon means a renewal should be arranged before
-            the robot stops reporting; ended means the end date should be confirmed or extended.
+            {t('intro')}
           </p>
         </div>
       </div>
 
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
         <div className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
-          Show
-          <div role="radiogroup" aria-label="Filter contracts by status" className="inline-flex overflow-hidden rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] text-sm font-normal">
+          {t('show')}
+          <div role="radiogroup" aria-label={t('filterAria')} className="inline-flex overflow-hidden rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] text-sm font-normal">
             {chips.map((chip) => {
               const active = filter === chip.id;
               return (
@@ -811,30 +820,30 @@ export function ContractsPanel() {
         </div>
 
         <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
-          Ending within
+          {t('endingWithin')}
           <select
             value={windowDays}
             onChange={(e) => setWindowDays(Number(e.target.value))}
             className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm font-normal text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
           >
-            <option value={90}>90 days</option>
-            <option value={60}>60 days</option>
-            <option value={30}>30 days</option>
-            <option value={180}>180 days</option>
+            <option value={90}>{t('daysOption', { n: 90 })}</option>
+            <option value={60}>{t('daysOption', { n: 60 })}</option>
+            <option value={30}>{t('daysOption', { n: 30 })}</option>
+            <option value={180}>{t('daysOption', { n: 180 })}</option>
           </select>
         </label>
 
         <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
-          Follow-up
+          {t('followupLabel')}
           <select
             value={followupFilter}
             onChange={(e) => setFollowupFilter(e.target.value as FollowupFilter)}
             className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm font-normal text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
           >
-            <option value="any">Any</option>
+            <option value="any">{t('any')}</option>
             {FOLLOWUP_ORDER.map((s) => (
               <option key={s} value={s}>
-                {FOLLOWUP[s].label}
+                {t(`followup.${s}.label`)}
                 {data ? ` (${followupCounts[s]})` : ''}
               </option>
             ))}
@@ -842,14 +851,14 @@ export function ContractsPanel() {
         </label>
 
         <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
-          Search
+          {t('search')}
           <span className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--app-muted)]" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Customer, site or serial…"
+              placeholder={t('searchPlaceholder')}
               className="h-9 w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] pl-9 pr-3 text-sm font-normal text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
             />
           </span>
@@ -862,18 +871,23 @@ export function ContractsPanel() {
           className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 text-sm font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)] disabled:opacity-50"
         >
           {query.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Refresh
+          {t('refresh')}
         </button>
         {data && (
           <p className="ml-auto text-xs text-[var(--app-muted)]">
-            As of {data.asOf} · <b className="text-[var(--app-text)]">{counts.soon}</b> ending within {data.windowDays} days
-            {counts.soon > 0 && (
-              <>
-                {' '}(<b className={counts.soonNotContacted > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-[var(--app-text)]'}>{counts.soonNotContacted}</b> not
-                contacted yet)
-              </>
-            )}{' '}
-            · <b className="text-[var(--app-text)]">{counts.ended}</b> ended · showing {rows.length} of {counts.all}
+            {t.rich(counts.soon > 0 ? 'summaryWithCalls' : 'summary', {
+              asOf: data.asOf,
+              soon: counts.soon,
+              days: data.windowDays,
+              notContacted: counts.soonNotContacted,
+              ended: counts.ended,
+              shown: rows.length,
+              total: counts.all,
+              b: (chunks) => <b className="text-[var(--app-text)]">{chunks}</b>,
+              n: (chunks) => (
+                <b className={counts.soonNotContacted > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-[var(--app-text)]'}>{chunks}</b>
+              ),
+            })}
           </p>
         )}
       </div>
@@ -881,7 +895,7 @@ export function ContractsPanel() {
       {query.isError && (
         <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          Could not load contracts — try again.
+          {t('loadFailed')}
         </p>
       )}
 
@@ -895,7 +909,7 @@ export function ContractsPanel() {
         >
           {notice.kind === 'ok' ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />}
           <span className="flex-1">{notice.text}</span>
-          <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss" className="rounded p-0.5 opacity-70 hover:opacity-100">
+          <button type="button" onClick={() => setNotice(null)} aria-label={t('dismiss')} className="rounded p-0.5 opacity-70 hover:opacity-100">
             <X className="h-3.5 w-3.5" />
           </button>
         </p>
@@ -904,7 +918,7 @@ export function ContractsPanel() {
       {data && filter === 'soon' && counts.soon === 0 && !needle ? (
         <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
-          No contracts end in the next {data.windowDays} days.
+          {t('noneEnding', { days: data.windowDays })}
         </p>
       ) : (
         data && (
@@ -924,19 +938,17 @@ export function ContractsPanel() {
 
       {filter === 'ended' && counts.ended > 0 && (
         <p className="text-xs leading-5 text-[var(--app-muted)]">
-          An ended robot gets no monthly report and is not on the No data list. If the contract was renewed, extend the end date on the robot; if the robot came back, clear it.
+          {t('endedNote')}
         </p>
       )}
       {filter === 'none' && counts.none > 0 && (
         <p className="text-xs leading-5 text-[var(--app-muted)]">
-          These robots have no contract end date, so they can never appear as ending soon and never trigger the renewal alert. Set the date on the robot when it is known.
+          {t('noEndNote')}
         </p>
       )}
 
       <p className="text-xs leading-5 text-[var(--app-muted)]">
-        Each contract is emailed to the customer success address once as it enters the 90-day window; changing the end date re-arms that alert
-        and puts the follow-up back to <i>Not contacted</i> for the new term. Changing a follow-up applies to every robot of the customer on the
-        same contract dates — one call, one contract. The Contract PDF is the signed document, kept in private storage; one upload covers them the same way.
+        {t.rich('footnote', { i: (chunks) => <i>{chunks}</i> })}
       </p>
 
       {attaching && (
