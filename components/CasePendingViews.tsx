@@ -3,6 +3,7 @@
 import { Fragment, useState } from 'react';
 import { useMutation, useQueries } from '@tanstack/react-query';
 import { ArrowRight, ChevronDown, ChevronRight, Download, Info, Loader2, Search } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import type { CaseReportSlug } from '@/lib/api';
 import {
@@ -23,6 +24,7 @@ import {
   CASE_REPORTS,
   SlaCell,
   TicketLink,
+  boldText,
   caseSheetQuery,
   countCases,
   downloadCaseSheet,
@@ -37,18 +39,17 @@ import { CardBand, CardError, CaseCountsCard, CasePendingSummary, LiveBadge, Rep
  * each section as a band of the same card.
  */
 
-const VIEW_TITLE: Record<CaseCustomerView, string> = {
-  internal: 'Internal',
-  pcs: 'PCS',
-  makro: 'Makro',
-  its: 'ITS',
-};
+/** The customers' names; Internal is the one view with a word of its own to translate. */
+const CUSTOMER_TITLE = { pcs: 'PCS', makro: 'Makro', its: 'ITS' } as const;
+
+type T = ReturnType<typeof useTranslations>;
 
 /** "Internal — all open cases", "Internal — cleaning", "PCS — delivery". */
-function titleOf(view: CaseCustomerView, scope: CaseScope): string {
-  if (scope === 'CLEANING') return `${VIEW_TITLE[view]} — cleaning`;
-  if (scope === 'DELIVERY') return `${VIEW_TITLE[view]} — delivery`;
-  return view === 'internal' ? 'Internal — all open cases' : VIEW_TITLE[view];
+function titleOf(t: T, view: CaseCustomerView, scope: CaseScope): string {
+  const name = view === 'internal' ? t('views.internal') : CUSTOMER_TITLE[view];
+  if (scope === 'CLEANING') return t('views.titleCleaning', { view: name });
+  if (scope === 'DELIVERY') return t('views.titleDelivery', { view: name });
+  return view === 'internal' ? t('views.titleAll') : name;
 }
 
 const rowsOf = (section: Section): CaseReportRow[] => section.parts.flatMap((part) => part.rows);
@@ -68,25 +69,24 @@ function sources(section: Section): { sheet: CaseReportSlug; count: number }[] {
 
 /** One sheet a section is made of: a row of a compact list, with its details and Excel. */
 function SheetSource({ sheet, count, asOf }: { sheet: CaseReportSlug; count: number; asOf: string }) {
+  const t = useTranslations('pendingCases');
   const exportExcel = useMutation({ mutationFn: () => downloadCaseSheet(sheet, asOf) });
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
-      <span className="font-medium text-[var(--app-text)]">{SHEET_LABEL[sheet]}</span>
-      <span className="tabular-nums text-[var(--app-muted)]">
-        {count} case{count === 1 ? '' : 's'}
-      </span>
+      <span className="font-medium text-[var(--app-text)]">{t(SHEET_LABEL[sheet])}</span>
+      <span className="tabular-nums text-[var(--app-muted)]">{t('caseCount', { count })}</span>
       <span className="ml-auto flex items-center gap-1">
         <Link
           href={{ pathname: `/reports/cases/${sheet}`, query: { date: asOf } }}
           className="inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 font-semibold text-[var(--app-brand-dark)] transition-colors duration-150 hover:bg-[var(--app-brand-soft)]"
         >
-          Details <ArrowRight className="h-3.5 w-3.5" />
+          {t('views.details')} <ArrowRight className="h-3.5 w-3.5" />
         </Link>
         <button
           type="button"
           onClick={() => exportExcel.mutate()}
           disabled={exportExcel.isPending}
-          title={`Download the ${SHEET_LABEL[sheet]} sheet for this day as Excel - every case on it, corrections included.`}
+          title={t('views.downloadTitle', { sheet: t(SHEET_LABEL[sheet]) })}
           className="inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 font-semibold text-[var(--app-text)] transition-colors duration-150 hover:bg-[var(--app-faint)] disabled:opacity-60"
         >
           {exportExcel.isPending ? (
@@ -94,12 +94,12 @@ function SheetSource({ sheet, count, asOf }: { sheet: CaseReportSlug; count: num
           ) : (
             <Download className="h-3.5 w-3.5" />
           )}
-          Excel
+          {t('summary.excel')}
         </button>
       </span>
       {exportExcel.isError && (
         <span className="w-full text-xs text-red-700 dark:text-red-300">
-          {errorMessage(exportExcel.error, 'Could not download the sheet.')}
+          {errorMessage(exportExcel.error, t('views.downloadFailed'))}
         </span>
       )}
     </li>
@@ -121,6 +121,7 @@ interface Entry {
  * where a case is corrected.
  */
 function CaseList({ entries, asOf }: { entries: Entry[]; asOf: string }) {
+  const t = useTranslations('pendingCases');
   const [search, setSearch] = useState('');
   const [showAll, setShowAll] = useState(false);
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -139,7 +140,8 @@ function CaseList({ entries, asOf }: { entries: Entry[]; asOf: string }) {
           row.solution,
           row.openDate,
           row.slaLabel,
-          SHEET_LABEL[sheet],
+          row.sla === 'UNKNOWN' ? null : t(`sla.${row.sla}`),
+          t(SHEET_LABEL[sheet]),
           BOARD_LABEL[board],
         ]
           .filter(Boolean)
@@ -165,20 +167,20 @@ function CaseList({ entries, asOf }: { entries: Entry[]; asOf: string }) {
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-3">
         <label className="relative min-w-[16rem] flex-1 sm:max-w-md">
-          <span className="sr-only">Search cases</span>
+          <span className="sr-only">{t('views.searchLabel')}</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--app-muted)]" />
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search customer, branch, robot, S/N, problem…"
+            placeholder={t('views.searchPlaceholder')}
             className="h-9 w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] pl-9 pr-3 text-sm text-[var(--app-text)]"
           />
         </label>
         <span className="text-xs text-[var(--app-muted)]">
           {words.length
-            ? `${matching.length} of ${sorted.length} match`
-            : `${shown.length} of ${sorted.length} · click a case for its details`}
+            ? t('views.matchCount', { matching: matching.length, total: sorted.length })
+            : t('views.shownCount', { shown: shown.length, total: sorted.length })}
         </span>
       </div>
       <div className="overflow-x-auto rounded-lg ring-1 ring-inset ring-[var(--app-border)]">
@@ -186,17 +188,17 @@ function CaseList({ entries, asOf }: { entries: Entry[]; asOf: string }) {
           <thead className="shadow-[inset_0_-1px_0_var(--app-border)]">
             <tr>
               <th className="w-8 px-2" />
-              <th className={th}>No</th>
-              <th className={th}>Board</th>
-              <th className={th}>Customer</th>
-              <th className={th}>Branch</th>
-              <th className={th}>Robot</th>
-              <th className={th}>S/N</th>
-              <th className={th}>Problem</th>
-              <th className={th}>Open date</th>
-              <th className={`${th} text-right`}>Days</th>
-              <th className={th}>SLA</th>
-              <th className={th}>Sheet</th>
+              <th className={th}>{t('views.col.no')}</th>
+              <th className={th}>{t('views.col.board')}</th>
+              <th className={th}>{t('views.col.customer')}</th>
+              <th className={th}>{t('views.col.branch')}</th>
+              <th className={th}>{t('views.col.robot')}</th>
+              <th className={th}>{t('views.col.sn')}</th>
+              <th className={th}>{t('views.col.problem')}</th>
+              <th className={th}>{t('views.col.openDate')}</th>
+              <th className={`${th} text-right`}>{t('views.col.days')}</th>
+              <th className={th}>{t('views.col.sla')}</th>
+              <th className={th}>{t('views.col.sheet')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--app-border)]">
@@ -241,10 +243,10 @@ function CaseList({ entries, asOf }: { entries: Entry[]; asOf: string }) {
                         <Link
                           href={{ pathname: `/reports/cases/${sheet}`, query: { date: asOf } }}
                           onClick={(e) => e.stopPropagation()}
-                          title="Open this sheet to correct the case"
+                          title={t('views.openSheetTitle')}
                           className="cursor-pointer font-semibold text-[var(--app-brand-dark)] hover:underline"
                         >
-                          {SHEET_LABEL[sheet]}
+                          {t(SHEET_LABEL[sheet])}
                         </Link>
                         <span onClick={(e) => e.stopPropagation()}>
                           <TicketLink row={row} boardId={BOARD_IDS[board]} />
@@ -266,7 +268,7 @@ function CaseList({ entries, asOf }: { entries: Entry[]; asOf: string }) {
             {shown.length === 0 && (
               <tr>
                 <td colSpan={12} className="px-3 py-8 text-center text-sm text-[var(--app-muted)]">
-                  {words.length ? 'No case matches the search.' : 'No open cases.'}
+                  {words.length ? t('views.emptySearch') : t('views.emptyList')}
                 </td>
               </tr>
             )}
@@ -280,7 +282,7 @@ function CaseList({ entries, asOf }: { entries: Entry[]; asOf: string }) {
           className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-semibold text-[var(--app-brand-dark)] transition-colors duration-150 hover:bg-[var(--app-brand-soft)]"
         >
           <ChevronDown className={`h-4 w-4 transition-transform duration-150 ${showAll ? 'rotate-180' : ''}`} />
-          {showAll ? 'Show the oldest 10 only' : `Show all ${matching.length} cases`}
+          {showAll ? t('views.showOldest') : t('views.showAll', { count: matching.length })}
         </button>
       )}
     </div>
@@ -292,6 +294,7 @@ const PREVIEW_ROWS = 10;
 
 /** One case opened in the list: the text the table clamps, and what the sheet adds. */
 function CaseDetails({ row }: { row: CaseReportRow }) {
+  const t = useTranslations('pendingCases');
   const parts = row.requiredPart || row.waiting || row.waitingFrom || row.partReceived;
   const item = (label: string, value: React.ReactNode) =>
     value ? (
@@ -302,26 +305,30 @@ function CaseDetails({ row }: { row: CaseReportRow }) {
     ) : null;
   return (
     <dl className="grid gap-3 rounded-lg bg-[var(--app-panel)] p-4 text-sm ring-1 ring-inset ring-[var(--app-border)] md:grid-cols-2">
-      <div className="md:col-span-2">{item('Problem', row.problem ?? '—')}</div>
-      {row.solution && <div className="md:col-span-2">{item('Solution / progress', row.solution)}</div>}
+      <div className="md:col-span-2">{item(t('views.detail.problem'), row.problem ?? '—')}</div>
+      {row.solution && <div className="md:col-span-2">{item(t('views.detail.solution'), row.solution)}</div>}
       {parts && (
         <>
-          {item('Required part', row.requiredPart)}
-          {item('Waiting', row.waiting)}
-          {item('Waiting from', row.waitingFrom)}
-          {item('Part received', row.partReceived)}
-          {item('Aging after received', row.agingAfterReceived != null ? `${row.agingAfterReceived} days` : null)}
+          {item(t('views.detail.requiredPart'), row.requiredPart)}
+          {item(t('views.detail.waiting'), row.waiting)}
+          {item(t('views.detail.waitingFrom'), row.waitingFrom)}
+          {item(t('views.detail.partReceived'), row.partReceived)}
+          {item(
+            t('views.detail.aging'),
+            row.agingAfterReceived != null ? t('views.detail.days', { count: row.agingAfterReceived }) : null,
+          )}
         </>
       )}
       {/* Open date and SLA are already in the row; these are what the table leaves out. */}
-      {item('RE on site', row.reOnSite)}
-      {item('Province', row.province)}
+      {item(t('views.detail.reOnSite'), row.reOnSite)}
+      {item(t('views.detail.province'), row.province)}
     </dl>
   );
 }
 
 /** One section as a band of the report card: its name, its counts, every case, and its sheets. */
 function SectionBand({ section, asOf, showTitle }: { section: Section; asOf: string; showTitle: boolean }) {
+  const t = useTranslations('pendingCases');
   const rows = rowsOf(section);
   const from = sources(section);
   const entries: Entry[] = section.parts.flatMap((part) =>
@@ -333,21 +340,21 @@ function SectionBand({ section, asOf, showTitle }: { section: Section; asOf: str
         <h3 className="flex items-baseline gap-2 text-base font-semibold text-[var(--app-text)]">
           {section.title}
           <span className="text-sm font-normal tabular-nums text-[var(--app-muted)]">
-            {rows.length} case{rows.length === 1 ? '' : 's'}
+            {t('caseCount', { count: rows.length })}
           </span>
         </h3>
       )}
       <CaseCountsCard rows={rows} holdOwner={section.holdOwner} />
       <div className="space-y-1.5">
         <p className="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">
-          All {rows.length} case{rows.length === 1 ? '' : 's'}, oldest first
+          {t('views.allCasesOldest', { count: rows.length })}
         </p>
         <CaseList entries={entries} asOf={asOf} />
       </div>
       {from.length > 0 && (
         <div className="space-y-1.5">
           <p className="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">
-            Correct a case, or download the Excel, on its sheet
+            {t('views.correctOnSheet')}
           </p>
           <ul className="divide-y divide-[var(--app-border)] rounded-lg ring-1 ring-inset ring-[var(--app-border)]">
             {from.map((s) => (
@@ -365,6 +372,7 @@ function SectionBand({ section, asOf, showTitle }: { section: Section; asOf: str
  * Delivery to see only delivery. Shown on Both, above the one combined section.
  */
 function BoardStrip({ sections, onPick }: { sections: Section[]; onPick?: (scope: CaseScope) => void }) {
+  const t = useTranslations('pendingCases');
   return (
     <div className="grid grid-cols-1 divide-y divide-[var(--app-border)] bg-[var(--app-bg)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
       {sections.map((section) => {
@@ -377,8 +385,12 @@ function BoardStrip({ sections, onPick }: { sections: Section[]; onPick?: (scope
             </span>
             <span className="mt-0.5 block text-3xl font-semibold tabular-nums text-[var(--app-text)]">{c.total}</span>
             <span className="block text-xs text-[var(--app-muted)]">
-              <span className="font-semibold text-red-700 dark:text-red-300">{c.breached}</span> over SLA ·{' '}
-              <span className="font-semibold text-[var(--app-text)]">{c.heldByCustomer}</span> on hold with customer
+              {t.rich('views.stripSummary', {
+                over: c.breached,
+                held: c.heldByCustomer,
+                red: (chunks) => <span className="font-semibold text-red-700 dark:text-red-300">{chunks}</span>,
+                b: boldText,
+              })}
             </span>
           </>
         );
@@ -387,7 +399,7 @@ function BoardStrip({ sections, onPick }: { sections: Section[]; onPick?: (scope
             key={section.key}
             type="button"
             onClick={() => onPick(board)}
-            title={`Show only ${section.title.toLowerCase()}`}
+            title={t('views.showOnly', { board: section.title.toLowerCase() })}
             className="cursor-pointer px-4 py-3 text-left transition-colors duration-150 hover:bg-[var(--app-faint)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--app-brand)] sm:px-5"
           >
             {body}
@@ -415,6 +427,9 @@ export function CaseCustomerPanel({
   /** Lets the board split on Both narrow the view to one board. */
   onScopeChange?: (next: CaseScope) => void;
 }) {
+  const t = useTranslations('pendingCases');
+  const tPeriod = useTranslations('pendingCases.period');
+  const locale = useLocale();
   const asOf = period.asOf;
   const slugs = NEEDS[view];
   const results = useQueries({ queries: slugs.map((slug) => caseSheetQuery(slug, asOf)) });
@@ -428,7 +443,7 @@ export function CaseCustomerPanel({
       <CardBand>
         <CardError
           error={failed.error}
-          fallback="Could not load the pending sheets. Check that the backend is running and that MONDAY_API_TOKEN is set."
+          fallback={t('views.loadFailed')}
         />
       </CardBand>
     );
@@ -436,7 +451,7 @@ export function CaseCustomerPanel({
     body = (
       <CardBand className="flex items-center justify-center gap-2 py-10 text-sm text-[var(--app-muted)]">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Loading {slugs.length} sheets. A day read for the first time comes from monday and can take a few minutes.
+        {t('views.loadingSheets', { count: slugs.length })}
       </CardBand>
     );
   } else {
@@ -448,16 +463,16 @@ export function CaseCustomerPanel({
     // the strip above it. One board shows that board's section alone.
     const combine = view === 'internal' && scope === 'BOTH' && scoped.length > 1;
     const sections: Section[] = combine
-      ? [{ key: 'all', title: 'All open cases', holdOwner: 'Customer', parts: scoped.flatMap((s) => s.parts) }]
+      ? [{ key: 'all', title: t('views.allOpen'), holdOwner: 'Customer', parts: scoped.flatMap((s) => s.parts) }]
       : scoped;
     body = (
       <>
         {composed.notes.length > 0 && (
           <CardBand className="space-y-2 py-3">
             {composed.notes.map((note) => (
-              <p key={note} className="flex items-start gap-2 text-sm text-[var(--app-text)]">
+              <p key={note.key} className="flex items-start gap-2 text-sm text-[var(--app-text)]">
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                {note}
+                {t(`notes.${note.key}`, { count: note.key === 'unplaced' ? note.count : 0 })}
               </p>
             ))}
           </CardBand>
@@ -472,8 +487,8 @@ export function CaseCustomerPanel({
 
   return (
     <ReportCard
-      title={titleOf(view, scope)}
-      subtitle={describePeriod(period)}
+      title={titleOf(t, view, scope)}
+      subtitle={describePeriod(period, tPeriod, locale)}
       badge={!loading && !failed ? <LiveBadge live={live} /> : undefined}
     >
       {body}
@@ -487,12 +502,13 @@ export function CaseCustomerPanel({
  * it once linked, and its link, columns and setup guide live in its card.
  */
 export function CaseAotPanel({ period }: { period: Period }) {
+  const t = useTranslations('pendingCases');
   return (
     <div className="space-y-5">
-      <CasePendingSummary report={CASE_REPORTS.aotga} title="AOTGA — from monday" period={period} />
+      <CasePendingSummary report={CASE_REPORTS.aotga} title={t('views.aotgaTitle')} period={period} />
       <ReportCard
-        title="AOT Google Sheet"
-        subtitle="AOT logs its cases in its own sheet. RAASPAL only reads it; the link stays until someone presses Remove link."
+        title={t('views.googleSheetTitle')}
+        subtitle={t('views.googleSheetSubtitle')}
         actions={<AotSheetHelp />}
       >
         <CardBand>

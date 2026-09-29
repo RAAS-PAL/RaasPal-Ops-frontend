@@ -94,7 +94,10 @@ export function weeksOfMonth(month: string): Week[] {
   return weeks;
 }
 
-// Written out rather than Intl: en-GB prints "Fri, 4 Sept", and the team writes "Fri 4 Sep".
+// English is written out rather than taken from Intl: en-GB prints "Fri, 4 Sept", and the
+// team writes "Fri 4 Sep". Any other locale (Thai) comes from Intl, in UTC so the calendar
+// day does not move with the browser's zone; Thai then reads in the Buddhist era, as the
+// rest of the app's dates do.
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTHS_LONG = [
@@ -102,36 +105,51 @@ const MONTHS_LONG = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-function parts(date: string) {
+const utc = (locale: string, options: Intl.DateTimeFormatOptions) =>
+  new Intl.DateTimeFormat(locale, { timeZone: 'UTC', ...options });
+
+function parts(date: string, locale: string) {
   const [y, m, d] = date.split('-').map(Number);
-  return { y, month: MONTHS[m - 1], d, wd: WEEKDAYS[weekday(date)] };
+  if (locale === 'en') return { y, year: String(y), month: MONTHS[m - 1], d, wd: WEEKDAYS[weekday(date)] };
+  // Parts of one full date: the year alone would carry the era ("พ.ศ. 2569"), and a weekday
+  // alone can come out in its long form.
+  const found = utc(locale, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).formatToParts(
+    new Date(toMs(date)),
+  );
+  const get = (type: string) => found.find((p) => p.type === type)?.value ?? '';
+  return { y, year: get('year'), month: get('month'), d, wd: get('weekday') };
 }
 
 /** "Mon 28 Sep 2026". */
-export function formatDay(date: string): string {
-  const p = parts(date);
-  return `${p.wd} ${p.d} ${p.month} ${p.y}`;
+export function formatDay(date: string, locale = 'en'): string {
+  const p = parts(date, locale);
+  return `${p.wd} ${p.d} ${p.month} ${p.year}`;
 }
 
 /** "September 2026". */
-export function formatMonth(month: string): string {
+export function formatMonth(month: string, locale = 'en'): string {
   const [y, m] = month.split('-').map(Number);
-  return `${MONTHS_LONG[m - 1]} ${y}`;
+  if (locale === 'en') return `${MONTHS_LONG[m - 1]} ${y}`;
+  return utc(locale, { month: 'long', year: 'numeric' }).format(new Date(Date.UTC(y, m - 1, 1)));
 }
 
 /** "Mon 7 – Fri 11 Sep 2026", "Mon 28 Sep – Fri 2 Oct 2026", "Mon 29 Dec 2025 – Fri 2 Jan 2026". */
-export function formatWeek(week: Week): string {
-  const a = parts(week.start);
-  const b = parts(week.end);
+export function formatWeek(week: Week, locale = 'en'): string {
+  const a = parts(week.start, locale);
+  const b = parts(week.end, locale);
   const from =
-    a.y !== b.y ? formatDay(week.start) : a.month !== b.month ? `${a.wd} ${a.d} ${a.month}` : `${a.wd} ${a.d}`;
-  return `${from} – ${formatDay(week.end)}`;
+    a.y !== b.y
+      ? formatDay(week.start, locale)
+      : a.month !== b.month
+        ? `${a.wd} ${a.d} ${a.month}`
+        : `${a.wd} ${a.d}`;
+  return `${from} – ${formatDay(week.end, locale)}`;
 }
 
 /** "1 – 30 Sep 2026". */
-function formatMonthRange(month: string): string {
-  const [y, m] = month.split('-').map(Number);
-  return `1 – ${Number(lastDayOfMonth(month).slice(8))} ${MONTHS[m - 1]} ${y}`;
+function formatMonthRange(month: string, locale: string): string {
+  const p = parts(`${month}-01`, locale);
+  return `1 – ${Number(lastDayOfMonth(month).slice(8))} ${p.month} ${p.year}`;
 }
 
 /** The month a week is listed under: the month of its Friday. */
@@ -143,7 +161,7 @@ export function initialChoice(today: string): PeriodChoice {
   return { cadence: 'DAILY', day: today, month: monthOf(today), weekStart: mondayOf(today) };
 }
 
-export function resolvePeriod(choice: PeriodChoice, today: string): Period {
+export function resolvePeriod(choice: PeriodChoice, today: string, locale = 'en'): Period {
   const clamp = (start: string, end: string) => {
     const running = end > today;
     return { start, end, asOf: running ? today : end, running };
@@ -151,30 +169,32 @@ export function resolvePeriod(choice: PeriodChoice, today: string): Period {
   switch (choice.cadence) {
     case 'DAILY': {
       const day = choice.day > today ? today : choice.day;
-      return { cadence: 'DAILY', start: day, end: day, asOf: day, running: false, label: formatDay(day) };
+      return { cadence: 'DAILY', start: day, end: day, asOf: day, running: false, label: formatDay(day, locale) };
     }
     case 'WEEKLY': {
       const week = { start: choice.weekStart, end: addDays(choice.weekStart, 4) };
-      return { cadence: 'WEEKLY', ...clamp(week.start, week.end), label: formatWeek(week) };
+      return { cadence: 'WEEKLY', ...clamp(week.start, week.end), label: formatWeek(week, locale) };
     }
     case 'MONTHLY': {
       const start = `${choice.month}-01`;
       return {
         cadence: 'MONTHLY',
         ...clamp(start, lastDayOfMonth(choice.month)),
-        label: formatMonthRange(choice.month),
+        label: formatMonthRange(choice.month, locale),
       };
     }
   }
 }
 
+/** What `describePeriod` needs of a translator: `pendingCases.period`. */
+type Translate = (key: string, values: Record<string, string>) => string;
+
 /**
  * What the numbers under a period mean, in one line: "Cases open on Mon 28 Sep 2026", or
  * for a week or month, the day it was read on and whether it is still running.
  */
-export function describePeriod(period: Period): string {
-  if (period.cadence === 'DAILY') return `Cases open on ${formatDay(period.asOf)}`;
-  return period.running
-    ? `${period.label} · still running, so the cases open today, ${formatDay(period.asOf)}`
-    : `${period.label} · the cases still open on its last day, ${formatDay(period.asOf)}`;
+export function describePeriod(period: Period, t: Translate, locale = 'en'): string {
+  const date = formatDay(period.asOf, locale);
+  if (period.cadence === 'DAILY') return t('openOn', { date });
+  return t(period.running ? 'running' : 'ended', { label: period.label, date });
 }

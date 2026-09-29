@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -38,6 +39,11 @@ import { CaseRowEditDialog } from './CaseRowEditDialog';
  * <p>Delivery is still by hand — nothing here sends anything.
  */
 
+/** The `<b>` of a rich message: a figure set in the app's ink inside a muted sentence. */
+export const boldText = (chunks: React.ReactNode) => (
+  <span className="font-semibold text-[var(--app-text)]">{chunks}</span>
+);
+
 export function errorMessage(e: unknown, fallback: string): string {
   const detail =
     typeof e === 'object' && e !== null && 'response' in e
@@ -72,10 +78,11 @@ const SLA_STYLE: Record<SlaStatus, string> = {
 };
 
 export function SlaCell({ row }: { row: CaseReportRow }) {
+  const t = useTranslations('pendingCases');
   // A blank verdict is a question, not a value: say what is missing so somebody can fix
   // it, rather than showing an empty cell that reads as a rendering bug.
   if (row.sla === 'UNKNOWN') {
-    const why = !row.openDate ? 'no open date' : !row.province ? 'no province' : 'not determinable';
+    const why = !row.openDate ? t('sla.noOpenDate') : !row.province ? t('sla.noProvince') : t('sla.notDeterminable');
     return (
       <span className="inline-flex items-center gap-1 text-xs text-[var(--app-muted)]" title={why}>
         <AlertTriangle className="h-3.5 w-3.5" />
@@ -87,7 +94,7 @@ export function SlaCell({ row }: { row: CaseReportRow }) {
     <span
       className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${SLA_STYLE[row.sla]}`}
     >
-      {row.slaLabel}
+      {t(`sla.${row.sla}`)}
     </span>
   );
 }
@@ -117,8 +124,8 @@ export interface CaseReportSpec {
    * and no verdict at all.
    */
   layout: 'sla' | 'parts';
-  /** One line under the controls: what is on the sheet and the SLA rule. */
-  hint: string;
+  /** One line under the controls: what is on the sheet and the SLA rule (`pendingCases.hint.*`). */
+  hintKey: string;
   /** Pre-filled on "Add row". */
   newRow: { project: string; robot: string };
   /**
@@ -139,7 +146,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     boardId: '1647612496',
     columns: ['project', 'branch'],
     layout: 'sla',
-    hint: 'MK, Yayoi and Bonus Suki delivery cases. Days counts from the day after the case opened (opened today = 0); the SLA is 3 days inside greater Bangkok, 5 elsewhere.',
+    hintKey: 'hint.mk',
     newRow: { project: 'MK', robot: 'Pudu 1' },
     holdOwner: 'MK',
   },
@@ -148,7 +155,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     boardId: '3451717331',
     columns: ['project'],
     layout: 'sla',
-    hint: 'Every open cleaning case except Makro’s and the airports’, which have their own sheets, and except held cases (see On Hold). Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
+    hintKey: 'hint.cleaning',
     newRow: { project: '', robot: 'M50' },
     holdOwner: 'Customer',
     heldElsewhere: true,
@@ -158,7 +165,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     boardId: '3451717331',
     columns: ['branch'],
     layout: 'sla',
-    hint: 'Makro’s cleaning cases, minus held cases (see On Hold). Days counts from the day after the case opened (opened today = 0); the SLA is 3 days everywhere.',
+    hintKey: 'hint.makro',
     newRow: { project: 'Makro', robot: 'Omnie' },
     holdOwner: 'Makro',
     heldElsewhere: true,
@@ -168,7 +175,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     boardId: '3451717331',
     columns: ['project'],
     layout: 'parts',
-    hint: 'The airports’ open cleaning cases, tracked by spare-part turnaround rather than SLA. Days and Aging After Received both count from the day after (opened or received today = 0). The 3-day SLA is computed but the sheet does not print it.',
+    hintKey: 'hint.aotga',
     newRow: { project: 'AOTGA-', robot: 'M75' },
     holdOwner: 'AOTGA',
   },
@@ -177,7 +184,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     boardId: '1647612496',
     columns: ['project', 'branch'],
     layout: 'sla',
-    hint: 'Every open delivery case that is not MK’s, minus held cases (see On Hold). Days counts from the day after the case opened (opened today = 0); the SLA is 3 days inside greater Bangkok, 5 elsewhere.',
+    hintKey: 'hint.delivery',
     newRow: { project: '', robot: 'Pudu 1' },
     holdOwner: 'Customer',
     heldElsewhere: true,
@@ -188,7 +195,7 @@ export const CASE_REPORTS: Record<CaseReportSlug, CaseReportSpec> = {
     boardFilter: true,
     columns: ['project', 'branch'],
     layout: 'sla',
-    hint: 'Every held case on the cleaning and delivery boards, except the airports’. A held case has no SLA: the clock is not RAASPAL’s to run. MK’s held cases are also still on the MK sheet, by request.',
+    hintKey: 'hint.onHold',
     newRow: { project: '', robot: '' },
     holdOwner: 'Customer',
   },
@@ -212,13 +219,14 @@ function serialLines(serialNumber: string): string[] {
  * value has to go and find the ticket by hand. A row added by hand has no ticket to open.
  */
 export function TicketLink({ row, boardId }: { row: CaseReportRow; boardId: string }) {
+  const t = useTranslations('pendingCases');
   if (!row.sourceItemId || isManualCaseRow(row)) return null;
   return (
     <a
       href={`https://raaspal.monday.com/boards/${boardId}/pulses/${row.sourceItemId}`}
       target="_blank"
       rel="noreferrer"
-      title="Open this ticket on monday.com"
+      title={t('ticketLinkTitle')}
       className="text-[var(--app-muted)] transition hover:text-[var(--app-brand-dark)]"
     >
       <ExternalLink className="h-3.5 w-3.5" />
@@ -358,6 +366,7 @@ const LIVE_POLL_MS = 60_000;
  * date has been generated.
  */
 export function CaseReportFreshness({ info, live }: { info: CaseReportRunInfo | null; live: boolean }) {
+  const t = useTranslations('pendingCases');
   if (!info?.exists || !info.generatedAt) return null;
   const at = new Date(info.generatedAt);
   if (Number.isNaN(at.getTime())) return null;
@@ -365,16 +374,7 @@ export function CaseReportFreshness({ info, live }: { info: CaseReportRunInfo | 
   return (
     <p className="flex items-center gap-1.5 text-xs text-[var(--app-muted)]">
       <Clock className="h-3.5 w-3.5 shrink-0" />
-      {live ? (
-        <span>
-          Updated <span className="font-semibold text-[var(--app-text)]">{time}</span> · refreshes from
-          monday every 15 minutes until midnight
-        </span>
-      ) : (
-        <span>
-          Final for this date · last updated <span className="font-semibold text-[var(--app-text)]">{time}</span>
-        </span>
-      )}
+      <span>{t.rich(live ? 'sheet.updatedLive' : 'sheet.finalFor', { time, b: boldText })}</span>
     </p>
   );
 }
@@ -385,6 +385,7 @@ export function CaseReportFreshness({ info, live }: { info: CaseReportRunInfo | 
  * @param initialDate the date the summary linked from; the picker here keeps the URL in step.
  */
 export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpec; initialDate?: string | null }) {
+  const t = useTranslations('pendingCases');
   const { confirm, confirmDialog } = useConfirm();
   const [asOf, setAsOfState] = useState<string>(initialDate ?? todayInBangkok());
   // Keep the date in the URL, so a reload or a shared link opens the same sheet.
@@ -422,7 +423,7 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
       });
       closeDialog();
     },
-    onError: (e) => setEditError(errorMessage(e, 'Could not save the row.')),
+    onError: (e) => setEditError(errorMessage(e, t('sheet.saveFailed'))),
   });
 
   // Mirror the backend's numbering: 1..n over the rows on the sheet, 0 for a removed one.
@@ -444,7 +445,7 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
       );
       closeDialog();
     },
-    onError: (e) => setEditError(errorMessage(e, 'Could not remove the row.')),
+    onError: (e) => setEditError(errorMessage(e, t('sheet.removeFailed'))),
   });
 
   const restore = useMutation({
@@ -454,17 +455,15 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
         renumber((current ?? []).map((r) => (r.sourceItemId === sourceItemId ? { ...r, removed: false } : r))),
       );
     },
-    onError: (e) => setEditError(errorMessage(e, 'Could not restore the row.')),
+    onError: (e) => setEditError(errorMessage(e, t('sheet.restoreFailed'))),
   });
 
   const askRemove = (row: CaseReportRow) =>
     void confirm({
-      title: 'Remove this row?',
+      title: t('sheet.confirmTitle'),
       kind: 'delete',
-      confirmLabel: 'Remove row',
-      message: isManualCaseRow(row)
-        ? `Row ${row.no} is taken off this date's report. It was added by hand, so nothing on monday changes.`
-        : `Row ${row.no} is taken off this date's report and stays off if the report is regenerated. The monday ticket is not changed, and you can put the row back from the "removed" chip.`,
+      confirmLabel: t('sheet.confirmLabel'),
+      message: t(isManualCaseRow(row) ? 'sheet.confirmManual' : 'sheet.confirmBoard', { no: row.no }),
     }).then((ok) => ok && remove.mutate(row.sourceItemId!));
 
   const busy = isFetching || regenerate.isPending;
@@ -482,6 +481,7 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
   const onBoard = showBoard && boardFilter !== 'all' ? sheet.filter((r) => r.board === boardFilter) : sheet;
   const visible = showRemoved ? [...onBoard, ...removedRows] : onBoard;
   const { breached, heldByCustomer, heldUnsplit, unknown, raaspalPending } = countCases(sheet);
+  const ownerName = report.holdOwner === 'Customer' ? t('owner.customer') : report.holdOwner;
   const edited = sheet.filter((r) => r.edited && !isManualCaseRow(r)).length;
   const added = sheet.filter(isManualCaseRow).length;
 
@@ -491,7 +491,7 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4">
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">
-            Report date
+            {t('sheet.reportDate')}
           </span>
           <span className="relative">
             <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--app-muted)]" />
@@ -511,28 +511,28 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
           className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:opacity-60"
         >
           {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {isFetching ? 'Loading…' : 'Generate'}
+          {isFetching ? t('sheet.loading') : t('sheet.generate')}
         </button>
 
         <button
           type="button"
           onClick={() => regenerate.mutate()}
           disabled={busy || rows.length === 0}
-          title="Re-read the monday board for this date. Rows you have edited are kept as they are."
+          title={t('sheet.regenerateTitle')}
           className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-2 text-sm font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-faint)] disabled:opacity-60"
         >
           {regenerate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          {regenerate.isPending ? 'Regenerating…' : 'Regenerate from monday'}
+          {regenerate.isPending ? t('sheet.regenerating') : t('sheet.regenerate')}
         </button>
 
         {showBoard && (
           <div className="flex flex-col gap-1.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">
-              Board
+              {t('sheet.boardLabel')}
             </span>
             <div
               role="radiogroup"
-              aria-label="Filter by board"
+              aria-label={t('sheet.filterByBoard')}
               className="inline-flex overflow-hidden rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] text-sm"
             >
               {(['all', 'CLEANING', 'DELIVERY'] as const).map((option) => {
@@ -551,7 +551,7 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
                         : 'text-[var(--app-text)] hover:bg-[var(--app-faint)]'
                     }`}
                   >
-                    {option === 'all' ? 'All' : BOARD_LABEL[option]}
+                    {option === 'all' ? t('sheet.all') : BOARD_LABEL[option]}
                     {sheet.length > 0 && <span className="ml-1.5 tabular-nums opacity-70">{count}</span>}
                   </button>
                 );
@@ -567,26 +567,26 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
             setEditing('new');
           }}
           disabled={busy || rows.length === 0}
-          title="Add a case the board does not list. Generate the report first."
+          title={t('sheet.addRowTitle')}
           className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-2 text-sm font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-faint)] disabled:opacity-60"
         >
           <Plus className="h-4 w-4" />
-          Add row
+          {t('sheet.addRow')}
         </button>
 
         <button
           type="button"
           onClick={() => exportExcel.mutate()}
           disabled={busy || exportExcel.isPending || rows.length === 0}
-          title="Download this sheet as Excel, exactly as shown - corrections included."
+          title={t('sheet.exportTitle')}
           className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] px-4 py-2 text-sm font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-faint)] disabled:opacity-60"
         >
           {exportExcel.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-          {exportExcel.isPending ? 'Preparing…' : 'Export Excel'}
+          {exportExcel.isPending ? t('sheet.preparing') : t('sheet.exportExcel')}
         </button>
 
         <p className="ml-auto max-w-md text-xs text-[var(--app-muted)]">
-          {report.hint} Click a row&apos;s pencil to correct it.
+          {t('sheet.hintWithPencil', { hint: t(report.hintKey) })}
         </p>
       </div>
 
@@ -596,7 +596,7 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
           <span>
             {errorMessage(
               isError ? error : regenerate.error,
-              'Could not generate the report. Check that the backend is running and that MONDAY_API_TOKEN is set.',
+              t('sheet.generateFailed'),
             )}
           </span>
         </div>
@@ -610,61 +610,61 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
       {rows.length > 0 && (
         <div className="flex flex-wrap gap-2 text-sm">
           <span className="rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] px-3 py-1.5">
-            {sheet.length} case{sheet.length === 1 ? '' : 's'}
+            {t('caseCount', { count: sheet.length })}
           </span>
           {removedRows.length > 0 && (
             <button
               type="button"
               onClick={() => setShowRemoved((v) => !v)}
               aria-pressed={showRemoved}
-              title={showRemoved ? 'Hide the removed rows' : 'Show the removed rows, to put one back'}
+              title={showRemoved ? t('sheet.hideRemoved') : t('sheet.showRemoved')}
               className={`rounded-lg border px-3 py-1.5 transition ${
                 showRemoved
                   ? 'border-[var(--app-brand)] bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)]'
                   : 'border-[var(--app-border)] text-[var(--app-muted)] hover:bg-[var(--app-faint)]'
               }`}
             >
-              {removedRows.length} removed by hand
+              {t('sheet.removedByHand', { count: removedRows.length })}
             </button>
           )}
           {raaspalPending > 0 && (
             <span className="rounded-lg bg-[var(--app-brand-soft)] px-3 py-1.5 font-semibold text-[var(--app-brand-dark)]">
-              {raaspalPending} RAASPAL pending
+              {t('sheet.pendingCount', { count: raaspalPending })}
             </span>
           )}
           {breached > 0 && (
             <span className="rounded-lg bg-red-50 px-3 py-1.5 font-semibold text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-900">
-              {breached} over SLA
+              {t('sheet.overSla', { count: breached })}
             </span>
           )}
           {(
             [
-              [heldByCustomer, `${report.holdOwner} on hold`],
-              [heldUnsplit, 'on hold'],
+              ['owner', heldByCustomer, t('sheet.heldOwner', { count: heldByCustomer, owner: ownerName })],
+              ['plain', heldUnsplit, t('sheet.heldPlain', { count: heldUnsplit })],
             ] as const
-          ).map(([count, label]) =>
+          ).map(([kind, count, label]) =>
             count > 0 ? (
               <span
-                key={label}
+                key={kind}
                 className="rounded-lg bg-amber-50 px-3 py-1.5 font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900"
               >
-                {count} {label}
+                {label}
               </span>
             ) : null,
           )}
           {unknown > 0 && (
             <span className="rounded-lg border border-[var(--app-border)] px-3 py-1.5 text-[var(--app-muted)]">
-              {unknown} without a verdict
+              {t('sheet.withoutVerdict', { count: unknown })}
             </span>
           )}
           {edited > 0 && (
             <span className="rounded-lg border border-[var(--app-border)] px-3 py-1.5 text-[var(--app-muted)]">
-              {edited} edited by hand
+              {t('sheet.editedByHand', { count: edited })}
             </span>
           )}
           {added > 0 && (
             <span className="rounded-lg border border-[var(--app-border)] px-3 py-1.5 text-[var(--app-muted)]">
-              {added} added by hand
+              {t('sheet.addedByHand', { count: added })}
             </span>
           )}
         </div>
@@ -704,7 +704,7 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
                 <th className="px-3 py-2.5 font-semibold">SLA</th>
               )}
               <th className="px-3 py-2.5">
-                <span className="sr-only">Edit</span>
+                <span className="sr-only">{t('sheet.editColumn')}</span>
               </th>
             </tr>
           </thead>
@@ -717,10 +717,10 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
                 <td className="px-3 py-2.5 tabular-nums text-[var(--app-muted)]">
                   {row.removed ? (
                     <span
-                      title="Removed from this date's report by hand. Not on the Excel; stays off if regenerated."
+                      title={t('sheet.removedTitle')}
                       className="inline-block rounded bg-[var(--app-bg)] px-1 text-[10px] font-semibold uppercase ring-1 ring-inset ring-[var(--app-border)]"
                     >
-                      removed
+                      {t('sheet.removedBadge')}
                     </span>
                   ) : (
                     row.no
@@ -729,14 +729,10 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
                     // A corrected row looks like any other, so say so: the reader comparing
                     // against the board needs to know this cell is a person's word, not monday's.
                     <span
-                      title={
-                        isManualCaseRow(row)
-                          ? 'Added by hand — not on the monday board. Kept when the report is regenerated.'
-                          : 'Edited by hand. Kept as is when the report is regenerated.'
-                      }
+                      title={isManualCaseRow(row) ? t('sheet.addedTitle') : t('sheet.editedTitle')}
                       className="ml-1 inline-block rounded bg-[var(--app-brand-soft)] px-1 text-[10px] font-semibold uppercase text-[var(--app-brand-dark)]"
                     >
-                      {isManualCaseRow(row) ? 'added' : 'edited'}
+                      {isManualCaseRow(row) ? t('sheet.addedBadge') : t('sheet.editedBadge')}
                     </span>
                   )}
                 </td>
@@ -830,12 +826,12 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
                       type="button"
                       onClick={() => restore.mutate(row.sourceItemId!)}
                       disabled={restore.isPending}
-                      title="Put this row back on the report"
-                      aria-label={`Restore row for ticket ${row.sourceItemId}`}
+                      title={t('sheet.restoreTitle')}
+                      aria-label={t('sheet.restoreAria', { id: row.sourceItemId })}
                       className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-[var(--app-brand-dark)] transition hover:bg-[var(--app-brand-soft)] disabled:opacity-60"
                     >
                       <Undo2 className="h-3.5 w-3.5" />
-                      Restore
+                      {t('sheet.restore')}
                     </button>
                   )}
                   {row.sourceItemId && !row.removed && (
@@ -846,8 +842,8 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
                         setEditError(null);
                         setEditing(row);
                       }}
-                      title="Correct this row"
-                      aria-label={`Edit row ${row.no}`}
+                      title={t('sheet.editTitle')}
+                      aria-label={t('sheet.editAria', { no: row.no })}
                       className="rounded-lg p-1.5 text-[var(--app-muted)] transition hover:bg-[var(--app-faint)] hover:text-[var(--app-brand-dark)]"
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -856,8 +852,8 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
                       type="button"
                       onClick={() => askRemove(row)}
                       disabled={remove.isPending}
-                      title="Remove this row from the report"
-                      aria-label={`Remove row ${row.no}`}
+                      title={t('sheet.removeTitle')}
+                      aria-label={t('sheet.removeAria', { no: row.no })}
                       className="rounded-lg p-1.5 text-[var(--app-muted)] transition hover:bg-red-50 hover:text-red-700 disabled:opacity-60 dark:hover:bg-red-950/40 dark:hover:text-red-300"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -871,14 +867,16 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
             {rows.length === 0 && !isFetching && !isError && (
               <tr>
                 <td colSpan={(parts ? 12 : 10) + report.columns.length + (showBoard ? 1 : 0)} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
-                  No cases generated yet. Pick a date and press Generate.
+                  {t('sheet.emptyGenerate')}
                 </td>
               </tr>
             )}
             {rows.length > 0 && visible.length === 0 && (
               <tr>
                 <td colSpan={(parts ? 12 : 10) + report.columns.length + 1} className="px-3 py-10 text-center text-sm text-[var(--app-muted)]">
-                  No {boardFilter === 'all' ? '' : BOARD_LABEL[boardFilter].toLowerCase() + ' '}cases on hold for this date.
+                  {boardFilter === 'all'
+                    ? t('sheet.emptyHoldAll')
+                    : t('sheet.emptyHoldBoard', { board: BOARD_LABEL[boardFilter].toLowerCase() })}
                 </td>
               </tr>
             )}
@@ -887,9 +885,7 @@ export function CaseReportSheet({ report, initialDate }: { report: CaseReportSpe
       </div>
 
       <p className="text-xs text-[var(--app-muted)]">
-        {parts
-          ? 'Required Part, Waiting, Waiting From and Part Received are written from each ticket’s comment thread, in the team’s wording; a value typed into the board’s own columns wins. A blank cell means the thread did not say. Corrections made here are saved to this date’s report only; the monday ticket is never changed.'
-          : 'Solution is written from each ticket’s comment thread, in the team’s wording. The board’s own Solution cell wins where somebody typed one. Corrections made here are saved to this date’s report only; the monday ticket is never changed.'}
+        {t(parts ? 'sheet.footnoteParts' : 'sheet.footnoteSla')}
       </p>
 
       {editing && (

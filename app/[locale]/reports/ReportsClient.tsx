@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Building2, CalendarClock, CalendarX2, ClipboardList, FileSearch, Gauge, History, Layers, PauseCircle, Plane, Wrench } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
@@ -114,12 +114,14 @@ export function ReportsClient({
   initialCustomerId?: string | null;
 }) {
   const t = useTranslations('reports');
+  const tCases = useTranslations('pendingCases');
+  const locale = useLocale();
   const [tab, setTab] = useState<ReportTab>(initialTab);
   // One period for every pending-case tab, so switching from Internal to MK keeps the
   // week or month being looked at.
   const today = todayInBangkok();
   const [periodChoice, setPeriodChoice] = useState<PeriodChoice>(() => initialChoice(today));
-  const period = resolvePeriod(periodChoice, today);
+  const period = resolvePeriod(periodChoice, today, locale);
   // Both boards or one, on the tabs whose cases span both; kept across those tabs too.
   const [scope, setScope] = useState<CaseScope>('BOTH');
   const scoped = tab === 'case-internal' || tab === 'case-pcs' || tab === 'case-its' || tab === 'case-on-hold';
@@ -295,7 +297,11 @@ export function ReportsClient({
             {tab === 'case-on-hold' && (
               <CasePendingSummary
                 report={CASE_REPORTS['on-hold']}
-                title={board ? `On Hold — ${board === 'CLEANING' ? 'cleaning' : 'delivery'}` : 'On Hold'}
+                title={
+                  board
+                    ? tCases(board === 'CLEANING' ? 'views.titleCleaning' : 'views.titleDelivery', { view: 'On Hold' })
+                    : 'On Hold'
+                }
                 period={period}
                 board={board}
               />

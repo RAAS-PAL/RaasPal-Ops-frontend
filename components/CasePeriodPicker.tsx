@@ -1,6 +1,7 @@
 'use client';
 
 import { CalendarDays } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   type Cadence,
   type PeriodChoice,
@@ -21,17 +22,8 @@ import type { CaseScope } from '@/lib/caseCustomerViews';
  * September" is never a guess; a week that has not started yet cannot be picked.
  */
 
-const SCOPES: { id: CaseScope; label: string }[] = [
-  { id: 'BOTH', label: 'Both' },
-  { id: 'CLEANING', label: 'Cleaning' },
-  { id: 'DELIVERY', label: 'Delivery' },
-];
-
-const CADENCES: { id: Cadence; label: string }[] = [
-  { id: 'DAILY', label: 'Daily' },
-  { id: 'WEEKLY', label: 'Weekly' },
-  { id: 'MONTHLY', label: 'Monthly' },
-];
+const SCOPES: CaseScope[] = ['BOTH', 'CLEANING', 'DELIVERY'];
+const CADENCES: Cadence[] = ['DAILY', 'WEEKLY', 'MONTHLY'];
 
 function Segmented<T extends string>({
   label,
@@ -119,6 +111,10 @@ export function CasePeriodPicker({
   onScopeChange?: (next: CaseScope) => void;
   leading?: React.ReactNode;
 }) {
+  const t = useTranslations('pendingCases.picker');
+  const locale = useLocale();
+  const scopes = SCOPES.map((id) => ({ id, label: t(`scope.${id}`) }));
+  const cadences = CADENCES.map((id) => ({ id, label: t(`cadence.${id}`) }));
   // A week is listed under the month of its Friday, the day it is read on; so this
   // week can belong to next month while the monthly picker is still on this one.
   const listedMonth = weekMonth(choice.weekStart);
@@ -139,21 +135,21 @@ export function CasePeriodPicker({
     <div className="space-y-2 print:hidden">
       <div className="flex flex-wrap items-center justify-between gap-3">
         {scope && onScopeChange ? (
-          <Segmented label="Show" options={SCOPES} value={scope} onChange={onScopeChange} />
+          <Segmented label={t('show')} options={scopes} value={scope} onChange={onScopeChange} />
         ) : (
           (leading ?? <span />)
         )}
 
         <div className="flex flex-wrap items-center gap-3">
           <Segmented
-            label="Period"
-            options={CADENCES}
+            label={t('period')}
+            options={cadences}
             value={choice.cadence}
             onChange={(cadence) => onChange({ ...choice, cadence })}
           />
           {choice.cadence === 'DAILY' && (
             <DateField
-              label="Date"
+              label={t('date')}
               type="date"
               value={choice.day}
               max={today}
@@ -161,11 +157,11 @@ export function CasePeriodPicker({
             />
           )}
           {choice.cadence === 'WEEKLY' && (
-            <DateField label="Month" type="month" value={listedMonth} max={thisWeeksMonth} onChange={pickWeekMonth} />
+            <DateField label={t('month')} type="month" value={listedMonth} max={thisWeeksMonth} onChange={pickWeekMonth} />
           )}
           {choice.cadence === 'MONTHLY' && (
             <DateField
-              label="Month"
+              label={t('month')}
               type="month"
               value={choice.month}
               max={thisMonth}
@@ -176,7 +172,7 @@ export function CasePeriodPicker({
       </div>
 
       {choice.cadence === 'WEEKLY' && (
-        <div role="radiogroup" aria-label="Week, Monday to Friday" className="flex flex-wrap justify-end gap-2">
+        <div role="radiogroup" aria-label={t('weekAria')} className="flex flex-wrap justify-end gap-2">
           {weeks.map((w, i) => {
             const active = choice.weekStart === w.start;
             const future = w.start > today;
@@ -188,7 +184,7 @@ export function CasePeriodPicker({
                 aria-checked={active}
                 disabled={future}
                 onClick={() => onChange({ ...choice, weekStart: w.start })}
-                title={future ? 'This week has not started yet.' : undefined}
+                title={future ? t('weekFuture') : undefined}
                 className={`cursor-pointer rounded-lg px-3 py-1.5 text-left text-sm shadow-sm ring-1 ring-inset transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${
                   active
                     ? 'bg-[var(--app-brand-soft)] text-[var(--app-brand-dark)] ring-[var(--app-brand)]'
@@ -196,7 +192,7 @@ export function CasePeriodPicker({
                 }`}
               >
                 <span className="mr-1.5 text-xs font-semibold uppercase tracking-wide opacity-60">W{i + 1}</span>
-                <span className="whitespace-nowrap font-semibold">{formatWeek(w)}</span>
+                <span className="whitespace-nowrap font-semibold">{formatWeek(w, locale)}</span>
               </button>
             );
           })}
