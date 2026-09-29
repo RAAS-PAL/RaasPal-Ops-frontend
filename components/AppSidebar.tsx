@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
+import { roleLabel } from '@/lib/roleLabel';
 import { useState } from 'react';
 import { Link, usePathname } from '@/i18n/navigation';
 import { useAuthStore } from '@/store/auth';
@@ -83,6 +84,8 @@ export function AppSidebar() {
   const pathname = usePathname();
   const t = useTranslations('nav');
   const sidebarT = useTranslations('sidebar');
+  const shellT = useTranslations('shell');
+  const roleT = useTranslations('profile.account.roles');
   const user = useAuthStore((s) => s.user);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
@@ -109,7 +112,7 @@ export function AppSidebar() {
       <div className={`mb-8 flex items-center gap-3 px-2 ${collapsed ? 'justify-center' : ''}`}>
         <div className={`flex ${collapsed ? 'h-12 w-12' : 'h-14 w-14'} shrink-0 items-center justify-center rounded-2xl bg-[var(--app-nav-panel)] transition-[height,width]`}>
           <Image
-            alt="RAAS PAL logo"
+            alt={shellT('logoAlt')}
             className={`${collapsed ? 'h-8 w-8' : 'h-9 w-9'} object-contain transition-[height,width]`}
             height={36}
             priority
@@ -130,7 +133,7 @@ export function AppSidebar() {
           <p className="text-xs font-semibold uppercase text-[var(--app-nav-muted)]">{sidebarT('teamWorkspace')}</p>
         )}
         <button
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? shellT('expandSidebar') : shellT('collapseSidebar')}
           className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--app-nav-border)] bg-[var(--app-nav-panel)] text-[var(--app-nav-muted)] transition hover:text-[var(--app-nav-text)]"
           onClick={() => setCollapsed((value) => !value)}
           type="button"
@@ -224,8 +227,8 @@ export function AppSidebar() {
           </span>
           {!collapsed && (
             <div>
-              <p className="text-sm font-semibold">{user?.fullName ?? 'Raas Pal Specialist'}</p>
-              <p className="text-xs text-[var(--app-nav-muted)]">{user?.role ?? 'RAASPAL_TEAM'}</p>
+              <p className="text-sm font-semibold">{user?.fullName ?? shellT('defaultName')}</p>
+              <p className="text-xs text-[var(--app-nav-muted)]">{roleLabel(roleT, user?.role ?? 'RAASPAL_TEAM')}</p>
             </div>
           )}
         </div>

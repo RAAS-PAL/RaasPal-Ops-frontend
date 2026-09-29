@@ -16,25 +16,13 @@
 import Image from 'next/image';
 import { FileText, Sparkles, Users } from 'lucide-react';
 import { LoginForm } from './LoginForm';
-import { setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 const highlights = [
-  {
-    icon: Users,
-    title: 'Customers and fleet',
-    description: 'Manage customers, sites, robots, and deployments from one workspace.',
-  },
-  {
-    icon: FileText,
-    title: 'Reports and service',
-    description: 'Prepare performance reports, track maintenance, and keep follow-up work visible.',
-  },
-  {
-    icon: Sparkles,
-    title: 'AI-assisted solutions',
-    description: 'Turn customer requirements into recommendations and professional proposals.',
-  },
-];
+  { icon: Users, key: 'customers' },
+  { icon: FileText, key: 'reports' },
+  { icon: Sparkles, key: 'ai' },
+] as const;
 
 export default async function LoginPage({
   params,
@@ -43,6 +31,7 @@ export default async function LoginPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('login');
 
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[var(--app-bg)]">
@@ -56,7 +45,7 @@ export default async function LoginPage({
           <div className="relative z-10 flex items-center gap-3">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25 backdrop-blur-sm">
               <Image
-                alt="RAAS PAL logo"
+                alt={t('logoAlt')}
                 className="h-9 w-9 object-contain"
                 height={36}
                 priority
@@ -66,29 +55,26 @@ export default async function LoginPage({
             </div>
             <div className="text-white">
               <p className="text-lg font-bold tracking-tight">RAAS PAL</p>
-              <p className="text-xs font-medium text-white/70">Team Operations</p>
+              <p className="text-xs font-medium text-white/70">{t('brandSub')}</p>
             </div>
           </div>
 
           {/* Headline + feature highlights */}
           <div className="relative z-10 max-w-md">
             <h2 className="text-3xl font-bold leading-tight text-white xl:text-4xl">
-              One place to run RAAS PAL operations.
+              {t('headline')}
             </h2>
-            <p className="mt-3 text-sm leading-6 text-white/70">
-              Manage the customer journey—from solution planning and robot deployment to
-              service oversight and reporting—in one secure team workspace.
-            </p>
+            <p className="mt-3 text-sm leading-6 text-white/70">{t('intro')}</p>
 
             <ul className="mt-8 space-y-4">
-              {highlights.map(({ icon: Icon, title, description }) => (
-                <li key={title} className="flex gap-3">
+              {highlights.map(({ icon: Icon, key }) => (
+                <li key={key} className="flex gap-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/20 backdrop-blur-sm">
                     <Icon className="h-5 w-5 text-blue-200" />
                   </span>
                   <div>
-                    <p className="text-sm font-semibold text-white">{title}</p>
-                    <p className="text-xs leading-5 text-white/65">{description}</p>
+                    <p className="text-sm font-semibold text-white">{t(`${key}.title`)}</p>
+                    <p className="text-xs leading-5 text-white/65">{t(`${key}.body`)}</p>
                   </div>
                 </li>
               ))}
@@ -96,7 +82,7 @@ export default async function LoginPage({
           </div>
 
           <p className="relative z-10 text-xs text-white/50">
-            © {new Date().getFullYear()} RAAS PAL · Internal team portal
+            {t('footer', { year: new Date().getFullYear() })}
           </p>
         </aside>
 
@@ -107,7 +93,7 @@ export default async function LoginPage({
             <div className="mb-8 flex flex-col items-center text-center lg:hidden">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--app-brand)] shadow-sm">
                 <Image
-                  alt="RAAS PAL logo"
+                  alt={t('logoAlt')}
                   className="h-10 w-10 object-contain"
                   height={40}
                   priority
@@ -116,9 +102,7 @@ export default async function LoginPage({
                 />
               </div>
               <h1 className="text-2xl font-bold text-[var(--app-text)]">RAAS PAL</h1>
-              <p className="mt-1 text-sm text-[var(--app-muted)]">
-                Internal operations platform
-              </p>
+              <p className="mt-1 text-sm text-[var(--app-muted)]">{t('platform')}</p>
             </div>
 
             {/* Glass sign-in card */}
@@ -126,14 +110,10 @@ export default async function LoginPage({
               <div className="mb-7">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--app-brand-soft)] px-3 py-1 text-xs font-semibold text-[var(--app-brand-dark)]">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Operations portal
+                  {t('badge')}
                 </span>
-                <h2 className="mt-4 text-2xl font-bold tracking-tight text-[var(--app-text)]">
-                  Welcome back
-                </h2>
-                <p className="mt-1 text-sm text-[var(--app-muted)]">
-                  Sign in with your team credentials to continue.
-                </p>
+                <h2 className="mt-4 text-2xl font-bold tracking-tight text-[var(--app-text)]">{t('welcome')}</h2>
+                <p className="mt-1 text-sm text-[var(--app-muted)]">{t('subtitle')}</p>
               </div>
 
               <LoginForm locale={locale} />
@@ -142,12 +122,12 @@ export default async function LoginPage({
                   created by an admin from inside it. A public "create one" link on the
                   sign-in page invites exactly the wrong thing. */}
               <p className="mt-6 text-center text-sm text-[var(--app-muted)]">
-                Need an account? Ask a RAASPAL administrator.
+                {t('noAccount')}
               </p>
             </div>
 
             <p className="mt-6 text-center text-xs text-[var(--app-muted)]">
-              Authorized RAAS PAL team members only.
+              {t('authorizedOnly')}
             </p>
           </div>
         </section>

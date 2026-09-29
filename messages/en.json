@@ -690,13 +690,14 @@
     "profile": "Profile",
     "profileDetail": "View account details",
     "accessRole": "Access role",
-    "teamRole": "RAASPAL_TEAM",
     "signOut": "Sign out"
   },
   "language": {
     "select": "Language",
     "en": "English",
-    "th": "Thai"
+    "th": "Thai",
+    "options": "Language options",
+    "available": "{count, plural, one {# language} other {# languages}} available"
   },
   "kpi": {
     "eyebrow": "Team performance",
@@ -2133,5 +2134,61 @@
       "notChosen": "not chosen",
       "pasteToConnect": "Paste the sheet’s link to connect it."
     }
+  },
+  "shell": {
+    "logoAlt": "RAAS PAL logo",
+    "home": "RAAS PAL home",
+    "mainNav": "Main navigation",
+    "workspaceNav": "Workspace navigation",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar",
+    "openMenu": "Open navigation menu",
+    "closeMenu": "Close navigation menu",
+    "defaultName": "Raas Pal Specialist",
+    "themeToLight": "Switch to light mode",
+    "themeToDark": "Switch to dark mode",
+    "loading": "Loading"
+  },
+  "dateRange": {
+    "last7": "Last 7 days",
+    "last30": "Last 30 days",
+    "thisMonth": "This month",
+    "lastMonth": "Last month",
+    "hintStart": "Click a start day, then an end day.",
+    "hintEnd": "Start {date} - now pick the end day.",
+    "prev": "Previous month",
+    "next": "Next month"
+  },
+  "login": {
+    "logoAlt": "RAAS PAL logo",
+    "brandSub": "Team Operations",
+    "customers": {
+      "title": "Customers and fleet",
+      "body": "Manage customers, sites, robots, and deployments from one workspace."
+    },
+    "reports": {
+      "title": "Reports and service",
+      "body": "Prepare performance reports, track maintenance, and keep follow-up work visible."
+    },
+    "ai": {
+      "title": "AI-assisted solutions",
+      "body": "Turn customer requirements into recommendations and professional proposals."
+    },
+    "headline": "One place to run RAAS PAL operations.",
+    "intro": "Manage the customer journey—from solution planning and robot deployment to service oversight and reporting—in one secure team workspace.",
+    "footer": "© {year} RAAS PAL · Internal team portal",
+    "platform": "Internal operations platform",
+    "badge": "Operations portal",
+    "welcome": "Welcome back",
+    "subtitle": "Sign in with your team credentials to continue.",
+    "noAccount": "Need an account? Ask a RAASPAL administrator.",
+    "authorizedOnly": "Authorized RAAS PAL team members only.",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "startingUp": "Server is starting up, retrying…",
+    "badCredentials": "Invalid email or password",
+    "unavailable": "Server is unavailable. Please try again in a moment."
   }
 }

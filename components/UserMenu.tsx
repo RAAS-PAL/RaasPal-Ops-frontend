@@ -9,6 +9,7 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { roleLabel } from '@/lib/roleLabel';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useAuthStore } from '@/store/auth';
 
@@ -18,6 +19,8 @@ export function UserMenu() {
   const router = useRouter();
   const { logout, user } = useAuthStore();
   const t = useTranslations('userMenu');
+  const shellT = useTranslations('shell');
+  const roleT = useTranslations('profile.account.roles');
 
   // Profile navigates; Access role is a readout - the real role from /me, not the
   // RAASPAL_TEAM placeholder it used to show under every account, admins included.
@@ -30,7 +33,7 @@ export function UserMenu() {
   // its own entry rather than this one.
   const menuItems = [
     { label: t('profile'), detail: t('profileDetail'), icon: UserCircle, href: '/profile' },
-    { label: t('accessRole'), detail: user?.role ?? t('teamRole'), icon: ShieldCheck },
+    { label: t('accessRole'), detail: roleLabel(roleT, user?.role ?? 'RAASPAL_TEAM'), icon: ShieldCheck },
   ];
 
   const handleLogout = useCallback(async () => {
@@ -77,8 +80,8 @@ export function UserMenu() {
           {user?.fullName?.slice(0, 2).toUpperCase() ?? 'RE'}
         </span>
         <span className="hidden text-left sm:block">
-          <span className="block text-xs font-semibold leading-4">{user?.fullName ?? 'Raas Pal Specialist'}</span>
-          <span className="block text-[11px] leading-3 text-[var(--app-muted)]">{user?.role ?? 'RAASPAL_TEAM'}</span>
+          <span className="block text-xs font-semibold leading-4">{user?.fullName ?? shellT('defaultName')}</span>
+          <span className="block text-[11px] leading-3 text-[var(--app-muted)]">{roleLabel(roleT, user?.role ?? 'RAASPAL_TEAM')}</span>
         </span>
         <ChevronDown className={`hidden h-3.5 w-3.5 shrink-0 transition sm:block ${open ? 'rotate-180' : ''}`} />
       </button>
@@ -99,7 +102,7 @@ export function UserMenu() {
                   {user?.fullName?.slice(0, 2).toUpperCase() ?? 'RE'}
                 </span>
                 <div>
-                  <p className="text-sm font-semibold text-[var(--app-text)]">{user?.fullName ?? 'Raas Pal Specialist'}</p>
+                  <p className="text-sm font-semibold text-[var(--app-text)]">{user?.fullName ?? shellT('defaultName')}</p>
                   <p className="text-xs text-[var(--app-muted)]">{user?.email ?? 'team@raaspal.local'}</p>
                 </div>
               </div>
