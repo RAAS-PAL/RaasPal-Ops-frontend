@@ -1327,6 +1327,32 @@
       "clearMatching": "Hide matching",
       "showing": "{count} of {total}",
       "noMatches": "No company matches that."
+    },
+    "region": {
+      "BANGKOK": "Bangkok",
+      "CENTRAL": "Central",
+      "EAST": "East",
+      "WEST": "West",
+      "NORTH": "North",
+      "NORTHEAST": "Northeast",
+      "SOUTH": "South",
+      "UNASSIGNED": "Unassigned"
+    },
+    "zone": {
+      "BANGKOK": "Bangkok",
+      "VICINITY": "Vicinity",
+      "LOWER_CENTRAL": "Lower Central",
+      "UPPER_CENTRAL": "Upper Central",
+      "LOWER_NORTH": "Lower North",
+      "UPPER_NORTH": "Upper North",
+      "CENTRAL_NORTHEAST": "Central Northeast",
+      "LOWER_NORTHEAST": "Lower Northeast",
+      "UPPER_NORTHEAST": "Upper Northeast",
+      "EAST": "East",
+      "WEST": "West",
+      "LOWER_SOUTH": "Lower South",
+      "UPPER_SOUTH": "Upper South",
+      "UNASSIGNED": "Unassigned"
     }
   },
   "solutionsHub": {

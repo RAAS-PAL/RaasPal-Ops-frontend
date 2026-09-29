@@ -1327,6 +1327,32 @@
       "clearMatching": "ซ่อนที่ค้นหา",
       "showing": "{count} จาก {total}",
       "noMatches": "ไม่พบบริษัทที่ค้นหา"
+    },
+    "region": {
+      "BANGKOK": "กรุงเทพฯ",
+      "CENTRAL": "ภาคกลาง",
+      "EAST": "ภาคตะวันออก",
+      "WEST": "ภาคตะวันตก",
+      "NORTH": "ภาคเหนือ",
+      "NORTHEAST": "ภาคตะวันออกเฉียงเหนือ",
+      "SOUTH": "ภาคใต้",
+      "UNASSIGNED": "ไม่ระบุ"
+    },
+    "zone": {
+      "BANGKOK": "กรุงเทพฯ",
+      "VICINITY": "ปริมณฑล",
+      "LOWER_CENTRAL": "กลางตอนล่าง",
+      "UPPER_CENTRAL": "กลางตอนบน",
+      "LOWER_NORTH": "เหนือตอนล่าง",
+      "UPPER_NORTH": "เหนือตอนบน",
+      "CENTRAL_NORTHEAST": "อีสานตอนกลาง",
+      "LOWER_NORTHEAST": "อีสานตอนล่าง",
+      "UPPER_NORTHEAST": "อีสานตอนบน",
+      "EAST": "ภาคตะวันออก",
+      "WEST": "ภาคตะวันตก",
+      "LOWER_SOUTH": "ใต้ตอนล่าง",
+      "UPPER_SOUTH": "ใต้ตอนบน",
+      "UNASSIGNED": "ไม่ระบุ"
     }
   },
   "solutionsHub": {

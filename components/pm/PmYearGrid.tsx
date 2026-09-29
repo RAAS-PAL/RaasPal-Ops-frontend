@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { PM_CELL_CLASS, PM_STATUS_LABEL_KEY, PM_STATUS_ORDER, PM_SWATCH_CLASS } from '@/lib/pm/status';
+import { geoLabel } from '@/lib/pm/geo';
 import { isoWeekMonday, weekRangeLabel } from '@/lib/pm/params';
 import type { PmCellStatus, PmYearResponse, PmYearRow } from '@/lib/pm/types';
 
@@ -293,6 +294,7 @@ function GroupBlock({
   onToggle: () => void;
   onSelectWeek: (week: number) => void;
 }) {
+  const t = useTranslations('pmPlanning');
   const visits = group.rows.reduce((sum, row) => sum + row.totalVisits, 0);
 
   return (
@@ -310,8 +312,8 @@ function GroupBlock({
           >
             {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             <span className="truncate">
-              {humanizeZone(group.region)}
-              {group.zone && group.zone !== group.region ? ` · ${humanizeZone(group.zone)}` : ''}
+              {geoLabel(t, 'region', group.region)}
+              {group.zone && group.zone !== group.region ? ` · ${geoLabel(t, 'zone', group.zone)}` : ''}
             </span>
             <span className="ml-auto shrink-0 font-semibold normal-case text-[var(--app-muted)]">
               {group.rows.length} · {visits}
@@ -360,7 +362,7 @@ function GroupBlock({
                     <button
                       type="button"
                       onClick={() => onSelectWeek(column.week)}
-                      title={`${weekRangeLabel(year, column.week, locale)} · ${describeCell(cell.byStatus)}`}
+                      title={`${weekRangeLabel(year, column.week, locale)} · ${describeCell(cell.byStatus, t)}`}
                       // Fills the column rather than floating inside it, so the
                       // colour maps to one week and not to the gap beside it.
                       className={`block h-5 w-8 text-[10px] font-bold leading-5 transition hover:opacity-80 ${PM_CELL_CLASS[cell.dominantStatus]}`}
@@ -463,23 +465,10 @@ function buildMonthSpans(columns: WeekColumn[], year: number, locale: string) {
 }
 
 /** "2 planned, 1 overdue" for a cell's tooltip. */
-function describeCell(byStatus: Partial<Record<PmCellStatus, number>>): string {
+function describeCell(byStatus: Partial<Record<PmCellStatus, number>>, t: ReturnType<typeof useTranslations>): string {
   return PM_STATUS_ORDER.filter((status) => byStatus[status])
-    .map((status) => `${byStatus[status]} ${status.toLowerCase().replace('_', ' ')}`)
+    .map((status) => `${byStatus[status]} ${t(`status.${PM_STATUS_LABEL_KEY[status]}`).toLowerCase()}`)
     .join(', ');
-}
-
-/**
- * UPPER_NORTH → Upper North.
- *
- * Not translated: these come from the province master as stable enum-ish keys, and
- * a missing translation key throws in next-intl rather than degrading.
- */
-function humanizeZone(zone: string): string {
-  return zone
-    .split('_')
-    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
-    .join(' ');
 }
 
 /** Groups rows by region then zone, preserving the backend's ordering. */
