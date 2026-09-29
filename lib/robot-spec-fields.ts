@@ -16,13 +16,18 @@
 export type SpecKind = 'number' | 'text' | 'bool';
 
 export interface SpecField {
+  /** The database column, and the field's name in `robotSpecs.fields.*`. */
   key: string;
+  /** English label, kept for reference; screens show `robotSpecs.fields.<key>`. */
   label: string;
   unit?: string;
   kind: SpecKind;
 }
 
 export interface SpecGroup {
+  /** Stable key: the group's filter value and its name in `robotSpecs.groups.*`. */
+  id: string;
+  /** English name, kept for reference; screens show `robotSpecs.groups.<id>`. */
   name: string;
   fields: SpecField[];
 }
@@ -33,6 +38,7 @@ const b = (key: string, label: string): SpecField => ({ key, label, kind: 'bool'
 
 export const SPEC_GROUPS: SpecGroup[] = [
   {
+    id: 'physical',
     name: 'Physical',
     fields: [
       n('dimension_l_mm', 'Length', 'mm'),
@@ -42,6 +48,7 @@ export const SPEC_GROUPS: SpecGroup[] = [
     ],
   },
   {
+    id: 'cleaningWidth',
     name: 'Cleaning width',
     fields: [
       n('sweep_width_mm', 'Sweep width', 'mm'),
@@ -50,6 +57,7 @@ export const SPEC_GROUPS: SpecGroup[] = [
     ],
   },
   {
+    id: 'brushVacuum',
     name: 'Brush & vacuum',
     fields: [
       n('brush_pressure_kg', 'Brush pressure', 'kg'),
@@ -61,6 +69,7 @@ export const SPEC_GROUPS: SpecGroup[] = [
     ],
   },
   {
+    id: 'speed',
     name: 'Speed',
     fields: [
       n('max_travelling_speed_ms', 'Max travelling speed', 'm/s'),
@@ -68,6 +77,7 @@ export const SPEC_GROUPS: SpecGroup[] = [
     ],
   },
   {
+    id: 'efficiency',
     name: 'Efficiency',
     fields: [
       n('sweep_efficiency_sqm_h', 'Sweep', 'm²/h'),
@@ -78,6 +88,7 @@ export const SPEC_GROUPS: SpecGroup[] = [
     ],
   },
   {
+    id: 'capacity',
     name: 'Capacity',
     fields: [
       n('cleaning_capacity_l', 'Clean water', 'L'),
@@ -89,6 +100,7 @@ export const SPEC_GROUPS: SpecGroup[] = [
     ],
   },
   {
+    id: 'power',
     name: 'Power',
     fields: [
       n('max_output_power_w', 'Max output power', 'W'),
@@ -96,6 +108,7 @@ export const SPEC_GROUPS: SpecGroup[] = [
     ],
   },
   {
+    id: 'battery',
     name: 'Battery',
     fields: [
       t('battery_type', 'Battery type'),
@@ -108,6 +121,7 @@ export const SPEC_GROUPS: SpecGroup[] = [
     ],
   },
   {
+    id: 'access',
     name: 'Access & obstacles',
     fields: [
       n('min_pass_width_mm', 'Min. pass width', 'mm'),
@@ -124,6 +138,7 @@ export const SPEC_GROUPS: SpecGroup[] = [
     ],
   },
   {
+    id: 'environment',
     name: 'Environment',
     fields: [
       t('ip_rating', 'IP rating'),
@@ -138,6 +153,7 @@ export const SPEC_GROUPS: SpecGroup[] = [
     ],
   },
   {
+    id: 'cleaningFunctions',
     name: 'Cleaning functions',
     fields: [
       b('fn_sweep_no_vacuum', 'Sweep (no vacuum)'),
@@ -149,6 +165,7 @@ export const SPEC_GROUPS: SpecGroup[] = [
     ],
   },
   {
+    id: 'sensors',
     name: 'Sensors & navigation',
     fields: [
       b('nav_2d_lidar', '2D LiDAR'),
@@ -163,6 +180,7 @@ export const SPEC_GROUPS: SpecGroup[] = [
     ],
   },
   {
+    id: 'features',
     name: 'Features',
     fields: [
       b('manual_drive', 'Manual drive'),
@@ -175,6 +193,7 @@ export const SPEC_GROUPS: SpecGroup[] = [
     ],
   },
   {
+    id: 'floors',
     name: 'Floor suitability',
     fields: [
       b('floor_layout_method', 'Floor layout method'),

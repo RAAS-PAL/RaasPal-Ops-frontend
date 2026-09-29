@@ -7,7 +7,7 @@ import { Bot, LayoutGrid, Plus, Table2 } from 'lucide-react';
 import { RobotSpecMatrix } from '@/components/RobotSpecMatrix';
 import { Link } from '@/i18n/navigation';
 import { robotApi } from '@/lib/api';
-import { ROBOT_TYPES, TYPE_LABELS, TYPE_STYLES } from '@/lib/robot-types';
+import { ROBOT_TYPES, TYPE_STYLES } from '@/lib/robot-types';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { InfiniteScroll } from '@/components/ui/infinite-scroll';
@@ -36,9 +36,10 @@ const BRAND_ALIASES: Record<string, string> = {
 /* ─── Badges ──────────────────────────────────────────────────────────────── */
 
 function TypeBadge({ type }: { type: RobotType }) {
+  const t = useTranslations('robots.types');
   return (
     <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${TYPE_STYLES[type]}`}>
-      {TYPE_LABELS[type]}
+      {t(type.toLowerCase())}
     </span>
   );
 }
@@ -222,7 +223,7 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
         <AppSidebar />
         <section className="flex min-w-0 flex-1 flex-col">
           <AppTopBar
-            eyebrow="Catalog"
+            eyebrow={t('eyebrow')}
             title={t('title')}
             searchPlaceholder={t('searchPlaceholder')}
             searchValue={searchQuery}

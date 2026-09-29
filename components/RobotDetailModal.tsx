@@ -2,19 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { Bot, Loader2, Pencil, Trash2, X } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { authApi, robotApi } from '@/lib/api';
-import { TYPE_LABELS, TYPE_STYLES } from '@/lib/robot-types';
+import { TYPE_STYLES } from '@/lib/robot-types';
 import type { RobotResponse, RobotSpecResponse } from '@/types/api';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
 const fmt = (v: number | null | undefined, unit = '') =>
   v != null ? `${v}${unit}` : '—';
-
-const fmtBool = (v: boolean | null | undefined) =>
-  v === true ? '✓ Yes' : v === false ? '✗ No' : '—';
 
 /* ─── Sub-components ──────────────────────────────────────────────────────── */
 
@@ -63,40 +61,43 @@ function Tags({ label, items }: { label: string; items: string[] }) {
 /* ─── Spec sections ───────────────────────────────────────────────────────── */
 
 function SpecDetails({ s }: { s: RobotSpecResponse }) {
+  const t = useTranslations('robotDetail');
+  const fmtBool = (v: boolean | null | undefined) =>
+    v === true ? `✓ ${t('yes')}` : v === false ? `✗ ${t('no')}` : '—';
   const cleaningFunctions = [
-    [s.cleaningFunctionSweepNoVacuum, 'Sweep (No Vacuum)'],
-    [s.cleaningFunctionSweepVacuum,   'Sweep + Vacuum'],
-    [s.cleaningFunctionMopDry,        'Mop Dry'],
-    [s.cleaningFunctionMopWet,        'Mop Wet'],
-    [s.cleaningFunctionScrubBrushRoller, 'Scrub Roller'],
-    [s.cleaningFunctionScrubBrushDisc,   'Scrub Disc'],
+    [s.cleaningFunctionSweepNoVacuum, t('fn.sweepNoVacuum')],
+    [s.cleaningFunctionSweepVacuum,   t('fn.sweepVacuum')],
+    [s.cleaningFunctionMopDry,        t('fn.mopDry')],
+    [s.cleaningFunctionMopWet,        t('fn.mopWet')],
+    [s.cleaningFunctionScrubBrushRoller, t('fn.scrubRoller')],
+    [s.cleaningFunctionScrubBrushDisc,   t('fn.scrubDisc')],
   ].filter(([v]) => v === true).map(([, label]) => label as string);
 
   const navTags = [
-    [s.navigationLidar2d,      'LiDAR 2D'],
-    [s.navigationLidar3d,      'LiDAR 3D'],
-    [s.navigationCameraVslam,  'Camera vSLAM'],
-    [s.spotAi,                 'Spot AI'],
+    [s.navigationLidar2d,      t('nav.lidar2d')],
+    [s.navigationLidar3d,      t('nav.lidar3d')],
+    [s.navigationCameraVslam,  t('nav.vslam')],
+    [s.spotAi,                 t('nav.spotAi')],
   ].filter(([v]) => v === true).map(([, label]) => label as string);
 
   const floorTypes = [
-    [s.floorTypePavingBlocks,   'Paving Blocks'],
-    [s.floorTypeGranite,        'Granite'],
-    [s.floorTypeMarble,         'Marble'],
-    [s.floorTypeTerrazzo,       'Terrazzo'],
-    [s.floorTypeTerracotta,     'Terracotta'],
-    [s.floorTypeCeramic,        'Ceramic'],
-    [s.floorTypeSmoothConcrete, 'Smooth Concrete'],
-    [s.floorTypeCoarseConcrete, 'Coarse Concrete'],
-    [s.floorTypeStampedConcrete,'Stamped Concrete'],
-    [s.floorTypeAsphalt,        'Asphalt'],
-    [s.floorTypeEpoxy,          'Epoxy'],
-    [s.floorTypeTile,           'Tile'],
-    [s.floorTypeShortCarpet,    'Short Carpet'],
-    [s.floorTypeLongCarpet,     'Long Carpet'],
-    [s.floorTypeSpc,            'SPC'],
-    [s.floorTypeLaminate,       'Laminate'],
-    [s.floorTypeVinyl,          'Vinyl'],
+    [s.floorTypePavingBlocks,   t('floor.pavingBlocks')],
+    [s.floorTypeGranite,        t('floor.granite')],
+    [s.floorTypeMarble,         t('floor.marble')],
+    [s.floorTypeTerrazzo,       t('floor.terrazzo')],
+    [s.floorTypeTerracotta,     t('floor.terracotta')],
+    [s.floorTypeCeramic,        t('floor.ceramic')],
+    [s.floorTypeSmoothConcrete, t('floor.smoothConcrete')],
+    [s.floorTypeCoarseConcrete, t('floor.coarseConcrete')],
+    [s.floorTypeStampedConcrete,t('floor.stampedConcrete')],
+    [s.floorTypeAsphalt,        t('floor.asphalt')],
+    [s.floorTypeEpoxy,          t('floor.epoxy')],
+    [s.floorTypeTile,           t('floor.tile')],
+    [s.floorTypeShortCarpet,    t('floor.shortCarpet')],
+    [s.floorTypeLongCarpet,     t('floor.longCarpet')],
+    [s.floorTypeSpc,            t('floor.spc')],
+    [s.floorTypeLaminate,       t('floor.laminate')],
+    [s.floorTypeVinyl,          t('floor.vinyl')],
   ].filter(([v]) => v === true).map(([, label]) => label as string);
 
   const floorLayouts = [
@@ -110,98 +111,98 @@ function SpecDetails({ s }: { s: RobotSpecResponse }) {
 
   return (
     <div className="space-y-6">
-      <Section title="Physical Dimensions">
+      <Section title={t('section.physical')}>
         <Grid>
-          <Stat label="Length" value={fmt(s.lengthMm, ' mm')} />
-          <Stat label="Width" value={fmt(s.widthMm, ' mm')} />
-          <Stat label="Height" value={fmt(s.heightMm, ' mm')} />
-          <Stat label="Weight" value={fmt(s.robotWeightKg, ' kg')} />
+          <Stat label={t('stat.length')} value={fmt(s.lengthMm, ' mm')} />
+          <Stat label={t('stat.width')} value={fmt(s.widthMm, ' mm')} />
+          <Stat label={t('stat.height')} value={fmt(s.heightMm, ' mm')} />
+          <Stat label={t('stat.weight')} value={fmt(s.robotWeightKg, ' kg')} />
         </Grid>
       </Section>
 
-      <Section title="Performance">
+      <Section title={t('section.performance')}>
         <Grid>
-          <Stat label="Speed" value={fmt(s.speedMs, ' m/s')} />
-          <Stat label="Cleaning Width" value={fmt(s.widthCleaningMm, ' mm')} />
-          <Stat label="Brush Pressure" value={fmt(s.brushPressureKg, ' kg')} />
-          <Stat label="Vacuum Pressure" value={fmt(s.vacuumPressureKpa, ' kPa')} />
-          <Stat label="Noise Level" value={fmt(s.noiseLevelDb, ' dB')} />
+          <Stat label={t('stat.speed')} value={fmt(s.speedMs, ' m/s')} />
+          <Stat label={t('stat.cleaningWidth')} value={fmt(s.widthCleaningMm, ' mm')} />
+          <Stat label={t('stat.brushPressure')} value={fmt(s.brushPressureKg, ' kg')} />
+          <Stat label={t('stat.vacuumPressure')} value={fmt(s.vacuumPressureKpa, ' kPa')} />
+          <Stat label={t('stat.noise')} value={fmt(s.noiseLevelDb, ' dB')} />
         </Grid>
       </Section>
 
-      <Section title="Cleaning Efficiency (sqm/h)">
+      <Section title={t('section.efficiency')}>
         <Grid>
-          <Stat label="Sweep" value={fmt(s.cleaningEfficiencySweepSqmH)} />
-          <Stat label="Scrub" value={fmt(s.cleaningEfficiencyScrubSqmH)} />
-          <Stat label="Mop" value={fmt(s.cleaningEfficiencyMopSqmH)} />
-          <Stat label="Sweep + Scrub" value={fmt(s.cleaningEfficiencySweepScrubSqmH)} />
-          <Stat label="Vacuum" value={fmt(s.cleaningEfficiencyVacuumSqmH)} />
+          <Stat label={t('stat.sweep')} value={fmt(s.cleaningEfficiencySweepSqmH)} />
+          <Stat label={t('stat.scrub')} value={fmt(s.cleaningEfficiencyScrubSqmH)} />
+          <Stat label={t('stat.mop')} value={fmt(s.cleaningEfficiencyMopSqmH)} />
+          <Stat label={t('stat.sweepScrub')} value={fmt(s.cleaningEfficiencySweepScrubSqmH)} />
+          <Stat label={t('stat.vacuum')} value={fmt(s.cleaningEfficiencyVacuumSqmH)} />
         </Grid>
       </Section>
 
-      <Section title="Tank Capacity (L)">
+      <Section title={t('section.tank')}>
         <Grid>
-          <Stat label="Clean Water" value={fmt(s.tankCapacityCleanL, ' L')} />
-          <Stat label="Waste Water" value={fmt(s.tankCapacityWasteL, ' L')} />
-          <Stat label="Trash" value={fmt(s.tankCapacityTrashL, ' L')} />
-          <Stat label="Dust Bag" value={fmt(s.tankCapacityDustBagL, ' L')} />
+          <Stat label={t('stat.cleanWater')} value={fmt(s.tankCapacityCleanL, ' L')} />
+          <Stat label={t('stat.wasteWater')} value={fmt(s.tankCapacityWasteL, ' L')} />
+          <Stat label={t('stat.trash')} value={fmt(s.tankCapacityTrashL, ' L')} />
+          <Stat label={t('stat.dustBag')} value={fmt(s.tankCapacityDustBagL, ' L')} />
         </Grid>
       </Section>
 
-      <Section title="Cleaning Functions">
-        <Tags label="Supported functions" items={cleaningFunctions} />
+      <Section title={t('section.functions')}>
+        <Tags label={t('tags.functions')} items={cleaningFunctions} />
       </Section>
 
-      <Section title="Navigation">
-        <Tags label="Navigation technologies" items={navTags} />
+      <Section title={t('section.navigation')}>
+        <Tags label={t('tags.navigation')} items={navTags} />
       </Section>
 
-      <Section title="Battery">
+      <Section title={t('section.battery')}>
         <Grid>
-          <Stat label="Type" value={s.batteryType ?? '—'} />
-          <Stat label="Voltage" value={fmt(s.batteryVoltageV, ' V')} />
-          <Stat label="Capacity" value={fmt(s.batteryCapacityAh, ' Ah')} />
-          <Stat label="Charge Time" value={fmt(s.batteryChargingTimeHr, ' hr')} />
-          <Stat label="Work Time (Sweep)" value={fmt(s.batteryWorkTimeSweepHr, ' hr')} />
-          <Stat label="Work Time (Scrub)" value={fmt(s.batteryWorkTimeScrubHr, ' hr')} />
-          <Stat label="Work Time (Sweep+Vac)" value={fmt(s.batteryWorkTimeSweepVacuumHr, ' hr')} />
+          <Stat label={t('stat.batteryType')} value={s.batteryType ?? '—'} />
+          <Stat label={t('stat.voltage')} value={fmt(s.batteryVoltageV, ' V')} />
+          <Stat label={t('stat.capacity')} value={fmt(s.batteryCapacityAh, ' Ah')} />
+          <Stat label={t('stat.chargeTime')} value={fmt(s.batteryChargingTimeHr, ' hr')} />
+          <Stat label={t('stat.workSweep')} value={fmt(s.batteryWorkTimeSweepHr, ' hr')} />
+          <Stat label={t('stat.workScrub')} value={fmt(s.batteryWorkTimeScrubHr, ' hr')} />
+          <Stat label={t('stat.workSweepVac')} value={fmt(s.batteryWorkTimeSweepVacuumHr, ' hr')} />
         </Grid>
       </Section>
 
-      <Section title="Charging & Station">
+      <Section title={t('section.charging')}>
         <Grid>
-          <Stat label="Work Station" value={fmtBool(s.workStation)} />
-          <Stat label="Dock Charge" value={fmtBool(s.dockCharge)} />
-          <Stat label="Manual Charge" value={fmtBool(s.manualCharge)} />
+          <Stat label={t('stat.workStation')} value={fmtBool(s.workStation)} />
+          <Stat label={t('stat.dockCharge')} value={fmtBool(s.dockCharge)} />
+          <Stat label={t('stat.manualCharge')} value={fmtBool(s.manualCharge)} />
         </Grid>
       </Section>
 
-      <Section title="Passability & Obstacles">
+      <Section title={t('section.passability')}>
         <Grid>
-          <Stat label="Min Passable Width" value={fmt(s.minimumPassableWidthMm, ' mm')} />
-          <Stat label="Min Passable Height" value={fmt(s.minimumPassableHeightMm, ' mm')} />
-          <Stat label="Max Narrow Cross" value={fmt(s.maximumNarrowCrossMm, ' mm')} />
-          <Stat label="Min Turn Width" value={fmt(s.minimumTurnWidthMm, ' mm')} />
-          <Stat label="Min Edge from Wall" value={fmt(s.minimumEdgeFromWallMm, ' mm')} />
-          <Stat label="Max Step Height" value={fmt(s.maximumStepHeightMm, ' mm')} />
-          <Stat label="Slope Angle" value={fmt(s.slopeAngleDeg, '°')} />
+          <Stat label={t('stat.minWidth')} value={fmt(s.minimumPassableWidthMm, ' mm')} />
+          <Stat label={t('stat.minHeight')} value={fmt(s.minimumPassableHeightMm, ' mm')} />
+          <Stat label={t('stat.maxNarrow')} value={fmt(s.maximumNarrowCrossMm, ' mm')} />
+          <Stat label={t('stat.minTurn')} value={fmt(s.minimumTurnWidthMm, ' mm')} />
+          <Stat label={t('stat.minEdge')} value={fmt(s.minimumEdgeFromWallMm, ' mm')} />
+          <Stat label={t('stat.maxStep')} value={fmt(s.maximumStepHeightMm, ' mm')} />
+          <Stat label={t('stat.slope')} value={fmt(s.slopeAngleDeg, '°')} />
         </Grid>
       </Section>
 
-      <Section title="Environment">
+      <Section title={t('section.environment')}>
         <Grid>
-          <Stat label="Indoor / Outdoor" value={s.outdoorIndoor ?? '—'} />
-          <Stat label="IP Rating" value={s.ipRating ?? '—'} />
-          <Stat label="HEPA Filter" value={fmtBool(s.hepa)} />
+          <Stat label={t('stat.indoorOutdoor')} value={s.outdoorIndoor ?? '—'} />
+          <Stat label={t('stat.ipRating')} value={s.ipRating ?? '—'} />
+          <Stat label={t('stat.hepa')} value={fmtBool(s.hepa)} />
         </Grid>
       </Section>
 
-      <Section title="Supported Floor Types">
-        <Tags label="Compatible surfaces" items={floorTypes} />
+      <Section title={t('section.floors')}>
+        <Tags label={t('tags.surfaces')} items={floorTypes} />
       </Section>
 
-      <Section title="Floor Tile Layouts">
-        <Tags label="Tile size formats" items={floorLayouts} />
+      <Section title={t('section.layouts')}>
+        <Tags label={t('tags.tiles')} items={floorLayouts} />
       </Section>
     </div>
   );
@@ -215,6 +216,8 @@ interface Props {
 }
 
 export function RobotDetailModal({ robot, onClose }: Props) {
+  const t = useTranslations('robotDetail');
+  const typeT = useTranslations('robots.types');
   const s = robot.spec;
   const queryClient = useQueryClient();
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -238,7 +241,7 @@ export function RobotDetailModal({ robot, onClose }: Props) {
       onClose();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })
-        ?.response?.data?.message ?? 'Incorrect password';
+        ?.response?.data?.message ?? t('incorrectPassword');
       setDeleteError(msg);
       setDeleting(false);
     }
@@ -281,10 +284,10 @@ export function RobotDetailModal({ robot, onClose }: Props) {
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-end">
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${TYPE_STYLES[robot.robotType] ?? ''}`}>
-                {TYPE_LABELS[robot.robotType] ?? robot.robotType}
+                {typeT.has(robot.robotType.toLowerCase()) ? typeT(robot.robotType.toLowerCase()) : robot.robotType}
               </span>
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${statusBg[robot.testStatus] ?? ''}`}>
-                {robot.testStatus}
+                {t.has(`status.${robot.testStatus}`) ? t(`status.${robot.testStatus}`) : robot.testStatus}
               </span>
               {robot.priceBand && (
                 <span className="rounded-full bg-[var(--app-faint)] px-2.5 py-0.5 text-xs font-bold text-[var(--app-muted)]">
@@ -293,12 +296,12 @@ export function RobotDetailModal({ robot, onClose }: Props) {
               )}
               {robot.rentalPrice != null && (
                 <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-                  Rent ฿{robot.rentalPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })}/mo
+                  {t('rent', { price: robot.rentalPrice.toLocaleString('en-US', { maximumFractionDigits: 0 }) })}
                 </span>
               )}
               {robot.sellingPrice != null && (
                 <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
-                  Buy ฿{robot.sellingPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  {t('buy', { price: robot.sellingPrice.toLocaleString('en-US', { maximumFractionDigits: 0 }) })}
                 </span>
               )}
               <Link
@@ -307,7 +310,7 @@ export function RobotDetailModal({ robot, onClose }: Props) {
                 className="ml-2 inline-flex items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-3 py-1.5 text-xs font-semibold text-[var(--app-muted)] transition hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)]"
               >
                 <Pencil className="h-3.5 w-3.5" />
-                Edit
+                {t('edit')}
               </Link>
 
               {/* Delete */}
@@ -318,14 +321,14 @@ export function RobotDetailModal({ robot, onClose }: Props) {
                   className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-3 py-1.5 text-xs font-semibold text-[var(--app-muted)] transition hover:border-red-400 hover:text-red-500"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  Delete
+                  {t('delete')}
                 </button>
               ) : (
                 <span className="inline-flex flex-wrap items-center gap-1.5">
                   <input
                     autoFocus
                     type="password"
-                    placeholder="Your password"
+                    placeholder={t('passwordPlaceholder')}
                     value={deletePassword}
                     onChange={(e) => { setDeletePassword(e.target.value); setDeleteError(null); }}
                     className="rounded-lg border border-red-300 bg-[var(--app-panel-alt)] px-2.5 py-1.5 text-xs text-[var(--app-text)] outline-none focus:border-red-500"
@@ -340,20 +343,21 @@ export function RobotDetailModal({ robot, onClose }: Props) {
                     className="inline-flex items-center gap-1 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-600 disabled:opacity-50"
                   >
                     {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                    Confirm
+                    {t('confirm')}
                   </button>
                   <button
                     type="button"
                     onClick={() => { setConfirmDelete(false); setDeleteError(null); }}
                     className="rounded-lg border border-[var(--app-border)] px-3 py-1.5 text-xs font-semibold text-[var(--app-muted)] transition hover:bg-[var(--app-faint)]"
                   >
-                    Cancel
+                    {t('cancel')}
                   </button>
                 </span>
               )}
 
               <button
                 onClick={onClose}
+                aria-label={t('close')}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--app-muted)] transition hover:bg-[var(--app-faint)] hover:text-[var(--app-text)]"
               >
                 <X className="h-4 w-4" />
@@ -373,7 +377,7 @@ export function RobotDetailModal({ robot, onClose }: Props) {
             {robot.datasheetUrl && (
               <a href={robot.datasheetUrl} target="_blank" rel="noopener noreferrer"
                 className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--app-brand-dark)] hover:underline">
-                View Datasheet →
+                {t('datasheet')}
               </a>
             )}
 
@@ -381,7 +385,7 @@ export function RobotDetailModal({ robot, onClose }: Props) {
               <SpecDetails s={s} />
             ) : (
               <p className="py-10 text-center text-sm text-[var(--app-muted)]">
-                No spec data available for this robot.
+                {t('noSpec')}
               </p>
             )}
           </div>
