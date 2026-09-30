@@ -8,6 +8,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
@@ -21,6 +22,8 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ locale }: LoginFormProps) {
+  const t = useTranslations('login');
+  const passwordT = useTranslations('profile.password');
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
 
@@ -49,7 +52,7 @@ export function LoginForm({ locale }: LoginFormProps) {
         // No response = network error (cold start / timeout). Auto-retry once.
         const hasResponse = !!(err as { response?: unknown })?.response;
         if (!hasResponse) {
-          setError('Server is starting up, retrying…');
+          setError(t('startingUp'));
           await new Promise((r) => setTimeout(r, 3000));
           result = await attemptLogin();
         } else {
@@ -70,9 +73,13 @@ export function LoginForm({ locale }: LoginFormProps) {
       router.push('/', { locale });
     } catch (err: unknown) {
       const hasResponse = !!(err as { response?: unknown })?.response;
+      const response = (err as { response?: { status?: number; data?: { message?: string } } })?.response;
+      // A wrong password is the one answer worth wording here; anything else the server says is shown as sent.
       const message = hasResponse
-        ? ((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Invalid email or password')
-        : 'Server is unavailable. Please try again in a moment.';
+        ? response?.status === 401
+          ? t('badCredentials')
+          : (response?.data?.message ?? t('badCredentials'))
+        : t('unavailable');
       setError(message);
     } finally {
       setLoading(false);
@@ -83,7 +90,7 @@ export function LoginForm({ locale }: LoginFormProps) {
     <form className="space-y-5" onSubmit={handleSubmit}>
       <div className="space-y-2">
         <Label className="text-sm font-semibold text-[var(--app-text)]" htmlFor="email">
-          Email
+          {t('email')}
         </Label>
         <Input
           autoComplete="email"
@@ -100,7 +107,7 @@ export function LoginForm({ locale }: LoginFormProps) {
 
       <div className="space-y-2">
         <Label className="text-sm font-semibold text-[var(--app-text)]" htmlFor="password">
-          Password
+          {t('password')}
         </Label>
         <div className="relative">
           <Input
@@ -115,7 +122,7 @@ export function LoginForm({ locale }: LoginFormProps) {
             value={password}
           />
           <button
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            aria-label={showPassword ? passwordT('hide') : passwordT('show')}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--app-muted)] hover:text-[var(--app-text)]"
             onClick={() => setShowPassword((v) => !v)}
             type="button"
@@ -139,10 +146,10 @@ export function LoginForm({ locale }: LoginFormProps) {
         {loading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Signing in…
+            {t('signingIn')}
           </>
         ) : (
-          'Sign in'
+          t('signIn')
         )}
       </Button>
     </form>

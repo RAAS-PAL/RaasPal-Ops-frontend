@@ -84,55 +84,57 @@ function parseIntoLines(text: string): string[] {
   return [cleanLine(trimmed)].filter(Boolean);
 }
 
-function buildSpecChips(spec: RobotSpecResponse): { label: string; value: string }[] {
+type T = ReturnType<typeof useTranslations>;
+
+function buildSpecChips(spec: RobotSpecResponse, t: T): { label: string; value: string }[] {
   const chips: { label: string; value: string }[] = [];
   if (spec.lengthMm && spec.widthMm && spec.heightMm) {
-    chips.push({ label: 'Body Size', value: `${spec.lengthMm}×${spec.widthMm}×${spec.heightMm} mm` });
+    chips.push({ label: t('specs.bodySize'), value: `${spec.lengthMm}×${spec.widthMm}×${spec.heightMm} mm` });
   }
   if (spec.widthCleaningMm) {
-    chips.push({ label: 'Cleaning Width', value: `${spec.widthCleaningMm} mm` });
+    chips.push({ label: t('specs.cleaningWidth'), value: `${spec.widthCleaningMm} mm` });
   }
   const cleanTank = spec.tankCapacityCleanL != null ? `${spec.tankCapacityCleanL}L` : null;
   const wasteTank = spec.tankCapacityWasteL != null ? `${spec.tankCapacityWasteL}L` : null;
   if (cleanTank || wasteTank) {
-    chips.push({ label: 'Tanks (Clean/Waste)', value: [cleanTank, wasteTank].filter(Boolean).join(' / ') });
+    chips.push({ label: t('specs.tanks'), value: [cleanTank, wasteTank].filter(Boolean).join(' / ') });
   }
   if (spec.batteryWorkTimeSweepHr != null) {
-    chips.push({ label: 'Battery (Sweep)', value: `${spec.batteryWorkTimeSweepHr} hr` });
+    chips.push({ label: t('specs.batterySweep'), value: t('specs.hours', { value: spec.batteryWorkTimeSweepHr }) });
   }
   if (spec.batteryWorkTimeScrubHr != null) {
-    chips.push({ label: 'Battery (Scrub)', value: `${spec.batteryWorkTimeScrubHr} hr` });
+    chips.push({ label: t('specs.batteryScrub'), value: t('specs.hours', { value: spec.batteryWorkTimeScrubHr }) });
   }
   if (spec.batteryChargingTimeHr != null) {
-    chips.push({ label: 'Charge Time', value: `${spec.batteryChargingTimeHr} hr` });
+    chips.push({ label: t('specs.chargeTime'), value: t('specs.hours', { value: spec.batteryChargingTimeHr }) });
   }
   const navParts: string[] = [];
-  if (spec.navigationLidar2d) navParts.push('2D LiDAR');
-  if (spec.navigationLidar3d) navParts.push('3D LiDAR');
-  if (spec.navigationCameraVslam) navParts.push('VSLAM');
-  if (navParts.length) chips.push({ label: 'Navigation', value: navParts.join(', ') });
+  if (spec.navigationLidar2d) navParts.push(t('specs.lidar2d'));
+  if (spec.navigationLidar3d) navParts.push(t('specs.lidar3d'));
+  if (spec.navigationCameraVslam) navParts.push(t('specs.vslam'));
+  if (navParts.length) chips.push({ label: t('specs.navigation'), value: navParts.join(', ') });
   if (spec.minimumPassableWidthMm != null) {
-    chips.push({ label: 'Min Pass Width', value: `${spec.minimumPassableWidthMm} mm` });
+    chips.push({ label: t('specs.minPassWidth'), value: `${spec.minimumPassableWidthMm} mm` });
   }
   if (spec.speedMs != null) {
-    chips.push({ label: 'Speed', value: `${spec.speedMs} m/s` });
+    chips.push({ label: t('specs.speed'), value: `${spec.speedMs} m/s` });
   }
-  if (spec.ipRating) chips.push({ label: 'IP Rating', value: spec.ipRating });
+  if (spec.ipRating) chips.push({ label: t('specs.ipRating'), value: spec.ipRating });
   if (spec.workStation != null) {
-    chips.push({ label: 'Auto Dock', value: spec.workStation ? 'Yes' : 'No' });
+    chips.push({ label: t('specs.autoDock'), value: spec.workStation ? t('specs.yes') : t('specs.no') });
   }
   if (spec.cleaningEfficiencySweepScrubSqmH != null) {
-    chips.push({ label: 'Efficiency (Sweep+Scrub)', value: `${spec.cleaningEfficiencySweepScrubSqmH} m²/h` });
+    chips.push({ label: t('specs.effSweepScrub'), value: `${spec.cleaningEfficiencySweepScrubSqmH} m²/h` });
   } else {
     if (spec.cleaningEfficiencySweepSqmH != null) {
-      chips.push({ label: 'Efficiency (Sweep)', value: `${spec.cleaningEfficiencySweepSqmH} m²/h` });
+      chips.push({ label: t('specs.effSweep'), value: `${spec.cleaningEfficiencySweepSqmH} m²/h` });
     }
     if (spec.cleaningEfficiencyScrubSqmH != null) {
-      chips.push({ label: 'Efficiency (Scrub)', value: `${spec.cleaningEfficiencyScrubSqmH} m²/h` });
+      chips.push({ label: t('specs.effScrub'), value: `${spec.cleaningEfficiencyScrubSqmH} m²/h` });
     }
   }
   if (spec.noiseLevelDb != null) {
-    chips.push({ label: 'Noise', value: `${spec.noiseLevelDb} dB` });
+    chips.push({ label: t('specs.noise'), value: `${spec.noiseLevelDb} dB` });
   }
   return chips;
 }
@@ -190,6 +192,7 @@ function RobotSummaryCard({
   onClick: () => void;
   translated?: TranslatedOption;
 }) {
+  const t = useTranslations('generateSolution.recommendation');
   const style = RANK_STYLES[item.rankPosition - 1] ?? RANK_STYLES[2];
   const label = rankLabels[item.rankPosition - 1] ?? rankLabels[2];
   const RankIcon = style.icon;
@@ -212,7 +215,7 @@ function RobotSummaryCard({
         </div>
         {fitStyle && item.fitLevel && (
           <Badge className={`text-[10px] font-semibold ${fitStyle}`} variant="secondary">
-            {item.fitLevel} Fit
+            {t('fitBadge', { level: t.has(`fitLevel.${fitKey}`) ? t(`fitLevel.${fitKey}`) : item.fitLevel })}
           </Badge>
         )}
       </div>
@@ -231,15 +234,15 @@ function RobotSummaryCard({
         <div className="flex flex-wrap justify-center gap-3 px-5 pb-3 text-sm">
           {item.robot.rentalPrice != null && (
             <span className="text-[var(--app-muted)]">
-              Rental:{' '}
+              {t('rental')}{' '}
               <span className="font-semibold text-[var(--app-text)]">
-                ฿{item.robot.rentalPrice.toLocaleString()}/mo
+                ฿{item.robot.rentalPrice.toLocaleString()}{t('perMonth')}
               </span>
             </span>
           )}
           {item.robot.sellingPrice != null && (
             <span className="text-[var(--app-muted)]">
-              Buy:{' '}
+              {t('buy')}{' '}
               <span className="font-semibold text-[var(--app-text)]">
                 ฿{item.robot.sellingPrice.toLocaleString()}
               </span>
@@ -254,7 +257,7 @@ function RobotSummaryCard({
           <div className="mb-2.5 flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" />
             <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-              Why this robot?
+              {t('whyThis')}
             </p>
           </div>
           <ul className="space-y-2">
@@ -270,7 +273,7 @@ function RobotSummaryCard({
 
       {/* View details hint */}
       <div className="mt-auto flex items-center justify-center gap-1 border-t border-[var(--app-border)] px-4 py-3 text-xs font-semibold text-[var(--app-muted)] transition group-hover:text-[var(--app-brand)]">
-        View full details
+        {t('viewDetails')}
         <ChevronRight className="h-3.5 w-3.5" />
       </div>
     </button>
@@ -298,7 +301,7 @@ function RobotDetailModal({
   const RankIcon = style.icon;
   const fitKey = item.fitLevel?.toUpperCase() ?? '';
   const fitStyle = FIT_LEVEL_STYLE[fitKey] ?? null;
-  const specChips = item.robot.spec ? buildSpecChips(item.robot.spec) : [];
+  const specChips = item.robot.spec ? buildSpecChips(item.robot.spec, t) : [];
   const whyLines = translated?.whyLines ?? (item.whyRecommended ? parseIntoLines(item.whyRecommended) : []);
   const limitationLines = translated?.limitationLines ?? (item.limitations ? parseIntoLines(item.limitations) : []);
   const missingLines = translated?.missingLines ?? (item.missingInformation ? parseIntoLines(item.missingInformation) : []);
@@ -330,7 +333,7 @@ function RobotDetailModal({
             <span className="font-bold">{label}</span>
             {fitStyle && item.fitLevel && (
               <Badge className={`text-xs font-semibold ${fitStyle}`} variant="secondary">
-                {item.fitLevel} Fit
+                {t('fitBadge', { level: t.has(`fitLevel.${fitKey}`) ? t(`fitLevel.${fitKey}`) : item.fitLevel })}
               </Badge>
             )}
           </div>
@@ -356,15 +359,15 @@ function RobotDetailModal({
                 <div className="flex flex-wrap gap-4 text-sm">
                   {item.robot.rentalPrice != null && (
                     <span className="text-[var(--app-muted)]">
-                      Rental:{' '}
+                      {t('rental')}{' '}
                       <span className="font-semibold text-[var(--app-text)]">
-                        ฿{item.robot.rentalPrice.toLocaleString()}/mo
+                        ฿{item.robot.rentalPrice.toLocaleString()}{t('perMonth')}
                       </span>
                     </span>
                   )}
                   {item.robot.sellingPrice != null && (
                     <span className="text-[var(--app-muted)]">
-                      Purchase:{' '}
+                      {t('purchase')}{' '}
                       <span className="font-semibold text-[var(--app-text)]">
                         ฿{item.robot.sellingPrice.toLocaleString()}
                       </span>
@@ -390,7 +393,7 @@ function RobotDetailModal({
           {specChips.length > 0 && (
             <div className="border-t border-[var(--app-border)] px-5 py-4">
               <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-[var(--app-muted)]">
-                Key Specs
+                {t('keySpecs')}
               </p>
               <div className="flex flex-wrap gap-2">
                 {specChips.map((chip) => (
@@ -434,7 +437,7 @@ function RobotDetailModal({
           {businessValue && (
             <div className="border-t border-[var(--app-border)] px-5 py-4">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--app-brand)]">
-                Business Value
+                {t('businessValue')}
               </p>
               <p className="text-sm leading-5 text-[var(--app-text)]">{businessValue}</p>
             </div>
@@ -447,7 +450,7 @@ function RobotDetailModal({
                 <div className="mb-3 flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                    Missing Information
+                    {t('missingInfo')}
                   </p>
                 </div>
                 <BulletList items={missingLines} color="bg-amber-500 dark:bg-amber-400" />
@@ -462,7 +465,7 @@ function RobotDetailModal({
                 <div className="mb-2 flex items-center gap-2">
                   <Lightbulb className="h-4 w-4 text-[var(--app-brand)]" />
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-brand)]">
-                    Suggested Next Step
+                    {t('nextStep')}
                   </p>
                 </div>
                 <p className="text-sm leading-5 text-[var(--app-text)]">{suggestedNextStep}</p>
@@ -487,6 +490,7 @@ function RecommendationInner({ solutionType }: Pick<RecommendationClientProps, '
   const searchParams = useSearchParams();
   const locale = useLocale();
   const t = useTranslations('generateSolution.recommendation');
+  const tg = useTranslations('generateSolution');
   const reqId = searchParams.get('reqId');
   const recId = searchParams.get('recId');
   const solutionName = searchParams.get('solutionName') ?? undefined;
@@ -606,7 +610,7 @@ function RecommendationInner({ solutionType }: Pick<RecommendationClientProps, '
         <section className="flex min-w-0 flex-1 flex-col">
           <AppTopBar
             eyebrow={t('eyebrow')}
-            searchPlaceholder="Search customers, sites, robot criteria"
+            searchPlaceholder={tg('searchPlaceholder')}
             title={t('title')}
           />
 
@@ -651,7 +655,7 @@ function RecommendationInner({ solutionType }: Pick<RecommendationClientProps, '
                 {/* Instruction hint + translate toggle */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm text-[var(--app-muted)]">
-                    Click any option to view full details and select it.
+                    {t('clickHint')}
                   </p>
                   <Button
                     className="gap-1.5 text-xs"
@@ -664,7 +668,7 @@ function RecommendationInner({ solutionType }: Pick<RecommendationClientProps, '
                     {translating
                       ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       : <Languages className="h-3.5 w-3.5" />}
-                    {translatedData ? 'Back to English' : 'แปลเป็นภาษาไทย'}
+                    {translatedData ? t('backToEnglish') : t('translateToThai')}
                   </Button>
                 </div>
 

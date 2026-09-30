@@ -13,7 +13,8 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { intlLocale } from '@/lib/intlLocale';
 import { proposalApi } from '@/lib/api';
 import type { GeneratedProposalResponse } from '@/types/api';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -40,6 +41,9 @@ interface ProposalClientProps {
 function ProposalInner({ solutionType }: Pick<ProposalClientProps, 'solutionType'>) {
   const searchParams = useSearchParams();
   const t = useTranslations('generateSolution.proposal');
+  const tg = useTranslations('generateSolution');
+  const tp = useTranslations('proposals');
+  const locale = useLocale();
   const itemId = searchParams.get('itemId');
   const recId = searchParams.get('recId');
 
@@ -107,7 +111,7 @@ function ProposalInner({ solutionType }: Pick<ProposalClientProps, 'solutionType
         <section className="flex min-w-0 flex-1 flex-col">
           <AppTopBar
             eyebrow={t('eyebrow')}
-            searchPlaceholder="Search customers, sites, robot criteria"
+            searchPlaceholder={tg('searchPlaceholder')}
             title={t('title')}
           />
 
@@ -157,9 +161,9 @@ function ProposalInner({ solutionType }: Pick<ProposalClientProps, 'solutionType
                       <FileText className="h-5 w-5" />
                     </span>
                     <div>
-                      <p className="font-semibold text-[var(--app-text)]">{proposal.title ?? 'Proposal'}</p>
+                      <p className="font-semibold text-[var(--app-text)]">{proposal.title ?? tp('untitled')}</p>
                       <p className="text-xs text-[var(--app-muted)]">
-                        Generated {new Date(proposal.createdAt).toLocaleDateString()}
+                        {tp('generated', { date: new Date(proposal.createdAt).toLocaleDateString(intlLocale(locale)) })}
                       </p>
                     </div>
                   </div>

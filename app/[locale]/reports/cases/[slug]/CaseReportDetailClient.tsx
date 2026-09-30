@@ -40,7 +40,7 @@ export function CaseReportDetailClient({ slug, initialDate }: { slug: CaseReport
                 {t('groups.pendingCases')}
               </Link>
               <span className="text-[var(--app-border)]">/</span>
-              <h2 className="text-lg font-semibold">{t(labelKey)} — case details</h2>
+              <h2 className="text-lg font-semibold">{t('caseDetailsTitle', { name: t(labelKey) })}</h2>
             </div>
 
             <CaseReportSheet report={CASE_REPORTS[slug]} initialDate={initialDate} />

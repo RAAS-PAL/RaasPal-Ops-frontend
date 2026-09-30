@@ -14,6 +14,7 @@
  * always reversible — it filters pages, it never touches telemetry.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -39,12 +40,10 @@ import type { CustomerBundleRobot, CustomerResponse } from '@/types/api';
 
 const PAGE_SIZE = 10;
 
-function errorMessage(e: unknown, fallback: string): string {
+function errorMessage(e: unknown, fallback: string, slow: string): string {
   const ax = e as { response?: { data?: { message?: string } }; code?: string };
   if (ax?.response?.data?.message) return ax.response.data.message;
-  if (ax?.code === 'ECONNABORTED' || !ax?.response) {
-    return 'This is taking longer than expected — it may still be running on the server. Wait a moment, then try again.';
-  }
+  if (ax?.code === 'ECONNABORTED' || !ax?.response) return slow;
   return fallback;
 }
 
@@ -62,6 +61,7 @@ function RobotRow({
   included: boolean;
   onToggle: () => void;
 }) {
+  const t = useTranslations('customerBundle');
   return (
     <label
       className={`flex cursor-pointer items-center gap-3 px-4 py-3 transition hover:bg-[var(--app-panel-alt)] ${
@@ -83,12 +83,12 @@ function RobotRow({
       {robot.hasData ? (
         <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
           <Check className="h-3.5 w-3.5" />
-          {robot.report.executive.totalTasksCompleted} tasks
+          {t('tasksCount', { count: robot.report.executive.totalTasksCompleted })}
         </span>
       ) : (
         <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
           <AlertTriangle className="h-3.5 w-3.5" />
-          No activity
+          {t('noActivity')}
         </span>
       )}
     </label>
@@ -96,6 +96,8 @@ function RobotRow({
 }
 
 export function CustomerBundlePanel({ initialCustomerId = null }: { initialCustomerId?: string | null } = {}) {
+  const t = useTranslations('customerBundle');
+  const slow = t('slowResponse');
   const { confirm, confirmDialog } = useConfirm();
   const queryClient = useQueryClient();
 
@@ -188,9 +190,9 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
             <Building2 className="h-4.5 w-4.5" />
           </span>
           <div>
-            <p className="text-sm font-semibold text-[var(--app-text)]">Company report</p>
+            <p className="text-sm font-semibold text-[var(--app-text)]">{t('title')}</p>
             <p className="text-xs text-[var(--app-muted)]">
-              Review every robot&apos;s report for one company, drop the ones with no activity, then send.
+              {t('intro')}
             </p>
           </div>
         </div>
@@ -201,7 +203,7 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search company…"
+            placeholder={t('searchCompany')}
             className="h-10 w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] pl-9 pr-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
           />
         </div>
@@ -210,8 +212,8 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
         {customersQuery.isSuccess && filteredCustomers.length === 0 && (
           <EmptyState
             icon={Building2}
-            title="No matching company"
-            description="Try a different name, or add the customer under Tools → Customers."
+            title={t('noMatchTitle')}
+            description={t('noMatchDesc')}
           />
         )}
 
@@ -229,11 +231,11 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
                     {customerLabel(c)}
                   </p>
                   <p className="truncate text-xs text-[var(--app-muted)]">
-                    {c.contactEmail ?? 'No email on file'}
+                    {c.contactEmail ?? t('noEmail')}
                   </p>
                 </div>
                 <span className="shrink-0 text-xs text-[var(--app-muted)]">
-                  {c.robotCount} robot{c.robotCount === 1 ? '' : 's'}
+                  {t('robotCount', { count: c.robotCount })}
                 </span>
               </button>
             ))}
@@ -243,7 +245,7 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
         <InfiniteScroll
           hasMore={filteredCustomers.length > visibleCount}
           onReach={() => setVisibleCount((c) => c + PAGE_SIZE)}
-          label={`Showing ${visibleCount} of ${filteredCustomers.length}`}
+          label={t('showing', { shown: visibleCount, total: filteredCustomers.length })}
         />
       </div>
     );
@@ -259,7 +261,7 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
           </span>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-[var(--app-text)]">
-              {bundleQuery.data?.customerName ?? 'Loading…'}
+              {bundleQuery.data?.customerName ?? t('loading')}
             </p>
             <p className="text-xs text-[var(--app-muted)]">
               {bundleQuery.data?.periodLabel ?? month}
@@ -277,7 +279,7 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
               onClick={() => setCustomerId(null)}
               className="inline-flex h-9 items-center rounded-lg border border-[var(--app-border)] px-3 text-xs font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
             >
-              Change company
+              {t('changeCompany')}
             </button>
           </div>
         </div>
@@ -286,15 +288,15 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
         {bundleQuery.isError && (
           <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            {errorMessage(bundleQuery.error, 'Could not load this company’s reports.')}
+            {errorMessage(bundleQuery.error, t('loadFailed'), slow)}
           </p>
         )}
 
         {bundleQuery.isSuccess && robots.length === 0 && (
           <EmptyState
             icon={Building2}
-            title="No robots deployed"
-            description="Register a robot to this company under Tools → Robots first."
+            title={t('noRobotsTitle')}
+            description={t('noRobotsDesc')}
           />
         )}
 
@@ -304,12 +306,12 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
             <div className="space-y-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
               <div className="flex flex-wrap items-center gap-3">
                 <p className="text-sm font-semibold text-[var(--app-text)]">
-                  {includedRobots.length} of {robots.length} robots in the report
+                  {t('inReport', { included: includedRobots.length, total: robots.length })}
                 </p>
                 {noActivityCount > 0 && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
                     <AlertTriangle className="h-3.5 w-3.5" />
-                    {noActivityCount} with no activity
+                    {t('withNoActivity', { count: noActivityCount })}
                   </span>
                 )}
                 <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -320,7 +322,7 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
                       className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
                     >
                       <EyeOff className="h-3.5 w-3.5" />
-                      Drop the {noActivityStillIncluded} with no activity
+                      {t('dropEmpty', { count: noActivityStillIncluded })}
                     </button>
                   )}
                   <button
@@ -328,7 +330,7 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
                     onClick={() => setAll(true)}
                     className="inline-flex h-8 items-center rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
                   >
-                    Include all
+                    {t('includeAll')}
                   </button>
                 </div>
               </div>
@@ -345,14 +347,13 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
               </div>
 
               <p className="text-xs text-[var(--app-muted)]">
-                Unticked robots are left out of the report the customer opens. Reversible at any
-                time — this only hides pages, it never changes the robot&apos;s data.
+                {t('unticked')}
               </p>
 
               {saveMutation.isError && (
                 <p className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                  {errorMessage(saveMutation.error, 'Could not save the selection.')}
+                  {errorMessage(saveMutation.error, t('saveFailed'), slow)}
                 </p>
               )}
 
@@ -368,7 +369,7 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
                   ) : (
                     <Save className="h-4 w-4" />
                   )}
-                  {dirty ? 'Save selection' : 'Selection saved'}
+                  {dirty ? t('saveSelection') : t('selectionSaved')}
                 </button>
                 <button
                   type="button"
@@ -376,7 +377,7 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
                   className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 text-sm font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
                 >
                   {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  {showPreview ? 'Hide pages' : 'Show pages'}
+                  {showPreview ? t('hidePages') : t('showPages')}
                 </button>
                 <button
                   type="button"
@@ -384,7 +385,7 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
                   className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 text-sm font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
                 >
                   <Printer className="h-4 w-4" />
-                  Print / PDF
+                  {t('print')}
                 </button>
               </div>
             </div>
@@ -393,21 +394,21 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
             <div className="space-y-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
               <div className="flex flex-wrap items-center gap-3">
                 <Mail className="h-4 w-4 text-[var(--app-brand-dark)]" />
-                <p className="text-sm font-semibold text-[var(--app-text)]">Send to the customer</p>
+                <p className="text-sm font-semibold text-[var(--app-text)]">{t('sendTitle')}</p>
                 <button
                   type="button"
                   onClick={() =>
                     void confirm({
-                      title: 'Send this report to the customer?',
+                      title: t('confirmTitle'),
                       kind: 'send',
-                      confirmLabel: 'Send to customer',
-                      message: (
-                        <>
-                          <strong>{customers.find((c) => c.id === customerId)?.companyName ?? 'This customer'}</strong>{' '}
-                          receives the {month} report by email, covering {includedRobots.length} of{' '}
-                          {robots.length} robots. It cannot be recalled once sent.
-                        </>
-                      ),
+                      confirmLabel: t('confirmLabel'),
+                      message: t.rich('confirmBody', {
+                        name: customers.find((c) => c.id === customerId)?.companyName ?? t('thisCustomer'),
+                        month,
+                        included: includedRobots.length,
+                        total: robots.length,
+                        b: (chunks) => <strong>{chunks}</strong>,
+                      }),
                     }).then((ok) => ok && sendMutation.mutate())
                   }
                   disabled={sendMutation.isPending || includedRobots.length === 0 || dirty}
@@ -418,7 +419,7 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
-                  Send report
+                  {t('sendReport')}
                 </button>
               </div>
 
@@ -426,25 +427,24 @@ export function CustomerBundlePanel({ initialCustomerId = null }: { initialCusto
                   on screen, so the button waits for the selection to be saved. */}
               {dirty && (
                 <p className="text-xs text-amber-600 dark:text-amber-400">
-                  Save your selection first — otherwise the customer would receive a different set
-                  of robots than the one shown here.
+                  {t('saveFirst')}
                 </p>
               )}
               {includedRobots.length === 0 && !dirty && (
                 <p className="text-xs text-amber-600 dark:text-amber-400">
-                  Every robot is excluded, so there is nothing to send.
+                  {t('allExcluded')}
                 </p>
               )}
               {sendMutation.isSuccess && (
                 <p className="flex items-start gap-2 text-sm text-emerald-600 dark:text-emerald-400">
                   <Check className="mt-0.5 h-4 w-4 shrink-0" />
-                  {sendMutation.data?.message ?? 'Send started — check the history under Manage automation.'}
+                  {sendMutation.data?.message ?? t('sendStarted')}
                 </p>
               )}
               {sendMutation.isError && (
                 <p className="flex items-start gap-2 text-sm text-red-600 dark:text-red-400">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                  {errorMessage(sendMutation.error, 'Could not start the send.')}
+                  {errorMessage(sendMutation.error, t('sendFailed'), slow)}
                 </p>
               )}
             </div>

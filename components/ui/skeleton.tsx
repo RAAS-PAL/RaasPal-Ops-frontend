@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useTranslations } from "next-intl"
 
 import { cn } from "@/lib/utils"
 
@@ -16,8 +17,9 @@ function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
 
 /** A stack of row-shaped skeletons matching the app's dense list rows. */
 function ListSkeleton({ rows = 4, className }: { rows?: number; className?: string }) {
+  const t = useTranslations("shell")
   return (
-    <div className={cn("space-y-3", className)} role="status" aria-label="Loading">
+    <div className={cn("space-y-3", className)} role="status" aria-label={t("loading")}>
       {Array.from({ length: rows }).map((_, i) => (
         <div
           key={i}

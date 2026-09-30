@@ -10,6 +10,7 @@
  * email per customer.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -37,6 +38,7 @@ function errorMessage(e: unknown, fallback: string): string {
 }
 
 export function CustomerEmailPanel() {
+  const t = useTranslations('customerEmail');
   const { confirm, confirmDialog } = useConfirm();
   const [query, setQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -95,20 +97,15 @@ export function CustomerEmailPanel() {
 
   function submit() {
     setFormError(null);
-    if (selected.size === 0) return setFormError('Select at least one customer.');
-    if (!subject.trim()) return setFormError('Enter a subject.');
-    if (!message.trim()) return setFormError('Enter a message.');
+    if (selected.size === 0) return setFormError(t('selectAtLeastOne'));
+    if (!subject.trim()) return setFormError(t('subjectRequired'));
+    if (!message.trim()) return setFormError(t('messageRequired'));
     const count = selected.size;
     void confirm({
-      title: 'Send this email?',
+      title: t('confirmTitle'),
       kind: 'send',
-      confirmLabel: `Send to ${count} customer${count === 1 ? '' : 's'}`,
-      message: (
-        <>
-          <strong>{count} customer{count === 1 ? '' : 's'}</strong> receive &ldquo;{subject.trim()}&rdquo; at
-          their contact email. It cannot be recalled once sent.
-        </>
-      ),
+      confirmLabel: t('sendTo', { count }),
+      message: t.rich('confirmBody', { count, subject: subject.trim(), b: (chunks) => <strong>{chunks}</strong> }),
     }).then((ok) => ok && sendMutation.mutate());
   }
 
@@ -126,7 +123,7 @@ export function CustomerEmailPanel() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search customers…"
+              placeholder={t('searchPlaceholder')}
               className="h-10 w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] pl-9 pr-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
             />
           </div>
@@ -138,18 +135,18 @@ export function CustomerEmailPanel() {
               disabled={filteredIds.length === 0}
               className="h-4 w-4 accent-[var(--app-brand)]"
             />
-            Select all ({filteredIds.length}) · {selected.size} selected
+            {t('selectAll', { total: filteredIds.length, selected: selected.size })}
           </label>
         </div>
 
         {isLoading && (
           <div className="flex items-center gap-2 py-8 text-sm text-[var(--app-muted)]">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading customers…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t('loading')}
           </div>
         )}
         {isError && (
           <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
-            Could not load customers.
+            {t('loadFailed')}
           </p>
         )}
 
@@ -174,7 +171,7 @@ export function CustomerEmailPanel() {
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-semibold text-[var(--app-text)]">{customerLabel(c)}</span>
                       <span className="block truncate text-xs text-[var(--app-muted)]">
-                        {c.contactEmail || 'No contact email'}
+                        {c.contactEmail || t('noEmail')}
                       </span>
                     </span>
                   </span>
@@ -187,36 +184,35 @@ export function CustomerEmailPanel() {
         <InfiniteScroll
           hasMore={hasMore}
           onReach={() => setVisibleCount((n) => n + PAGE_SIZE)}
-          label={`Showing ${visibleCount} of ${filtered.length}`}
+          label={t('showing', { shown: visibleCount, total: filtered.length })}
         />
       </div>
 
       {/* ── Right: compose ──────────────────────────────────────────────────── */}
       <div className="space-y-3">
         <div className="space-y-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4">
-          <p className="text-sm font-semibold text-[var(--app-text)]">Compose message</p>
+          <p className="text-sm font-semibold text-[var(--app-text)]">{t('compose')}</p>
           <p className="text-xs text-[var(--app-muted)]">
-            The email contains only what you type below — no report links or attachments. Each customer gets a
-            separate email; CC (optional) is added to every one.
+            {t('composeHint')}
           </p>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[var(--app-muted)]">Subject *</label>
-            <input className={inputClass} value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="e.g. Report system update" />
+            <label className="text-xs font-semibold text-[var(--app-muted)]">{t('subject')}</label>
+            <input className={inputClass} value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={t('subjectPlaceholder')} />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[var(--app-muted)]">CC (optional)</label>
+            <label className="text-xs font-semibold text-[var(--app-muted)]">{t('cc')}</label>
             <input className={inputClass} value={cc} onChange={(e) => setCc(e.target.value)} placeholder="team@raaspal.com, manager@raaspal.com" />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[var(--app-muted)]">Message *</label>
+            <label className="text-xs font-semibold text-[var(--app-muted)]">{t('message')}</label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={10}
-              placeholder="Type the exact message the customer will receive…"
+              placeholder={t('messagePlaceholder')}
               className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 py-2 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
             />
           </div>
@@ -234,7 +230,7 @@ export function CustomerEmailPanel() {
             className="w-full bg-[var(--app-brand)] text-white hover:opacity-90 disabled:opacity-50"
           >
             {sendMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            {sendMutation.isPending ? 'Sending…' : `Send to ${selected.size} customer${selected.size === 1 ? '' : 's'}`}
+            {sendMutation.isPending ? t('sending') : t('sendTo', { count: selected.size })}
           </Button>
         </div>
 
@@ -242,7 +238,9 @@ export function CustomerEmailPanel() {
           <div className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm dark:border-emerald-900/40 dark:bg-emerald-950/30">
             <p className="flex items-center gap-2 font-semibold text-emerald-700 dark:text-emerald-300">
               <CheckCircle2 className="h-4 w-4" />
-              {sendMutation.data.sent} sent{sendMutation.data.failed > 0 ? `, ${sendMutation.data.failed} failed` : ''}.
+              {sendMutation.data.failed > 0
+                ? t('resultSentFailed', { sent: sendMutation.data.sent, failed: sendMutation.data.failed })
+                : t('resultSent', { sent: sendMutation.data.sent })}
             </p>
             {sendMutation.data.items.filter((i) => !i.ok).length > 0 && (
               <ul className="space-y-0.5 text-xs text-red-600 dark:text-red-400">
@@ -261,7 +259,7 @@ export function CustomerEmailPanel() {
         {sendMutation.isError && (
           <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            {errorMessage(sendMutation.error, 'Send failed — check SMTP config and that customers have emails.')}
+            {errorMessage(sendMutation.error, t('sendFailed'))}
           </p>
         )}
       </div>

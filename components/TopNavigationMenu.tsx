@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
+import { roleLabel } from '@/lib/roleLabel';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, usePathname } from '@/i18n/navigation';
 import { navigationItems } from './AppSidebar';
@@ -14,6 +15,8 @@ export function TopNavigationMenu() {
   const pathname = usePathname();
   const t = useTranslations('nav');
   const sidebarT = useTranslations('sidebar');
+  const shellT = useTranslations('shell');
+  const roleT = useTranslations('profile.account.roles');
 
   const handleClickOutside = useCallback((event: MouseEvent) => {
     if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -45,7 +48,7 @@ export function TopNavigationMenu() {
       <button
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
+        aria-label={open ? shellT('closeMenu') : shellT('openMenu')}
         className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-muted)] transition hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)]"
         onClick={() => setOpen((value) => !value)}
         type="button"
@@ -66,7 +69,7 @@ export function TopNavigationMenu() {
             <div className="flex items-center gap-3 border-b border-[var(--app-border)] bg-[var(--app-panel-alt)] p-4">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--app-brand)] shadow-sm">
                 <Image
-                  alt="RAAS PAL logo"
+                  alt={shellT('logoAlt')}
                   className="h-7 w-7 object-contain"
                   height={28}
                   src="/raas-pal-logo.png"
@@ -79,7 +82,7 @@ export function TopNavigationMenu() {
               </div>
             </div>
 
-            <nav className="p-2" aria-label="Workspace navigation">
+            <nav className="p-2" aria-label={shellT('workspaceNav')}>
               {navigationItems.map((item) => {
                 const children = item.children ?? [];
                 const isActive = (href: string) =>
@@ -145,8 +148,8 @@ export function TopNavigationMenu() {
                   RE
                 </span>
                 <div>
-                  <p className="text-sm font-semibold text-[var(--app-text)]">Raas Pal Specialist</p>
-                  <p className="text-xs text-[var(--app-muted)]">RAASPAL_TEAM</p>
+                  <p className="text-sm font-semibold text-[var(--app-text)]">{shellT('defaultName')}</p>
+                  <p className="text-xs text-[var(--app-muted)]">{roleLabel(roleT, 'RAASPAL_TEAM')}</p>
                 </div>
               </div>
             </div>

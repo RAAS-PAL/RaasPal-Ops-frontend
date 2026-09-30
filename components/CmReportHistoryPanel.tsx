@@ -7,6 +7,7 @@
  * signature images) and hands it to CmReportPanel for editing and reprinting.
  */
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, ArrowLeft, Loader2, Search, Wrench } from 'lucide-react';
 import { cmReportApi } from '@/lib/api';
@@ -25,6 +26,7 @@ function errorMessage(e: unknown, fallback: string): string {
 }
 
 export function CmReportHistoryPanel() {
+  const t = useTranslations('cmReport.history');
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -32,8 +34,8 @@ export function CmReportHistoryPanel() {
 
   // The search hits the database on every keystroke otherwise.
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(query), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebounced(query), 300);
+    return () => clearTimeout(timer);
   }, [query]);
 
   useEffect(() => setVisibleCount(PAGE_SIZE), [debounced]);
@@ -59,19 +61,19 @@ export function CmReportHistoryPanel() {
           className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 text-sm font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)] print:hidden"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to history
+          {t('back')}
         </button>
 
         {openQuery.isPending && (
           <div className="flex items-center gap-2 px-1 text-sm text-[var(--app-muted)]">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading report…
+            {t('loadingReport')}
           </div>
         )}
         {openQuery.isError && (
           <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            {errorMessage(openQuery.error, 'Could not load that report.')}
+            {errorMessage(openQuery.error, t('openFailed'))}
           </p>
         )}
         {/* Keyed by id: reopening a different report remounts the form instead of patching it. */}
@@ -91,9 +93,9 @@ export function CmReportHistoryPanel() {
           <Wrench className="h-4.5 w-4.5" />
         </span>
         <div>
-          <p className="text-sm font-semibold text-[var(--app-text)]">Past reports</p>
+          <p className="text-sm font-semibold text-[var(--app-text)]">{t('pastTitle')}</p>
           <p className="text-xs text-[var(--app-muted)]">
-            Search by ticket number, customer, or serial number. Open one to edit or reprint it.
+            {t('pastHint')}
           </p>
         </div>
       </div>
@@ -104,7 +106,7 @@ export function CmReportHistoryPanel() {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search ticket no., customer, or serial number…"
+          placeholder={t('search')}
           className="h-10 w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] pl-9 pr-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
         />
       </div>
@@ -114,19 +116,15 @@ export function CmReportHistoryPanel() {
       {listQuery.isError && (
         <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          {errorMessage(listQuery.error, 'Could not load the report history.')}
+          {errorMessage(listQuery.error, t('failed'))}
         </p>
       )}
 
       {listQuery.isSuccess && reports.length === 0 && (
         <EmptyState
           icon={Wrench}
-          title={debounced ? 'No matching reports' : 'No reports yet'}
-          description={
-            debounced
-              ? 'Try a different ticket number, customer, or serial number.'
-              : 'Create one from the "New report" tab and it will appear here.'
-          }
+          title={debounced ? t('noMatching') : t('noneYet')}
+          description={debounced ? t('tryDifferent') : t('createHint')}
         />
       )}
 
@@ -144,7 +142,7 @@ export function CmReportHistoryPanel() {
                   {r.customerName}
                 </p>
                 <p className="truncate text-xs text-[var(--app-muted)]">
-                  {[r.ticketNo && `Ticket ${r.ticketNo}`, r.robotModel, r.serialNumber]
+                  {[r.ticketNo && t('ticketNo', { no: r.ticketNo }), r.robotModel, r.serialNumber]
                     .filter(Boolean)
                     .join(' · ') || '—'}
                 </p>
@@ -160,7 +158,7 @@ export function CmReportHistoryPanel() {
       <InfiniteScroll
         hasMore={reports.length > visibleCount}
         onReach={() => setVisibleCount((c) => c + PAGE_SIZE)}
-        label={`Showing ${visibleCount} of ${reports.length}`}
+        label={t('showing', { shown: visibleCount, total: reports.length })}
       />
     </div>
   );

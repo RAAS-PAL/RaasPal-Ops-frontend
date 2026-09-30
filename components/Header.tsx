@@ -13,6 +13,7 @@ import { Bot } from 'lucide-react';
 
 export async function Header() {
   const t = await getTranslations('nav');
+  const shellT = await getTranslations('shell');
 
   return (
     <header className="
@@ -26,7 +27,7 @@ export async function Header() {
         <Link
           href="/"
           className="flex items-center gap-2.5 mr-auto group"
-          aria-label="RAAS PAL home"
+          aria-label={shellT('home')}
         >
           {/* Logo icon */}
           <span className="
@@ -49,7 +50,7 @@ export async function Header() {
         </Link>
 
         {/* ── Nav links (hidden on mobile, shown sm+) ── */}
-        <nav className="hidden sm:flex items-center gap-1" aria-label="Main navigation">
+        <nav className="hidden sm:flex items-center gap-1" aria-label={shellT('mainNav')}>
           {[
             { href: '/dashboard',    label: t('dashboard')    },
             { href: '/solutions?tab=generate', label: t('generateSolution') },

@@ -33,13 +33,14 @@ export const NEEDS: Record<CaseCustomerView, CaseReportSlug[]> = {
   its: ['mk', 'delivery', 'cleaning', 'on-hold'],
 };
 
+/** Each sheet's name, as a key of `pendingCases`: `t(SHEET_LABEL[sheet])`. */
 export const SHEET_LABEL: Record<CaseReportSlug, string> = {
-  mk: 'MK',
-  delivery: 'Delivery (other customers)',
-  cleaning: 'Cleaning (other customers)',
-  makro: 'Makro',
-  aotga: 'AOTGA (airports)',
-  'on-hold': 'On Hold',
+  mk: 'name.mk',
+  delivery: 'name.delivery',
+  cleaning: 'name.cleaning',
+  makro: 'name.makro',
+  aotga: 'name.aotga',
+  'on-hold': 'name.onHold',
 };
 
 /** A name standing alone, not inside another word: "PCS : Makro" yes, "PCSX" no. */
@@ -68,6 +69,9 @@ export interface Section {
 
 export type Sheets = Partial<Record<CaseReportSlug, CaseReportRow[]>>;
 
+/** Something to tell the reader about a view; the panel words it (`pendingCases.notes.*`). */
+export type CaseNote = { key: 'unplaced'; count: number } | { key: 'itsEmpty' };
+
 const live = (rows: CaseReportRow[] | undefined) => (rows ?? []).filter((r) => !r.removed);
 
 /** The frozen sheets, split into the pieces the views are made of. */
@@ -92,14 +96,10 @@ function pools(sheets: Sheets) {
   };
 }
 
-export function compose(view: CaseCustomerView, sheets: Sheets): { sections: Section[]; notes: string[] } {
+export function compose(view: CaseCustomerView, sheets: Sheets): { sections: Section[]; notes: CaseNote[] } {
   const p = pools(sheets);
-  const notes: string[] = [];
-  if (p.unplaced > 0) {
-    notes.push(
-      `${p.unplaced} held case${p.unplaced === 1 ? ' was' : 's were'} frozen before the On Hold sheet recorded each case's board, so ${p.unplaced === 1 ? 'it is' : 'they are'} left out here. They are on the On Hold tab.`,
-    );
-  }
+  const notes: CaseNote[] = [];
+  if (p.unplaced > 0) notes.push({ key: 'unplaced', count: p.unplaced });
   const delivery: Part[] = [
     { sheet: 'mk', board: 'DELIVERY', rows: p.mk },
     { sheet: 'delivery', board: 'DELIVERY', rows: p.delivery },
@@ -149,9 +149,7 @@ export function compose(view: CaseCustomerView, sheets: Sheets): { sections: Sec
     case 'its': {
       const parts = [...only(otherCleaning, mentions(ITS)), ...only(delivery, mentions(ITS))];
       if (parts.every((part) => part.rows.length === 0)) {
-        notes.push(
-          'No open case on either board names ISS or ITS in its project or branch. Tag ITS’s cases on monday with ISS or ITS in the Project column and they will appear here.',
-        );
+        notes.push({ key: 'itsEmpty' });
       }
       return { notes, sections: [{ key: 'its', title: 'ITS', holdOwner: 'ITS', parts }] };
     }

@@ -16,7 +16,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -33,7 +33,8 @@ import {
 import { reportApi, robotUnitApi, telemetryApi } from '@/lib/api';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { MonthlyReportView } from '@/components/report/MonthlyReportView';
-import { monthYearLabel } from '@/lib/reports/preview';
+import { intlLocale } from '@/lib/intlLocale';
+import { monthLabel } from '@/lib/report-month';
 import { isoWeekRange, previousIsoWeek, weekRangeLabel } from '@/lib/report-week';
 import type { MonthlyPerformanceReport } from '@/lib/reports/types';
 import { InfiniteScroll } from '@/components/ui/infinite-scroll';
@@ -44,10 +45,7 @@ type Selection = { kind: 'robot'; robot: RobotUnitResponse };
 /** Which window the report covers. */
 type PeriodKind = 'month' | 'week';
 
-const PERIOD_TABS: { kind: PeriodKind; label: string }[] = [
-  { kind: 'month', label: 'Monthly' },
-  { kind: 'week', label: 'Weekly' },
-];
+const PERIOD_KINDS: PeriodKind[] = ['month', 'week'];
 
 const PERIOD_INPUT_CLASS =
   'h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]';
@@ -71,14 +69,12 @@ function monthRange(month: string): { from: string; to: string } {
   return { from: `${month}-01`, to: `${month}-${String(lastDay).padStart(2, '0')}` };
 }
 
-function errorMessage(e: unknown, fallback: string): string {
+function errorMessage(e: unknown, fallback: string, slow: string): string {
   const ax = e as { response?: { data?: { message?: string } }; code?: string };
   if (ax?.response?.data?.message) return ax.response.data.message;
   // No response at all = the request timed out or the connection dropped client-side
   // — the backend may well have kept running and finished. Don't blame credentials.
-  if (ax?.code === 'ECONNABORTED' || !ax?.response) {
-    return 'This is taking longer than expected — it may still be running on the server. Wait a moment, then refresh before retrying.';
-  }
+  if (ax?.code === 'ECONNABORTED' || !ax?.response) return slow;
   return fallback;
 }
 
@@ -91,11 +87,14 @@ function matchesQuery(r: RobotUnitResponse, q: string): boolean {
   return hay.includes(q.toLowerCase());
 }
 
-const CADENCE_LABEL: Record<string, string> = { MONTHLY: 'Monthly', WEEKLY: 'Weekly', OFF: 'Off' };
+/** The robot's report cadence -> its key in `robotsPanel`. */
+const CADENCE_KEY: Record<string, string> = { MONTHLY: 'cadenceMonthly', WEEKLY: 'cadenceWeekly', OFF: 'cadenceOff' };
 
 const PAGE_SIZE = 10;
 
 export function ReportPreviewPanel() {
+  const t = useTranslations('reportPreview');
+  const tRobots = useTranslations('robotsPanel');
   const { confirm, confirmDialog } = useConfirm();
   const [query, setQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -111,10 +110,11 @@ export function ReportPreviewPanel() {
   const maxWeek = useMemo(previousIsoWeek, []);
 
   const isWeekly = periodKind === 'week';
+  const slow = t('slow');
   /** The single period value the request, the cache key and the sync range share. */
   const periodValue = isWeekly ? week : month;
   const periodParam = isWeekly ? { week } : { month };
-  const periodLabel = isWeekly ? weekRangeLabel(week) : monthYearLabel(month);
+  const periodLabel = isWeekly ? weekRangeLabel(week, intlLocale(locale)) : monthLabel(month, intlLocale(locale));
   // Null only when the week input is cleared or malformed — the sync is blocked then.
   const syncRange = isWeekly ? isoWeekRange(week) : monthRange(month);
 
@@ -147,7 +147,7 @@ export function ReportPreviewPanel() {
   const queryClient = useQueryClient();
   const syncMutation = useMutation({
     mutationFn: () => {
-      if (!syncRange) return Promise.reject(new Error('Choose a valid week before syncing.'));
+      if (!syncRange) return Promise.reject(new Error(t('chooseValidWeek')));
       return telemetryApi.sync(robotSn!, syncRange.from, syncRange.to).then((r) => r.data);
     },
     // Invalidate every period for this robot, not just the visible one: newly
@@ -181,34 +181,34 @@ export function ReportPreviewPanel() {
             className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to robots
+            {t('back')}
           </button>
 
           <div className="flex flex-wrap items-center gap-3">
             <div
               role="group"
-              aria-label="Report period"
+              aria-label={t('periodAria')}
               className="flex items-center gap-0.5 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] p-0.5"
             >
-              {PERIOD_TABS.map((tab) => (
+              {PERIOD_KINDS.map((kind) => (
                 <button
-                  key={tab.kind}
+                  key={kind}
                   type="button"
-                  onClick={() => setPeriodKind(tab.kind)}
-                  aria-pressed={periodKind === tab.kind}
+                  onClick={() => setPeriodKind(kind)}
+                  aria-pressed={periodKind === kind}
                   className={
-                    periodKind === tab.kind
+                    periodKind === kind
                       ? 'rounded-md bg-[var(--app-brand)] px-3 py-1.5 text-sm font-semibold text-white'
                       : 'rounded-md px-3 py-1.5 text-sm font-semibold text-[var(--app-muted)] transition hover:text-[var(--app-text)]'
                   }
                 >
-                  {tab.label}
+                  {t(kind === 'month' ? 'monthly' : 'weekly')}
                 </button>
               ))}
             </div>
 
             <label className="flex items-center gap-2 text-sm text-[var(--app-muted)]">
-              {isWeekly ? 'Report week' : 'Report month'}
+              {t(isWeekly ? 'reportWeek' : 'reportMonth')}
               {isWeekly ? (
                 <input
                   type="week"
@@ -232,11 +232,11 @@ export function ReportPreviewPanel() {
                 type="button"
                 onClick={() => syncMutation.mutate()}
                 disabled={syncMutation.isPending || !syncRange}
-                title={`Pull this robot's task reports from the Gausium API for the selected ${periodKind}`}
+                title={t('syncTitle', { unit: t(isWeekly ? 'unitWeek' : 'unitMonth') })}
                 className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
               >
                 {syncMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                {syncMutation.isPending ? 'Syncing…' : 'Sync from Gausium'}
+                {syncMutation.isPending ? t('syncing') : t('syncGausium')}
               </button>
             )}
             {isRobot && (
@@ -244,11 +244,11 @@ export function ReportPreviewPanel() {
                 type="button"
                 onClick={() => linkMutation.mutate()}
                 disabled={linkMutation.isPending}
-                title="Open the standalone customer report link (real data) in a new tab — the same link the report email carries"
+                title={t('linkTitle')}
                 className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm font-semibold text-[var(--app-brand-dark)] transition hover:border-[var(--app-brand)] disabled:opacity-50"
               >
                 {linkMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-                Open shareable link
+                {t('openLink')}
               </button>
             )}
             {isRobot && (
@@ -256,24 +256,23 @@ export function ReportPreviewPanel() {
                 type="button"
                 onClick={() =>
                   void confirm({
-                    title: 'Email this report to the customer?',
+                    title: t('confirmTitle'),
                     kind: 'send',
-                    confirmLabel: 'Send report email',
-                    message: (
-                      <>
-                        The {periodLabel} report for <strong>{robotSn}</strong> goes to{' '}
-                        <strong>{selection.robot.deployment?.customerName ?? 'the customer'}</strong>
-                        {' '}at their contact email. It cannot be recalled once sent.
-                      </>
-                    ),
+                    confirmLabel: t('confirmLabel'),
+                    message: t.rich('confirmBody', {
+                      period: periodLabel,
+                      serial: robotSn ?? '',
+                      customer: selection.robot.deployment?.customerName ?? t('theCustomer'),
+                      b: (chunks) => <strong>{chunks}</strong>,
+                    }),
                   }).then((ok) => ok && emailMutation.mutate())
                 }
                 disabled={emailMutation.isPending}
-                title="Email this report link to the customer's contact email"
+                title={t('emailTitle')}
                 className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
               >
                 {emailMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                {emailMutation.isPending ? 'Sending…' : 'Send report email'}
+                {emailMutation.isPending ? t('sending') : t('confirmLabel')}
               </button>
             )}
           </div>
@@ -282,38 +281,38 @@ export function ReportPreviewPanel() {
         {isRobot && syncMutation.isSuccess && (
           <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
-            {syncMutation.data?.message ?? 'Sync complete.'}
+            {syncMutation.data?.message ?? t('syncDone')}
           </p>
         )}
         {isRobot && syncMutation.isError && (
           <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            {errorMessage(syncMutation.error, 'Sync failed — check Gausium credentials and that the robot is bound to your account.')}
+            {errorMessage(syncMutation.error, t('syncFailed'), slow)}
           </p>
         )}
 
         {isRobot && emailMutation.isSuccess && (
           <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
-            {emailMutation.data?.message ?? 'Report email sent.'}
+            {emailMutation.data?.message ?? t('emailSent')}
           </p>
         )}
         {isRobot && emailMutation.isError && (
           <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            {errorMessage(emailMutation.error, 'Email failed — check SMTP credentials and the customer\'s contact email.')}
+            {errorMessage(emailMutation.error, t('emailFailed'), slow)}
           </p>
         )}
 
         {isRobot && reportLoading && (
           <div className="flex items-center gap-2 py-10 text-sm text-[var(--app-muted)]">
-            <Loader2 className="h-4 w-4 animate-spin" /> Aggregating this robot&apos;s telemetry…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t('aggregating')}
           </div>
         )}
 
         {isRobot && reportError && (
           <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
-            Could not load this robot&apos;s report. Check that you are signed in and the backend is running.
+            {t('reportFailed')}
           </p>
         )}
 
@@ -331,9 +330,9 @@ export function ReportPreviewPanel() {
   return (
     <div className="space-y-5">
       <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-4">
-        <p className="text-sm font-semibold text-[var(--app-text)]">Report layout preview</p>
+        <p className="text-sm font-semibold text-[var(--app-text)]">{t('layoutTitle')}</p>
         <p className="mt-1 text-xs text-[var(--app-muted)]">
-          Pick a robot to preview its report page for a month or a week.
+          {t('layoutHint')}
         </p>
         <a
           href={`/${locale}/report/example`}
@@ -342,7 +341,7 @@ export function ReportPreviewPanel() {
           className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-3 py-1.5 text-xs font-semibold text-[var(--app-brand-dark)] transition hover:border-[var(--app-brand)]"
         >
           <ExternalLink className="h-3.5 w-3.5" />
-          Open public example page (no login) — shareable with customers
+          {t('openExample')}
         </a>
       </div>
 
@@ -354,28 +353,26 @@ export function ReportPreviewPanel() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by serial number, robot, or customer…"
+            placeholder={t('searchPlaceholder')}
             className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-panel-alt)] pl-10 pr-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
           />
         </div>
 
         {isLoading && (
           <div className="flex items-center gap-2 py-8 text-sm text-[var(--app-muted)]">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading robots…
+            <Loader2 className="h-4 w-4 animate-spin" /> {t('loadingRobots')}
           </div>
         )}
 
         {isError && (
           <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
-            Could not load robots. Check that you are signed in and the backend is running.
+            {t('robotsFailed')}
           </p>
         )}
 
         {!isLoading && !isError && filtered.length === 0 && (
           <div className="rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-panel)] py-10 text-center text-sm text-[var(--app-muted)]">
-            {robots.length === 0
-              ? 'No robots registered yet. Register a robot first.'
-              : 'No robots match your search.'}
+            {robots.length === 0 ? t('emptyNone') : t('noMatch')}
           </div>
         )}
 
@@ -396,7 +393,7 @@ export function ReportPreviewPanel() {
                   <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--app-muted)]">
                     <span className="inline-flex items-center gap-1">
                       <Building2 className="h-3.5 w-3.5" />
-                      {r.deployment?.customerName ?? 'Unassigned'}
+                      {r.deployment?.customerName ?? t('unassigned')}
                     </span>
                     {r.deployment?.site && (
                       <span className="inline-flex items-center gap-1">
@@ -407,7 +404,7 @@ export function ReportPreviewPanel() {
                   </div>
                 </div>
                 <span className="shrink-0 rounded-full border border-[var(--app-border)] px-2.5 py-1 text-xs font-semibold text-[var(--app-brand-dark)]">
-                  {CADENCE_LABEL[r.deployment?.reportCadence ?? ''] ?? '—'}
+                  {CADENCE_KEY[r.deployment?.reportCadence ?? ''] ? tRobots(CADENCE_KEY[r.deployment?.reportCadence ?? '']) : '—'}
                 </span>
               </button>
             </li>
@@ -417,7 +414,7 @@ export function ReportPreviewPanel() {
         <InfiniteScroll
           hasMore={hasMore}
           onReach={() => setVisibleCount((n) => n + PAGE_SIZE)}
-          label={`Showing ${visibleCount} of ${filtered.length}`}
+          label={t('showing', { shown: visibleCount, total: filtered.length })}
         />
       </div>
     </div>

@@ -48,15 +48,15 @@ export function PublicReportClient({ token }: { token: string }) {
 
       {!isExample && isLoading && (
         <div className="flex items-center justify-center gap-2 py-32 text-sm text-[#6b7785]">
-          <Loader2 className="h-5 w-5 animate-spin" /> Loading report…
+          <Loader2 className="h-5 w-5 animate-spin" /> {t('loading')}
         </div>
       )}
 
       {!isExample && isError && (
         <div className="mx-auto max-w-md px-6 py-32 text-center">
-          <p className="text-lg font-semibold text-[#16243a]">Report not available</p>
+          <p className="text-lg font-semibold text-[#16243a]">{t('unavailable')}</p>
           <p className="mt-2 text-sm text-[#6b7785]">
-            This report link is invalid or has expired. Please request a new link.
+            {t('unavailableBody')}
           </p>
         </div>
       )}

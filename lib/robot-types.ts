@@ -18,23 +18,6 @@ export const ROBOT_TYPES: RobotType[] = [
   'RECEPTION',
 ];
 
-/**
- * English labels for the badges.
- *
- * <p>Badges used to render the raw enum, which was survivable while every value was
- * a single word. `CLEANING_EQUIPMENT` is not a label. The filter tabs are translated
- * through next-intl (`robots.types.*`) instead; these cover the places that are not.
- */
-export const TYPE_LABELS: Record<RobotType, string> = {
-  CLEANING: 'Cleaning',
-  CLEANING_EQUIPMENT: 'Cleaning Equipment',
-  DELIVERY: 'Delivery',
-  MOWING: 'Mowing',
-  SECURITY: 'Security',
-  COOKING: 'Cooking',
-  RECEPTION: 'Reception',
-};
-
 /** One colour per type. A missing entry renders an unstyled badge, so this is
  *  a total record rather than a partial one. */
 export const TYPE_STYLES: Record<RobotType, string> = {

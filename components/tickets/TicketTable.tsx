@@ -279,13 +279,14 @@ function Fact({ label, value }: { label: string; value: string | null | undefine
 }
 
 function StatusPill({ open, status }: { open: boolean; status: string | null }) {
+  const t = useTranslations('tickets.table');
   const cls = open
     ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
     : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400';
   return (
     <span className={`inline-flex max-w-[160px] items-center gap-1 truncate rounded-md px-1.5 py-0.5 text-xs font-medium ${cls}`}>
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${open ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-      <span className="truncate">{status ?? (open ? 'Open' : 'Done')}</span>
+      <span className="truncate">{status ?? (open ? t('statusOpen') : t('statusDone'))}</span>
     </span>
   );
 }

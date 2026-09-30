@@ -64,6 +64,8 @@ type Stage = 'idle' | 'uploading' | 'extracting' | 'done' | 'error';
 export function UploadClient({ locale, solutionType, meta }: UploadClientProps) {
   const router = useRouter();
   const t = useTranslations('generateSolution.upload');
+  const tg = useTranslations('generateSolution');
+  const tc = useTranslations('common');
   const [solutionName, setSolutionName] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [stage, setStage] = useState<Stage>('idle');
@@ -105,7 +107,7 @@ export function UploadClient({ locale, solutionType, meta }: UploadClientProps) 
       // Step 1: Upload file
       const uploadRes = await fileApi.upload(file);
       if (!uploadRes.data.success) {
-        throw new Error(uploadRes.data.message ?? 'File upload failed');
+        throw new Error(uploadRes.data.message ?? t('uploadFailed'));
       }
       const { id: fileId } = uploadRes.data.data;
 
@@ -113,7 +115,7 @@ export function UploadClient({ locale, solutionType, meta }: UploadClientProps) 
       setStage('extracting');
       const extractRes = await requirementApi.extractFromFile(fileId, robotType);
       if (!extractRes.data.success) {
-        throw new Error(extractRes.data.message ?? 'Requirement extraction failed');
+        throw new Error(extractRes.data.message ?? t('extractionFailed'));
       }
       const { id: requirementId } = extractRes.data.data;
 
@@ -131,11 +133,11 @@ export function UploadClient({ locale, solutionType, meta }: UploadClientProps) 
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         (err as Error)?.message ??
-        'Something went wrong';
+        tc('error');
       setErrorMsg(msg);
       setStage('error');
     }
-  }, [file, solutionName, robotType, solutionType, locale, router, t]);
+  }, [file, solutionName, robotType, solutionType, locale, router, t, tc]);
 
   const stageLabel: Record<Stage, string> = {
     idle: t('generate'),
@@ -153,7 +155,7 @@ export function UploadClient({ locale, solutionType, meta }: UploadClientProps) 
         <section className="flex min-w-0 flex-1 flex-col">
           <AppTopBar
             eyebrow={t('eyebrow')}
-            searchPlaceholder="Search customers, sites, robot criteria"
+            searchPlaceholder={tg('searchPlaceholder')}
             title={meta.title}
           />
 

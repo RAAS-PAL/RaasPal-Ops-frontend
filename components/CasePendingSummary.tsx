@@ -1,10 +1,11 @@
 'use client';
 
 import { AlertTriangle, ArrowRight, Download, Loader2, RefreshCw } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { type Period, describePeriod } from '@/lib/casePeriod';
 import type { CaseBoard, CaseReportRow, CaseReportRunInfo } from '@/types/api';
-import { countCases, errorMessage, useCaseReport } from './CasePendingPanel';
+import { boldText, countCases, errorMessage, useCaseReport } from './CasePendingPanel';
 import type { CaseReportSpec } from './CasePendingPanel';
 
 /**
@@ -70,6 +71,7 @@ function PartLabel({ part }: { part: Part }) {
  * off the end; a slice of one case in hundreds keeps a 4px minimum so it stays visible.
  */
 function CompositionBar({ parts, total }: { parts: Part[]; total: number }) {
+  const t = useTranslations('pendingCases');
   const shown = parts.filter((p) => p.value > 0);
   return (
     <div
@@ -80,7 +82,12 @@ function CompositionBar({ parts, total }: { parts: Part[]; total: number }) {
       {shown.map((p) => (
         <div
           key={p.label}
-          title={`${p.label}: ${p.value} of ${total} (${Math.round((p.value / total) * 100)}%)`}
+          title={t('counts.sliceTitle', {
+            label: p.label,
+            value: p.value,
+            total,
+            percent: Math.round((p.value / total) * 100),
+          })}
           className={`min-w-1 basis-0 ${SLICE[p.slice]}`}
           style={{ flexGrow: p.value }}
         />
@@ -108,6 +115,7 @@ export const cardButton =
  * every 15 minutes, and "Final" for a past day.
  */
 export function LiveBadge({ live, info }: { live: boolean; info?: CaseReportRunInfo | null }) {
+  const t = useTranslations('pendingCases');
   const at = info?.exists && info.generatedAt ? new Date(info.generatedAt) : null;
   const time =
     at && !Number.isNaN(at.getTime())
@@ -115,18 +123,18 @@ export function LiveBadge({ live, info }: { live: boolean; info?: CaseReportRunI
       : null;
   return live ? (
     <span
-      title="Today's sheets refresh from monday every 15 minutes until midnight; this page re-reads them every minute."
+      title={t('badge.liveTitle')}
       className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900"
     >
       <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
-      Live{time && ` · updated ${time}`}
+      {time ? t('badge.liveUpdated', { time }) : t('badge.live')}
     </span>
   ) : (
     <span
-      title="A past day is final: the sheets as they were frozen that day."
+      title={t('badge.finalTitle')}
       className="inline-flex items-center rounded-full bg-[var(--app-bg)] px-2 py-0.5 text-xs font-semibold text-[var(--app-muted)] ring-1 ring-inset ring-[var(--app-border-strong)]"
     >
-      Final{time && ` · last updated ${time}`}
+      {time ? t('badge.finalUpdated', { time }) : t('badge.final')}
     </span>
   );
 }
@@ -199,22 +207,25 @@ export function CaseCountsCard({
   holdOwner: string;
   heldNote?: string;
 }) {
+  const t = useTranslations('pendingCases');
   const counts = countCases(rows);
+  // "Customer" is the generic owner of a sheet's holds; the others are names (MK, Makro, …).
+  const owner = holdOwner === 'Customer' ? t('owner.customer') : holdOwner;
 
   // The total's parts, in the order the boxes and the bar show them. The last two of
   // RAASPAL Pending appear only when there is something in them.
-  const held: Part = { slice: 'held', label: `${holdOwner} on hold`, value: counts.heldByCustomer };
+  const held: Part = { slice: 'held', label: t('counts.heldOwner', { owner }), value: counts.heldByCustomer };
   const pendingParts: Part[] = [
-    { slice: 'within', label: 'Within SLA', value: counts.within },
-    { slice: 'breached', label: 'Over SLA', value: counts.breached },
+    { slice: 'within', label: t('sla.WITHIN'), value: counts.within },
+    { slice: 'breached', label: t('sla.BREACHED'), value: counts.breached },
     ...(counts.heldByRaaspal > 0
-      ? [{ slice: 'other' as const, label: 'Sup Status On Hold', value: counts.heldByRaaspal }]
+      ? [{ slice: 'other' as const, label: t('counts.supOnHold'), value: counts.heldByRaaspal }]
       : []),
-    ...(counts.unknown > 0 ? [{ slice: 'other' as const, label: 'No SLA verdict', value: counts.unknown }] : []),
+    ...(counts.unknown > 0 ? [{ slice: 'other' as const, label: t('counts.noVerdict'), value: counts.unknown }] : []),
   ];
   // Held rows from before the owner was recorded: in the total, in neither part.
   const unsplit: Part[] =
-    counts.heldUnsplit > 0 ? [{ slice: 'other', label: 'On hold, owner not recorded', value: counts.heldUnsplit }] : [];
+    counts.heldUnsplit > 0 ? [{ slice: 'other', label: t('counts.unsplit'), value: counts.heldUnsplit }] : [];
 
   return (
     <div className="@container space-y-4">
@@ -224,14 +235,17 @@ export function CaseCountsCard({
           cases waiting on RAASPAL, only one of them is late. */}
       <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
         <div className="shrink-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">Total cases</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">{t('counts.total')}</p>
           <p className="mt-1 text-4xl font-semibold leading-none tabular-nums text-[var(--app-text)]">{counts.total}</p>
         </div>
         <div className="min-w-[14rem] flex-1 space-y-2 pb-0.5">
           <p className="text-sm text-[var(--app-muted)]">
-            <span className="font-semibold text-[var(--app-text)]">{counts.heldByCustomer}</span> on hold with{' '}
-            {holdOwner} &middot;{' '}
-            <span className="font-semibold text-[var(--app-text)]">{counts.raaspalPending}</span> RAASPAL Pending
+            {t.rich('counts.summary', {
+              held: counts.heldByCustomer,
+              owner,
+              pending: counts.raaspalPending,
+              b: boldText,
+            })}
           </p>
           {counts.total > 0 && <CompositionBar parts={[held, ...pendingParts, ...unsplit]} total={counts.total} />}
         </div>
@@ -241,14 +255,14 @@ export function CaseCountsCard({
         <div className={`flex flex-col justify-center gap-1 rounded-lg border p-4 ${BOX_TONE.held}`}>
           <PartLabel part={held} />
           <span className="text-3xl font-semibold tabular-nums text-[var(--app-text)]">{held.value}</span>
-          <span className="text-xs text-[var(--app-muted)]">{heldNote ?? 'Status is On Hold: waiting on the customer'}</span>
+          <span className="text-xs text-[var(--app-muted)]">{heldNote ?? t('counts.heldNote')}</span>
         </div>
 
         <div className="@container flex flex-col gap-3 rounded-lg bg-[var(--app-bg)] p-4 @xl:flex-row @xl:items-center">
           <div className="shrink-0 @xl:w-44">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">RAASPAL Pending</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">{t('counts.raaspalPending')}</p>
             <p className="mt-1 text-3xl font-semibold tabular-nums text-[var(--app-text)]">{counts.raaspalPending}</p>
-            <p className="text-xs text-[var(--app-muted)]">Technician schedule or spare parts</p>
+            <p className="text-xs text-[var(--app-muted)]">{t('counts.pendingSub')}</p>
           </div>
           <div className="grid flex-1 gap-2 @sm:grid-cols-2">
             {pendingParts.map((part) => (
@@ -263,10 +277,8 @@ export function CaseCountsCard({
         <p className="flex items-start gap-2 text-xs text-[var(--app-muted)]">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
-            {counts.unknown > 0 &&
-              `${counts.unknown} case${counts.unknown === 1 ? ' has' : 's have'} no SLA verdict (no open date or province). `}
-            {counts.heldUnsplit > 0 &&
-              `${counts.heldUnsplit} held case${counts.heldUnsplit === 1 ? ' is' : 's are'} in neither count: generated before ${holdOwner} on hold and RAASPAL Pending were told apart, or set to On Hold by hand. Regenerate from monday to sort the unedited ones.`}
+            {counts.unknown > 0 && `${t('counts.noVerdictGap', { count: counts.unknown })} `}
+            {counts.heldUnsplit > 0 && t('counts.unsplitGap', { count: counts.heldUnsplit, owner })}
           </span>
         </p>
       )}
@@ -293,6 +305,9 @@ export function CasePendingSummary({
   period: Period;
   board?: CaseBoard;
 }) {
+  const t = useTranslations('pendingCases');
+  const tPeriod = useTranslations('pendingCases.period');
+  const locale = useLocale();
   const asOf = period.asOf;
   const { query, regenerate, exportExcel, runInfo, live } = useCaseReport(report, asOf);
   const { data: rows = [], isFetching, isError, error } = query;
@@ -300,13 +315,13 @@ export function CasePendingSummary({
 
   // Removed rows are kept for restoring but are not cases; count what the Excel holds.
   const sheet = rows.filter((r) => !r.removed && (board === undefined || r.board === board));
-  const heldNote = report.heldElsewhere ? 'Held cases are listed on the On Hold tab' : undefined;
+  const heldNote = report.heldElsewhere ? t('counts.heldElsewhere') : undefined;
   const failure = isError ? error : regenerate.isError ? regenerate.error : exportExcel.isError ? exportExcel.error : null;
 
   return (
     <ReportCard
       title={title}
-      subtitle={describePeriod(period)}
+      subtitle={describePeriod(period, tPeriod, locale)}
       badge={rows.length > 0 ? <LiveBadge live={live} info={runInfo} /> : undefined}
       actions={
         <>
@@ -314,33 +329,29 @@ export function CasePendingSummary({
             type="button"
             onClick={() => regenerate.mutate()}
             disabled={busy || rows.length === 0 || !live}
-            aria-label="Regenerate from monday"
-            title={
-              live
-                ? 'Re-read the monday board now. Rows you have edited are kept as they are.'
-                : 'A past day is final; only today can be re-read from monday.'
-            }
+            aria-label={t('summary.regenerateAria')}
+            title={live ? t('summary.regenerateLive') : t('summary.regeneratePast')}
             className={cardButton}
           >
             {regenerate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            <span className="hidden sm:inline">{regenerate.isPending ? 'Regenerating…' : 'Regenerate'}</span>
+            <span className="hidden sm:inline">{regenerate.isPending ? t('summary.regenerating') : t('summary.regenerate')}</span>
           </button>
           <button
             type="button"
             onClick={() => exportExcel.mutate()}
             disabled={busy || exportExcel.isPending || rows.length === 0}
-            title="Download this sheet as Excel, exactly as the details page shows it - corrections included."
+            title={t('summary.excelTitle')}
             className={cardButton}
           >
             {exportExcel.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            Excel
+            {t('summary.excel')}
           </button>
           {rows.length > 0 && (
             <Link
               href={{ pathname: `/reports/cases/${report.slug}`, query: { date: asOf } }}
               className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--app-brand)] px-3 text-sm font-semibold text-white shadow-sm transition-opacity duration-150 hover:opacity-90"
             >
-              Case details
+              {t('summary.caseDetails')}
               <ArrowRight className="h-4 w-4" />
             </Link>
           )}
@@ -351,7 +362,7 @@ export function CasePendingSummary({
         <CardBand>
           <CardError
             error={failure}
-            fallback="Could not load the report. Check that the backend is running and that MONDAY_API_TOKEN is set."
+            fallback={t('summary.loadFailed')}
           />
         </CardBand>
       )}
@@ -362,10 +373,10 @@ export function CasePendingSummary({
             {isFetching ? (
               <span className="inline-flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Loading the report. The first run for a day reads monday and can take a few minutes.
+                {t('summary.loading')}
               </span>
             ) : (
-              'No open cases on this sheet for this day.'
+              t('summary.empty')
             )}
           </CardBand>
         )
@@ -373,15 +384,14 @@ export function CasePendingSummary({
         <CardBand>
           {board && (
             <p className="mb-3 text-xs text-[var(--app-muted)]">
-              Showing {board === 'CLEANING' ? 'cleaning' : 'delivery'} cases only. The Excel and the details hold both
-              boards.
+              {t('summary.boardOnly', { board: board === 'CLEANING' ? 'cleaning' : 'delivery' })}
             </p>
           )}
           <CaseCountsCard rows={sheet} holdOwner={report.holdOwner} heldNote={heldNote} />
         </CardBand>
       )}
 
-      <CardBand className="py-3 text-xs text-[var(--app-muted)]">{report.hint}</CardBand>
+      <CardBand className="py-3 text-xs text-[var(--app-muted)]">{t(report.hintKey)}</CardBand>
     </ReportCard>
   );
 }

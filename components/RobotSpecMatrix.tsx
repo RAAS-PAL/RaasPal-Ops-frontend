@@ -2,6 +2,7 @@
 
 import { Fragment, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { Check, ChevronDown, ChevronRight, Minus, Table2 } from 'lucide-react';
 import { robotApi } from '@/lib/api';
 import { SPEC_GROUPS, type SpecField } from '@/lib/robot-spec-fields';
@@ -27,6 +28,7 @@ const hasValue = (v: unknown) => v !== null && v !== undefined && v !== '';
 /* ─── Cell rendering ──────────────────────────────────────────────────────── */
 
 function SpecCell({ field, value }: { field: SpecField; value: unknown }) {
+  const t = useTranslations('specMatrix');
   // NULL means "not recorded", which is different from zero or false. Showing a
   // dash keeps that distinction visible instead of implying the robot lacks the
   // feature — the datasheet's N/A entries land here.
@@ -36,9 +38,9 @@ function SpecCell({ field, value }: { field: SpecField; value: unknown }) {
 
   if (field.kind === 'bool') {
     return value === true || value === 'true' ? (
-      <Check className="mx-auto h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-label="yes" />
+      <Check className="mx-auto h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-label={t('yes')} />
     ) : (
-      <Minus className="mx-auto h-3.5 w-3.5 text-[var(--app-muted)] opacity-40" aria-label="no" />
+      <Minus className="mx-auto h-3.5 w-3.5 text-[var(--app-muted)] opacity-40" aria-label={t('no')} />
     );
   }
 
@@ -62,6 +64,8 @@ function SpecCell({ field, value }: { field: SpecField; value: unknown }) {
 /* ─── Matrix ──────────────────────────────────────────────────────────────── */
 
 export function RobotSpecMatrix() {
+  const t = useTranslations('specMatrix');
+  const tSpecs = useTranslations('robotSpecs');
   // Same reasoning as the catalogue list: a big read of data that changes a few times
   // a week, so it is kept rather than re-fetched when the window regains focus.
   const { data, isLoading, isError } = useQuery({
@@ -97,7 +101,7 @@ export function RobotSpecMatrix() {
   const groupCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const g of SPEC_GROUPS) {
-      counts[g.name] = hideEmpty
+      counts[g.id] = hideEmpty
         ? g.fields.filter((f) => rows.some((r) => hasValue(r.specs[f.key]))).length
         : g.fields.length;
     }
@@ -110,7 +114,7 @@ export function RobotSpecMatrix() {
   // see exactly which fields are missing.
   const groups = useMemo(() => {
     const chosen =
-      selected.size === 0 ? SPEC_GROUPS : SPEC_GROUPS.filter((g) => selected.has(g.name));
+      selected.size === 0 ? SPEC_GROUPS : SPEC_GROUPS.filter((g) => selected.has(g.id));
     if (!hideEmpty) return chosen;
     return chosen
       .map((g) => ({ ...g, fields: g.fields.filter((f) => rows.some((r) => hasValue(r.specs[f.key]))) }))
@@ -122,7 +126,7 @@ export function RobotSpecMatrix() {
   if (isError) {
     return (
       <div className="rounded-xl border border-[var(--app-border)] p-8 text-center text-sm text-[var(--app-muted)]">
-        Could not load the specification matrix.
+        {t('loadFailed')}
       </div>
     );
   }
@@ -131,9 +135,9 @@ export function RobotSpecMatrix() {
     return (
       <div className="rounded-xl border border-[var(--app-border)] p-10 text-center">
         <Table2 className="mx-auto mb-3 h-8 w-8 text-[var(--app-muted)] opacity-40" />
-        <p className="text-sm font-semibold">No specifications yet</p>
+        <p className="text-sm font-semibold">{t('noneTitle')}</p>
         <p className="mt-1 text-sm text-[var(--app-muted)]">
-          Models appear here once they have a row in the cleaning specification table.
+          {t('noneBody')}
         </p>
       </div>
     );
@@ -146,12 +150,13 @@ export function RobotSpecMatrix() {
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-[var(--app-muted)]">
-          <span className="font-semibold text-[var(--app-text)]">{rows.length}</span> models ·{' '}
-          <span className="font-semibold text-[var(--app-text)]">{visibleFieldCount}</span> specifications
+          {t.rich('summary', {
+            models: rows.length,
+            specs: visibleFieldCount,
+            b: (chunks) => <span className="font-semibold text-[var(--app-text)]">{chunks}</span>,
+          })}
           {selected.size > 0 && (
-            <span className="ml-1.5 text-[var(--app-brand-dark)]">
-              ({selected.size} {selected.size === 1 ? 'category' : 'categories'})
-            </span>
+            <span className="ml-1.5 text-[var(--app-brand-dark)]">({t('categories', { count: selected.size })})</span>
           )}
         </p>
         <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--app-muted)]">
@@ -161,7 +166,7 @@ export function RobotSpecMatrix() {
             onChange={(e) => setHideEmpty(e.target.checked)}
             className="h-4 w-4 rounded border-[var(--app-border)] accent-[var(--app-brand)]"
           />
-          Hide specs no model has
+          {t('hideEmpty')}
         </label>
       </div>
 
@@ -169,7 +174,7 @@ export function RobotSpecMatrix() {
       <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3">
         <div className="mb-2 flex items-center justify-between gap-3">
           <span className="text-xs font-bold uppercase tracking-wide text-[var(--app-muted)]">
-            Filter by category
+            {t('filterTitle')}
           </span>
           {selected.size > 0 ? (
             <button
@@ -177,25 +182,25 @@ export function RobotSpecMatrix() {
               onClick={() => setSelected(new Set())}
               className="text-xs font-semibold text-[var(--app-brand-dark)] hover:underline"
             >
-              Clear
+              {t('clear')}
             </button>
           ) : (
             <span className="text-xs text-[var(--app-muted)] opacity-70">
-              Nothing ticked — showing all
+              {t('nothingTicked')}
             </span>
           )}
         </div>
 
         <div className="flex flex-wrap gap-2">
           {SPEC_GROUPS.map((g) => {
-            const isOn = selected.has(g.name);
-            const count = groupCounts[g.name] ?? 0;
+            const isOn = selected.has(g.id);
+            const count = groupCounts[g.id] ?? 0;
             // A category whose specs are all blank cannot contribute rows while
             // "hide empty" is on, so ticking it would appear to do nothing.
             const isEmpty = count === 0;
             return (
               <label
-                key={g.name}
+                key={g.id}
                 className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
                   isOn
                     ? 'border-[var(--app-brand)] bg-[var(--app-brand)] text-white'
@@ -205,10 +210,10 @@ export function RobotSpecMatrix() {
                 <input
                   type="checkbox"
                   checked={isOn}
-                  onChange={() => toggleGroup(g.name)}
+                  onChange={() => toggleGroup(g.id)}
                   className="h-3.5 w-3.5 rounded border-[var(--app-border)] accent-[var(--app-brand)]"
                 />
-                {g.name}
+                {tSpecs(`groups.${g.id}`)}
                 <span className={isOn ? 'opacity-80' : 'opacity-60'}>{count}</span>
               </label>
             );
@@ -218,10 +223,9 @@ export function RobotSpecMatrix() {
 
       {groups.length === 0 && (
         <div className="rounded-xl border border-dashed border-[var(--app-border)] py-12 text-center">
-          <p className="text-sm font-semibold">Nothing to show</p>
+          <p className="text-sm font-semibold">{t('nothingTitle')}</p>
           <p className="mt-1 text-sm text-[var(--app-muted)]">
-            The selected categories have no recorded values. Clear the filter, or untick
-            &ldquo;hide specs no model has&rdquo; to see the blank rows.
+            {t('nothingBody')}
           </p>
         </div>
       )}
@@ -237,7 +241,7 @@ export function RobotSpecMatrix() {
               <th
                 className="sticky left-0 top-0 z-30 min-w-[220px] border-b border-r border-[var(--app-border)] bg-[var(--app-bg)] px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-[var(--app-muted)]"
               >
-                Specification
+                {t('specification')}
               </th>
               {rows.map((r) => (
                 <th
@@ -255,9 +259,9 @@ export function RobotSpecMatrix() {
 
           <tbody>
             {groups.map((group) => {
-              const isCollapsed = collapsed[group.name];
+              const isCollapsed = collapsed[group.id];
               return (
-                <Fragment key={group.name}>
+                <Fragment key={group.id}>
                   <tr>
                     <th
                       colSpan={rows.length + 1}
@@ -266,12 +270,12 @@ export function RobotSpecMatrix() {
                       <button
                         type="button"
                         onClick={() =>
-                          setCollapsed((c) => ({ ...c, [group.name]: !c[group.name] }))
+                          setCollapsed((c) => ({ ...c, [group.id]: !c[group.id] }))
                         }
                         className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[var(--app-muted)] hover:text-[var(--app-brand-dark)]"
                       >
                         {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                        {group.name}
+                        {tSpecs(`groups.${group.id}`)}
                         <span className="opacity-60">({group.fields.length})</span>
                       </button>
                     </th>
@@ -284,7 +288,7 @@ export function RobotSpecMatrix() {
                           scope="row"
                           className="sticky left-0 z-10 border-b border-r border-[var(--app-border)] bg-[var(--app-bg)] px-3 py-1.5 text-left font-medium"
                         >
-                          {field.label}
+                          {tSpecs(`fields.${field.key}`)}
                           {field.unit && (
                             <span className="ml-1.5 text-[10px] font-normal text-[var(--app-muted)]">
                               {field.unit}

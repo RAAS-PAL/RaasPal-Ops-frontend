@@ -17,7 +17,7 @@
  *   the locale prefix, so we can pass it straight into router.replace.
  */
 
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, usePathname } from '@/i18n/navigation';
 import { routing, type Locale } from '@/i18n/routing';
 import { Globe, ChevronDown, Check } from 'lucide-react';
@@ -35,6 +35,7 @@ const LANGUAGES: { locale: Locale; label: string; nativeLabel: string }[] = [
 
 export function LanguageSwitcher() {
   const currentLocale = useLocale() as Locale;
+  const t = useTranslations('language');
   const router       = useRouter();
   const pathname     = usePathname();
 
@@ -76,7 +77,7 @@ export function LanguageSwitcher() {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label="Select language"
+        aria-label={t('select')}
         className="
           flex items-center gap-2 rounded-lg px-3 py-2
           text-sm font-semibold text-[var(--app-text)]
@@ -98,7 +99,7 @@ export function LanguageSwitcher() {
         {open && (
           <motion.ul
             role="listbox"
-            aria-label="Language options"
+            aria-label={t('options')}
             initial={{ opacity: 0, y: -6, scale: 0.97 }}
             animate={{ opacity: 1, y: 0,  scale: 1    }}
             exit={{    opacity: 0, y: -6, scale: 0.97 }}
@@ -146,7 +147,7 @@ export function LanguageSwitcher() {
             {/* Bottom label */}
             <li aria-hidden className="border-t border-[var(--app-border)] px-4 py-2">
               <span className="text-[11px] text-[var(--app-muted)]">
-                {routing.locales.length} languages available
+                {t('available', { count: routing.locales.length })}
               </span>
             </li>
           </motion.ul>

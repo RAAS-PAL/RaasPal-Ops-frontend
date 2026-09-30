@@ -2,10 +2,11 @@
 
 import { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { ArrowLeft, Loader2, Upload } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { robotApi } from '@/lib/api';
-import { ROBOT_TYPES, TYPE_LABELS } from '@/lib/robot-types';
+import { ROBOT_TYPES } from '@/lib/robot-types';
 import type { BudgetBand, RobotImportResult, RobotSpecRequest, RobotType, TestStatus } from '@/types/api';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -221,6 +222,9 @@ function CheckboxGrid({ items, spec, setSpec }: {
 /* ─── Main component ──────────────────────────────────────────────────────── */
 
 export function AddRobotClient() {
+  const tf = useTranslations('robotForm');
+  const d = useTranslations('robotDetail');
+  const typeT = useTranslations('robots.types');
   const router = useRouter();
   const queryClient = useQueryClient();
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -273,7 +277,7 @@ export function AddRobotClient() {
       await queryClient.invalidateQueries({ queryKey: ['robots'] });
       router.push('/robots');
     } catch {
-      setSaveError('Failed to save robot. Check the fields and try again.');
+      setSaveError(tf('saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -288,7 +292,7 @@ export function AddRobotClient() {
       const res = await robotApi.importCatalog(importFile, importType, importStatus);
       setImportResult(res.data.data);
     } catch {
-      setImportError('Import failed. Check that your file matches the required column format.');
+      setImportError(tf('importFailed'));
     } finally {
       setImporting(false);
     }
@@ -301,7 +305,7 @@ export function AddRobotClient() {
 
       <Link href="/robots"
         className="inline-flex items-center gap-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-brand-dark)] transition">
-        <ArrowLeft className="h-4 w-4" />Back to Robots
+        <ArrowLeft className="h-4 w-4" />{tf('back')}
       </Link>
 
       {/* Tabs */}
@@ -313,7 +317,7 @@ export function AddRobotClient() {
                 ? 'bg-[var(--app-brand)] text-white'
                 : 'border border-[var(--app-border)] text-[var(--app-muted)] hover:border-[var(--app-brand)] hover:text-[var(--app-brand-dark)]'
             }`}>
-            {t === 'single' ? 'Single Robot' : 'Import Excel / CSV'}
+            {t === 'single' ? tf('tabSingle') : tf('tabImport')}
           </button>
         ))}
       </div>
@@ -323,209 +327,209 @@ export function AddRobotClient() {
         <form onSubmit={handleSave} className="max-w-3xl space-y-5">
 
           {/* Basic */}
-          <SectionCard title="Basic Information">
+          <SectionCard title={tf('section.basic')}>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Brand" required>
-                <input className={inputCls} value={brand} onChange={(e) => setBrand(e.target.value)} required placeholder="e.g. Gausium" />
+              <Field label={tf('brand')} required>
+                <input className={inputCls} value={brand} onChange={(e) => setBrand(e.target.value)} required placeholder={tf('example', { value: 'Gausium' })} />
               </Field>
-              <Field label="Model" required>
-                <input className={inputCls} value={model} onChange={(e) => setModel(e.target.value)} required placeholder="e.g. G2" />
+              <Field label={tf('model')} required>
+                <input className={inputCls} value={model} onChange={(e) => setModel(e.target.value)} required placeholder={tf('example', { value: 'G2' })} />
               </Field>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Field label="Robot Type" required>
+              <Field label={tf('robotType')} required>
                 <select className={selectCls} value={robotType} onChange={(e) => setRobotType(e.target.value as RobotType)}>
                   {ROBOT_TYPES.map((t) => (
-                    <option key={t} value={t}>{TYPE_LABELS[t]}</option>
+                    <option key={t} value={t}>{typeT(t.toLowerCase())}</option>
                   ))}
                 </select>
               </Field>
-              <Field label="Test Status">
+              <Field label={tf('testStatus')}>
                 <select className={selectCls} value={testStatus} onChange={(e) => setTestStatus(e.target.value as TestStatus)}>
-                  <option value="DRAFT">Draft</option>
-                  <option value="PENDING">Pending</option>
-                  <option value="UNDER_TESTING">Under Testing</option>
-                  <option value="VERIFIED">Verified</option>
-                  <option value="REJECTED">Rejected</option>
+                  <option value="DRAFT">{d('status.DRAFT')}</option>
+                  <option value="PENDING">{d('status.PENDING')}</option>
+                  <option value="UNDER_TESTING">{d('status.UNDER_TESTING')}</option>
+                  <option value="VERIFIED">{d('status.VERIFIED')}</option>
+                  <option value="REJECTED">{d('status.REJECTED')}</option>
                 </select>
               </Field>
-              <Field label="Price Band">
+              <Field label={tf('priceBand')}>
                 <select className={selectCls} value={priceBand} onChange={(e) => setPriceBand(e.target.value as BudgetBand | '')}>
-                  <option value="">— Select —</option>
-                  <option value="LOW">Low ($)</option>
-                  <option value="MEDIUM">Medium ($$)</option>
-                  <option value="HIGH">High ($$$)</option>
-                  <option value="PREMIUM">Premium ($$$$)</option>
+                  <option value="">{tf('select')}</option>
+                  <option value="LOW">{tf('priceLow')}</option>
+                  <option value="MEDIUM">{tf('priceMedium')}</option>
+                  <option value="HIGH">{tf('priceHigh')}</option>
+                  <option value="PREMIUM">{tf('pricePremium')}</option>
                 </select>
               </Field>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Rental Price (฿ / month)">
+              <Field label={tf('rental')}>
                 <input className={inputCls} type="number" min="0" step="1" value={rentalPrice}
-                  onChange={(e) => setRentalPrice(e.target.value)} placeholder="e.g. 35000" />
+                  onChange={(e) => setRentalPrice(e.target.value)} placeholder={tf('example', { value: '35000' })} />
               </Field>
-              <Field label="Selling Price (฿)">
+              <Field label={tf('selling')}>
                 <input className={inputCls} type="number" min="0" step="1" value={sellingPrice}
-                  onChange={(e) => setSellingPrice(e.target.value)} placeholder="e.g. 450000" />
+                  onChange={(e) => setSellingPrice(e.target.value)} placeholder={tf('example', { value: '450000' })} />
               </Field>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Image URL">
+              <Field label={tf('imageUrl')}>
                 <input className={inputCls} type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" />
               </Field>
-              <Field label="Datasheet URL">
+              <Field label={tf('datasheetUrl')}>
                 <input className={inputCls} type="url" value={datasheetUrl} onChange={(e) => setDatasheetUrl(e.target.value)} placeholder="https://…" />
               </Field>
             </div>
           </SectionCard>
 
           {/* Physical */}
-          <SectionCard title="Physical Dimensions">
+          <SectionCard title={d('section.physical')}>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <NumInput label="Length (mm)" value={spec.lengthMm} onChange={(v) => setSpec((s) => ({ ...s, lengthMm: v }))} placeholder="750" />
-              <NumInput label="Width (mm)" value={spec.widthMm} onChange={(v) => setSpec((s) => ({ ...s, widthMm: v }))} placeholder="560" />
-              <NumInput label="Height (mm)" value={spec.heightMm} onChange={(v) => setSpec((s) => ({ ...s, heightMm: v }))} placeholder="370" />
-              <NumInput label="Weight (kg)" value={spec.robotWeightKg} onChange={(v) => setSpec((s) => ({ ...s, robotWeightKg: v }))} placeholder="45" step="0.1" />
+              <NumInput label={`${d('stat.length')} (mm)`} value={spec.lengthMm} onChange={(v) => setSpec((s) => ({ ...s, lengthMm: v }))} placeholder="750" />
+              <NumInput label={`${d('stat.width')} (mm)`} value={spec.widthMm} onChange={(v) => setSpec((s) => ({ ...s, widthMm: v }))} placeholder="560" />
+              <NumInput label={`${d('stat.height')} (mm)`} value={spec.heightMm} onChange={(v) => setSpec((s) => ({ ...s, heightMm: v }))} placeholder="370" />
+              <NumInput label={`${d('stat.weight')} (kg)`} value={spec.robotWeightKg} onChange={(v) => setSpec((s) => ({ ...s, robotWeightKg: v }))} placeholder="45" step="0.1" />
             </div>
           </SectionCard>
 
           {/* Performance */}
-          <SectionCard title="Performance">
+          <SectionCard title={d('section.performance')}>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <NumInput label="Speed (m/s)" value={spec.speedMs} onChange={(v) => setSpec((s) => ({ ...s, speedMs: v }))} placeholder="0.8" step="0.01" />
-              <NumInput label="Clean Width (mm)" value={spec.widthCleaningMm} onChange={(v) => setSpec((s) => ({ ...s, widthCleaningMm: v }))} placeholder="520" />
-              <NumInput label="Brush Pressure (kg)" value={spec.brushPressureKg} onChange={(v) => setSpec((s) => ({ ...s, brushPressureKg: v }))} placeholder="2.5" step="0.1" />
-              <NumInput label="Vacuum Pressure (kPa)" value={spec.vacuumPressureKpa} onChange={(v) => setSpec((s) => ({ ...s, vacuumPressureKpa: v }))} placeholder="3.5" step="0.1" />
-              <NumInput label="Noise (dB)" value={spec.noiseLevelDb} onChange={(v) => setSpec((s) => ({ ...s, noiseLevelDb: v }))} placeholder="62" step="0.1" />
+              <NumInput label={`${d('stat.speed')} (m/s)`} value={spec.speedMs} onChange={(v) => setSpec((s) => ({ ...s, speedMs: v }))} placeholder="0.8" step="0.01" />
+              <NumInput label={`${d('stat.cleaningWidth')} (mm)`} value={spec.widthCleaningMm} onChange={(v) => setSpec((s) => ({ ...s, widthCleaningMm: v }))} placeholder="520" />
+              <NumInput label={`${d('stat.brushPressure')} (kg)`} value={spec.brushPressureKg} onChange={(v) => setSpec((s) => ({ ...s, brushPressureKg: v }))} placeholder="2.5" step="0.1" />
+              <NumInput label={`${d('stat.vacuumPressure')} (kPa)`} value={spec.vacuumPressureKpa} onChange={(v) => setSpec((s) => ({ ...s, vacuumPressureKpa: v }))} placeholder="3.5" step="0.1" />
+              <NumInput label={`${d('stat.noise')} (dB)`} value={spec.noiseLevelDb} onChange={(v) => setSpec((s) => ({ ...s, noiseLevelDb: v }))} placeholder="62" step="0.1" />
             </div>
           </SectionCard>
 
           {/* Cleaning efficiency */}
-          <SectionCard title="Cleaning Efficiency (sqm/h)">
+          <SectionCard title={d('section.efficiency')}>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <NumInput label="Sweep" value={spec.cleaningEfficiencySweepSqmH} onChange={(v) => setSpec((s) => ({ ...s, cleaningEfficiencySweepSqmH: v }))} placeholder="2000" />
-              <NumInput label="Scrub" value={spec.cleaningEfficiencyScrubSqmH} onChange={(v) => setSpec((s) => ({ ...s, cleaningEfficiencyScrubSqmH: v }))} placeholder="1500" />
-              <NumInput label="Mop" value={spec.cleaningEfficiencyMopSqmH} onChange={(v) => setSpec((s) => ({ ...s, cleaningEfficiencyMopSqmH: v }))} placeholder="1200" />
-              <NumInput label="Sweep + Scrub" value={spec.cleaningEfficiencySweepScrubSqmH} onChange={(v) => setSpec((s) => ({ ...s, cleaningEfficiencySweepScrubSqmH: v }))} placeholder="1800" />
-              <NumInput label="Vacuum" value={spec.cleaningEfficiencyVacuumSqmH} onChange={(v) => setSpec((s) => ({ ...s, cleaningEfficiencyVacuumSqmH: v }))} placeholder="1000" />
+              <NumInput label={d('stat.sweep')} value={spec.cleaningEfficiencySweepSqmH} onChange={(v) => setSpec((s) => ({ ...s, cleaningEfficiencySweepSqmH: v }))} placeholder="2000" />
+              <NumInput label={d('stat.scrub')} value={spec.cleaningEfficiencyScrubSqmH} onChange={(v) => setSpec((s) => ({ ...s, cleaningEfficiencyScrubSqmH: v }))} placeholder="1500" />
+              <NumInput label={d('stat.mop')} value={spec.cleaningEfficiencyMopSqmH} onChange={(v) => setSpec((s) => ({ ...s, cleaningEfficiencyMopSqmH: v }))} placeholder="1200" />
+              <NumInput label={d('stat.sweepScrub')} value={spec.cleaningEfficiencySweepScrubSqmH} onChange={(v) => setSpec((s) => ({ ...s, cleaningEfficiencySweepScrubSqmH: v }))} placeholder="1800" />
+              <NumInput label={d('stat.vacuum')} value={spec.cleaningEfficiencyVacuumSqmH} onChange={(v) => setSpec((s) => ({ ...s, cleaningEfficiencyVacuumSqmH: v }))} placeholder="1000" />
             </div>
           </SectionCard>
 
           {/* Tank capacity */}
-          <SectionCard title="Tank Capacity (L)">
+          <SectionCard title={d('section.tank')}>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <NumInput label="Clean Water" value={spec.tankCapacityCleanL} onChange={(v) => setSpec((s) => ({ ...s, tankCapacityCleanL: v }))} placeholder="40" step="0.1" />
-              <NumInput label="Waste Water" value={spec.tankCapacityWasteL} onChange={(v) => setSpec((s) => ({ ...s, tankCapacityWasteL: v }))} placeholder="40" step="0.1" />
-              <NumInput label="Trash" value={spec.tankCapacityTrashL} onChange={(v) => setSpec((s) => ({ ...s, tankCapacityTrashL: v }))} placeholder="30" step="0.1" />
-              <NumInput label="Dust Bag" value={spec.tankCapacityDustBagL} onChange={(v) => setSpec((s) => ({ ...s, tankCapacityDustBagL: v }))} placeholder="10" step="0.1" />
+              <NumInput label={d('stat.cleanWater')} value={spec.tankCapacityCleanL} onChange={(v) => setSpec((s) => ({ ...s, tankCapacityCleanL: v }))} placeholder="40" step="0.1" />
+              <NumInput label={d('stat.wasteWater')} value={spec.tankCapacityWasteL} onChange={(v) => setSpec((s) => ({ ...s, tankCapacityWasteL: v }))} placeholder="40" step="0.1" />
+              <NumInput label={d('stat.trash')} value={spec.tankCapacityTrashL} onChange={(v) => setSpec((s) => ({ ...s, tankCapacityTrashL: v }))} placeholder="30" step="0.1" />
+              <NumInput label={d('stat.dustBag')} value={spec.tankCapacityDustBagL} onChange={(v) => setSpec((s) => ({ ...s, tankCapacityDustBagL: v }))} placeholder="10" step="0.1" />
             </div>
           </SectionCard>
 
           {/* Cleaning functions */}
-          <SectionCard title="Cleaning Functions">
+          <SectionCard title={d('section.functions')}>
             <CheckboxGrid spec={spec} setSpec={setSpec} items={[
-              ['Sweep (No Vacuum)', 'cleaningFunctionSweepNoVacuum'],
-              ['Sweep + Vacuum', 'cleaningFunctionSweepVacuum'],
-              ['Mop Dry', 'cleaningFunctionMopDry'],
-              ['Mop Wet', 'cleaningFunctionMopWet'],
-              ['Scrub Brush Roller', 'cleaningFunctionScrubBrushRoller'],
-              ['Scrub Brush Disc', 'cleaningFunctionScrubBrushDisc'],
+              [d('fn.sweepNoVacuum'), 'cleaningFunctionSweepNoVacuum'],
+              [d('fn.sweepVacuum'), 'cleaningFunctionSweepVacuum'],
+              [d('fn.mopDry'), 'cleaningFunctionMopDry'],
+              [d('fn.mopWet'), 'cleaningFunctionMopWet'],
+              [d('fn.scrubRoller'), 'cleaningFunctionScrubBrushRoller'],
+              [d('fn.scrubDisc'), 'cleaningFunctionScrubBrushDisc'],
             ]} />
           </SectionCard>
 
           {/* Navigation */}
-          <SectionCard title="Navigation">
+          <SectionCard title={d('section.navigation')}>
             <CheckboxGrid spec={spec} setSpec={setSpec} items={[
-              ['LiDAR 2D', 'navigationLidar2d'],
-              ['LiDAR 3D', 'navigationLidar3d'],
-              ['Camera vSLAM', 'navigationCameraVslam'],
-              ['Spot AI', 'spotAi'],
+              [d('nav.lidar2d'), 'navigationLidar2d'],
+              [d('nav.lidar3d'), 'navigationLidar3d'],
+              [d('nav.vslam'), 'navigationCameraVslam'],
+              [d('nav.spotAi'), 'spotAi'],
             ]} />
           </SectionCard>
 
           {/* Battery */}
-          <SectionCard title="Battery">
+          <SectionCard title={d('section.battery')}>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Battery Type">
-                <input className={inputCls} value={spec.batteryType} onChange={(e) => setSpec((s) => ({ ...s, batteryType: e.target.value }))} placeholder="e.g. Lithium-Ion" />
+              <Field label={tf('batteryType')}>
+                <input className={inputCls} value={spec.batteryType} onChange={(e) => setSpec((s) => ({ ...s, batteryType: e.target.value }))} placeholder={tf('example', { value: 'Lithium-Ion' })} />
               </Field>
-              <NumInput label="Voltage (V)" value={spec.batteryVoltageV} onChange={(v) => setSpec((s) => ({ ...s, batteryVoltageV: v }))} placeholder="48" step="0.1" />
+              <NumInput label={`${d('stat.voltage')} (V)`} value={spec.batteryVoltageV} onChange={(v) => setSpec((s) => ({ ...s, batteryVoltageV: v }))} placeholder="48" step="0.1" />
             </div>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <NumInput label="Capacity (Ah)" value={spec.batteryCapacityAh} onChange={(v) => setSpec((s) => ({ ...s, batteryCapacityAh: v }))} placeholder="60" step="0.1" />
-              <NumInput label="Charge Time (hr)" value={spec.batteryChargingTimeHr} onChange={(v) => setSpec((s) => ({ ...s, batteryChargingTimeHr: v }))} placeholder="4" step="0.1" />
-              <NumInput label="Work Time Sweep (hr)" value={spec.batteryWorkTimeSweepHr} onChange={(v) => setSpec((s) => ({ ...s, batteryWorkTimeSweepHr: v }))} placeholder="4" step="0.1" />
-              <NumInput label="Work Time Scrub (hr)" value={spec.batteryWorkTimeScrubHr} onChange={(v) => setSpec((s) => ({ ...s, batteryWorkTimeScrubHr: v }))} placeholder="3" step="0.1" />
+              <NumInput label={`${d('stat.capacity')} (Ah)`} value={spec.batteryCapacityAh} onChange={(v) => setSpec((s) => ({ ...s, batteryCapacityAh: v }))} placeholder="60" step="0.1" />
+              <NumInput label={tf('chargeTimeHr')} value={spec.batteryChargingTimeHr} onChange={(v) => setSpec((s) => ({ ...s, batteryChargingTimeHr: v }))} placeholder="4" step="0.1" />
+              <NumInput label={tf('workSweepHr')} value={spec.batteryWorkTimeSweepHr} onChange={(v) => setSpec((s) => ({ ...s, batteryWorkTimeSweepHr: v }))} placeholder="4" step="0.1" />
+              <NumInput label={tf('workScrubHr')} value={spec.batteryWorkTimeScrubHr} onChange={(v) => setSpec((s) => ({ ...s, batteryWorkTimeScrubHr: v }))} placeholder="3" step="0.1" />
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <NumInput label="Work Time Sweep+Vacuum (hr)" value={spec.batteryWorkTimeSweepVacuumHr} onChange={(v) => setSpec((s) => ({ ...s, batteryWorkTimeSweepVacuumHr: v }))} placeholder="3.5" step="0.1" />
+              <NumInput label={tf('workSweepVacHr')} value={spec.batteryWorkTimeSweepVacuumHr} onChange={(v) => setSpec((s) => ({ ...s, batteryWorkTimeSweepVacuumHr: v }))} placeholder="3.5" step="0.1" />
             </div>
           </SectionCard>
 
           {/* Charging & station */}
-          <SectionCard title="Charging & Work Station">
+          <SectionCard title={tf('section.chargingStation')}>
             <CheckboxGrid spec={spec} setSpec={setSpec} items={[
-              ['Work Station', 'workStation'],
-              ['Dock Charge', 'dockCharge'],
-              ['Manual Charge', 'manualCharge'],
+              [d('stat.workStation'), 'workStation'],
+              [d('stat.dockCharge'), 'dockCharge'],
+              [d('stat.manualCharge'), 'manualCharge'],
             ]} />
           </SectionCard>
 
           {/* Passability */}
-          <SectionCard title="Passability & Obstacles">
+          <SectionCard title={d('section.passability')}>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <NumInput label="Min Passable Width (mm)" value={spec.minimumPassableWidthMm} onChange={(v) => setSpec((s) => ({ ...s, minimumPassableWidthMm: v }))} placeholder="700" />
-              <NumInput label="Min Passable Height (mm)" value={spec.minimumPassableHeightMm} onChange={(v) => setSpec((s) => ({ ...s, minimumPassableHeightMm: v }))} placeholder="400" />
-              <NumInput label="Max Narrow Cross (mm)" value={spec.maximumNarrowCrossMm} onChange={(v) => setSpec((s) => ({ ...s, maximumNarrowCrossMm: v }))} placeholder="650" />
-              <NumInput label="Min Turn Width (mm)" value={spec.minimumTurnWidthMm} onChange={(v) => setSpec((s) => ({ ...s, minimumTurnWidthMm: v }))} placeholder="1200" />
+              <NumInput label={`${d('stat.minWidth')} (mm)`} value={spec.minimumPassableWidthMm} onChange={(v) => setSpec((s) => ({ ...s, minimumPassableWidthMm: v }))} placeholder="700" />
+              <NumInput label={`${d('stat.minHeight')} (mm)`} value={spec.minimumPassableHeightMm} onChange={(v) => setSpec((s) => ({ ...s, minimumPassableHeightMm: v }))} placeholder="400" />
+              <NumInput label={`${d('stat.maxNarrow')} (mm)`} value={spec.maximumNarrowCrossMm} onChange={(v) => setSpec((s) => ({ ...s, maximumNarrowCrossMm: v }))} placeholder="650" />
+              <NumInput label={`${d('stat.minTurn')} (mm)`} value={spec.minimumTurnWidthMm} onChange={(v) => setSpec((s) => ({ ...s, minimumTurnWidthMm: v }))} placeholder="1200" />
             </div>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <NumInput label="Min Edge from Wall (mm)" value={spec.minimumEdgeFromWallMm} onChange={(v) => setSpec((s) => ({ ...s, minimumEdgeFromWallMm: v }))} placeholder="30" />
-              <NumInput label="Max Step Height (mm)" value={spec.maximumStepHeightMm} onChange={(v) => setSpec((s) => ({ ...s, maximumStepHeightMm: v }))} placeholder="20" />
-              <NumInput label="Slope Angle (°)" value={spec.slopeAngleDeg} onChange={(v) => setSpec((s) => ({ ...s, slopeAngleDeg: v }))} placeholder="5" step="0.1" />
+              <NumInput label={`${d('stat.minEdge')} (mm)`} value={spec.minimumEdgeFromWallMm} onChange={(v) => setSpec((s) => ({ ...s, minimumEdgeFromWallMm: v }))} placeholder="30" />
+              <NumInput label={`${d('stat.maxStep')} (mm)`} value={spec.maximumStepHeightMm} onChange={(v) => setSpec((s) => ({ ...s, maximumStepHeightMm: v }))} placeholder="20" />
+              <NumInput label={`${d('stat.slope')} (°)`} value={spec.slopeAngleDeg} onChange={(v) => setSpec((s) => ({ ...s, slopeAngleDeg: v }))} placeholder="5" step="0.1" />
             </div>
           </SectionCard>
 
           {/* Environment */}
-          <SectionCard title="Environment">
+          <SectionCard title={d('section.environment')}>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Field label="Indoor / Outdoor">
-                <input className={inputCls} value={spec.outdoorIndoor} onChange={(e) => setSpec((s) => ({ ...s, outdoorIndoor: e.target.value }))} placeholder="e.g. Indoor, Outdoor, Both" />
+              <Field label={d('stat.indoorOutdoor')}>
+                <input className={inputCls} value={spec.outdoorIndoor} onChange={(e) => setSpec((s) => ({ ...s, outdoorIndoor: e.target.value }))} placeholder={tf('example', { value: 'Indoor, Outdoor, Both' })} />
               </Field>
-              <Field label="IP Rating">
-                <input className={inputCls} value={spec.ipRating} onChange={(e) => setSpec((s) => ({ ...s, ipRating: e.target.value }))} placeholder="e.g. IP65" />
+              <Field label={d('stat.ipRating')}>
+                <input className={inputCls} value={spec.ipRating} onChange={(e) => setSpec((s) => ({ ...s, ipRating: e.target.value }))} placeholder={tf('example', { value: 'IP65' })} />
               </Field>
               <div className="flex items-end pb-2">
-                <CheckboxRow label="HEPA Filter" checked={spec.hepa} onChange={(v) => setSpec((s) => ({ ...s, hepa: v }))} />
+                <CheckboxRow label={d('stat.hepa')} checked={spec.hepa} onChange={(v) => setSpec((s) => ({ ...s, hepa: v }))} />
               </div>
             </div>
           </SectionCard>
 
           {/* Floor types */}
-          <SectionCard title="Supported Floor Types">
+          <SectionCard title={d('section.floors')}>
             <CheckboxGrid spec={spec} setSpec={setSpec} items={[
-              ['Paving Blocks', 'floorTypePavingBlocks'],
-              ['Granite', 'floorTypeGranite'],
-              ['Marble', 'floorTypeMarble'],
-              ['Terrazzo', 'floorTypeTerrazzo'],
-              ['Terracotta', 'floorTypeTerracotta'],
-              ['Ceramic', 'floorTypeCeramic'],
-              ['Smooth Concrete', 'floorTypeSmoothConcrete'],
-              ['Coarse Concrete', 'floorTypeCoarseConcrete'],
-              ['Stamped Concrete', 'floorTypeStampedConcrete'],
-              ['Asphalt', 'floorTypeAsphalt'],
-              ['Epoxy', 'floorTypeEpoxy'],
-              ['Tile', 'floorTypeTile'],
-              ['Short Carpet', 'floorTypeShortCarpet'],
-              ['Long Carpet', 'floorTypeLongCarpet'],
-              ['SPC', 'floorTypeSpc'],
-              ['Laminate', 'floorTypeLaminate'],
-              ['Vinyl', 'floorTypeVinyl'],
+              [d('floor.pavingBlocks'), 'floorTypePavingBlocks'],
+              [d('floor.granite'), 'floorTypeGranite'],
+              [d('floor.marble'), 'floorTypeMarble'],
+              [d('floor.terrazzo'), 'floorTypeTerrazzo'],
+              [d('floor.terracotta'), 'floorTypeTerracotta'],
+              [d('floor.ceramic'), 'floorTypeCeramic'],
+              [d('floor.smoothConcrete'), 'floorTypeSmoothConcrete'],
+              [d('floor.coarseConcrete'), 'floorTypeCoarseConcrete'],
+              [d('floor.stampedConcrete'), 'floorTypeStampedConcrete'],
+              [d('floor.asphalt'), 'floorTypeAsphalt'],
+              [d('floor.epoxy'), 'floorTypeEpoxy'],
+              [d('floor.tile'), 'floorTypeTile'],
+              [d('floor.shortCarpet'), 'floorTypeShortCarpet'],
+              [d('floor.longCarpet'), 'floorTypeLongCarpet'],
+              [d('floor.spc'), 'floorTypeSpc'],
+              [d('floor.laminate'), 'floorTypeLaminate'],
+              [d('floor.vinyl'), 'floorTypeVinyl'],
             ]} />
           </SectionCard>
 
           {/* Floor layouts */}
-          <SectionCard title="Floor Tile Layouts">
+          <SectionCard title={d('section.layouts')}>
             <CheckboxGrid spec={spec} setSpec={setSpec} items={[
               ['2×2', 'floorLayout2x2'],
               ['4×4', 'floorLayout4x4'],
@@ -546,7 +550,7 @@ export function AddRobotClient() {
             <button type="submit" disabled={saving}
               className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50">
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              {saving ? 'Saving…' : 'Save Robot'}
+              {saving ? tf('saving') : tf('saveRobot')}
             </button>
           </div>
         </form>
@@ -557,21 +561,21 @@ export function AddRobotClient() {
         <div className="max-w-3xl space-y-5">
 
           <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-5 space-y-4">
-            <p className="text-xs font-bold uppercase tracking-widest text-[var(--app-muted)]">Import Options</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-[var(--app-muted)]">{tf('section.importOptions')}</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Robot Type" required>
+              <Field label={tf('robotType')} required>
                 <select className={selectCls} value={importType} onChange={(e) => setImportType(e.target.value as RobotType)}>
                   {ROBOT_TYPES.map((t) => (
-                    <option key={t} value={t}>{TYPE_LABELS[t]}</option>
+                    <option key={t} value={t}>{typeT(t.toLowerCase())}</option>
                   ))}
                 </select>
               </Field>
-              <Field label="Test Status">
+              <Field label={tf('testStatus')}>
                 <select className={selectCls} value={importStatus} onChange={(e) => setImportStatus(e.target.value as TestStatus)}>
-                  <option value="DRAFT">Draft</option>
-                  <option value="PENDING">Pending</option>
-                  <option value="UNDER_TESTING">Under Testing</option>
-                  <option value="VERIFIED">Verified</option>
+                  <option value="DRAFT">{d('status.DRAFT')}</option>
+                  <option value="PENDING">{d('status.PENDING')}</option>
+                  <option value="UNDER_TESTING">{d('status.UNDER_TESTING')}</option>
+                  <option value="VERIFIED">{d('status.VERIFIED')}</option>
                 </select>
               </Field>
             </div>
@@ -592,8 +596,8 @@ export function AddRobotClient() {
             {importFile
               ? <p className="text-sm font-semibold text-[var(--app-text)]">{importFile.name}</p>
               : <>
-                  <p className="text-sm font-semibold text-[var(--app-text)]">Drop your Excel or CSV file here</p>
-                  <p className="text-xs text-[var(--app-muted)]">.xlsx · .xls · .csv — data starts on row 4</p>
+                  <p className="text-sm font-semibold text-[var(--app-text)]">{tf('dropHere')}</p>
+                  <p className="text-xs text-[var(--app-muted)]">{tf('fileHint')}</p>
                 </>
             }
             <input ref={importInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden"
@@ -603,11 +607,11 @@ export function AddRobotClient() {
           {/* Column guide */}
           <details className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)]">
             <summary className="cursor-pointer px-5 py-3 text-sm font-semibold text-[var(--app-text)] select-none">
-              Column guide — rows 1–3 are skipped as headers, data starts row 4
+              {tf('guideSummary')}
             </summary>
             <div className="overflow-x-auto border-t border-[var(--app-border)] px-5 py-3">
               <table className="w-full text-xs text-[var(--app-muted)]">
-                <thead><tr className="text-left"><th className="pr-6 pb-1 font-bold">Col</th><th className="pb-1 font-bold">Field</th></tr></thead>
+                <thead><tr className="text-left"><th className="pr-6 pb-1 font-bold">{tf('guideCol')}</th><th className="pb-1 font-bold">{tf('guideField')}</th></tr></thead>
                 <tbody>
                   {[
                     ['A','Brand *'], ['B','Model *'], ['C','Length (mm)'], ['D','Width (mm)'], ['E','Height (mm)'],
@@ -648,11 +652,11 @@ export function AddRobotClient() {
 
           {importResult && (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 space-y-2 dark:border-emerald-900/40 dark:bg-emerald-950/30">
-              <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">Import complete</p>
+              <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{tf('importComplete')}</p>
               <div className="flex flex-wrap gap-4 text-sm text-emerald-700 dark:text-emerald-400">
-                <span>✓ {importResult.imported} imported</span>
-                <span>↺ {importResult.updated} updated</span>
-                <span>⚠ {importResult.skipped} skipped</span>
+                <span>{tf('imported', { count: importResult.imported })}</span>
+                <span>{tf('updated', { count: importResult.updated })}</span>
+                <span>{tf('skipped', { count: importResult.skipped })}</span>
               </div>
               {importResult.errors.length > 0 && (
                 <ul className="mt-2 space-y-0.5 text-xs text-amber-700 dark:text-amber-400">
@@ -666,7 +670,7 @@ export function AddRobotClient() {
             <button type="button" disabled={!importFile || importing} onClick={handleImport}
               className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50">
               {importing && <Loader2 className="h-4 w-4 animate-spin" />}
-              {importing ? 'Importing…' : 'Import File'}
+              {importing ? tf('importing') : tf('importFile')}
             </button>
           </div>
         </div>

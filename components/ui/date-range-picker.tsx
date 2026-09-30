@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 
 /**
  * A from/to range on one calendar: the first click sets the start, the second the end.
@@ -16,6 +17,8 @@ export function DateRangePicker({ from, to, onChange, max, min, className = '' }
   min?: string;
   className?: string;
 }) {
+  const t = useTranslations('dateRange');
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [draftFrom, setDraftFrom] = useState<string | null>(null);
   const [hover, setHover] = useState<string | null>(null);
@@ -63,12 +66,12 @@ export function DateRangePicker({ from, to, onChange, max, min, className = '' }
     const lastMonthStart = fmt(new Date(e.getFullYear(), e.getMonth() - 1, 1));
     const lastMonthEnd = fmt(new Date(e.getFullYear(), e.getMonth(), 0));
     return [
-      { label: 'Last 7 days', from: addDays(end, -6), to: end },
-      { label: 'Last 30 days', from: addDays(end, -29), to: end },
-      { label: 'This month', from: firstOfMonth, to: end },
-      { label: 'Last month', from: lastMonthStart, to: lastMonthEnd },
+      { key: 'last7', label: t('last7'), from: addDays(end, -6), to: end },
+      { key: 'last30', label: t('last30'), from: addDays(end, -29), to: end },
+      { key: 'thisMonth', label: t('thisMonth'), from: firstOfMonth, to: end },
+      { key: 'lastMonth', label: t('lastMonth'), from: lastMonthStart, to: lastMonthEnd },
     ];
-  }, [max]);
+  }, [max, t]);
 
   const openPicker = () => {
     setMonth(monthOf(from || max || today()));
@@ -89,7 +92,7 @@ export function DateRangePicker({ from, to, onChange, max, min, className = '' }
         className="flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
       >
         <CalendarDays className="h-4 w-4 text-[var(--app-muted)]" />
-        <span>{label(from)} – {label(to)}</span>
+        <span>{label(from, locale)} – {label(to, locale)}</span>
       </button>
 
       {open && (
@@ -99,7 +102,7 @@ export function DateRangePicker({ from, to, onChange, max, min, className = '' }
           <div className="flex flex-wrap gap-1 border-b border-[var(--app-border)] pb-2 sm:w-32 sm:flex-col sm:border-b-0 sm:border-r sm:pb-0 sm:pr-3">
             {presets.map((p) => (
               <button
-                key={p.label}
+                key={p.key}
                 type="button"
                 onClick={() => {
                   onChange({ from: min && p.from < min ? min : p.from, to: p.to });
@@ -112,7 +115,7 @@ export function DateRangePicker({ from, to, onChange, max, min, className = '' }
               </button>
             ))}
             <p className="mt-1 w-full text-[11px] leading-snug text-[var(--app-muted)] sm:mt-2">
-              {draftFrom === null ? 'Click a start day, then an end day.' : `Start ${label(draftFrom)} - now pick the end day.`}
+              {draftFrom === null ? t('hintStart') : t('hintEnd', { date: label(draftFrom, locale) })}
             </p>
           </div>
 
@@ -150,6 +153,8 @@ function Month({ month, range, min, max, onPick, onHover, prev, next }: {
   prev?: () => void;
   next?: () => void;
 }) {
+  const t = useTranslations('dateRange');
+  const locale = useLocale();
   const first = new Date(month.getFullYear(), month.getMonth(), 1);
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const lead = (first.getDay() + 6) % 7; // Monday first
@@ -160,18 +165,18 @@ function Month({ month, range, min, max, onPick, onHover, prev, next }: {
   return (
     <div className="w-60" onMouseLeave={() => onHover(null)}>
       <div className="mb-1 flex items-center justify-between">
-        <button type="button" onClick={prev} className={`rounded-md p-1 hover:bg-[var(--app-faint)] ${prev ? '' : 'invisible'}`} aria-label="Previous month">
+        <button type="button" onClick={prev} className={`rounded-md p-1 hover:bg-[var(--app-faint)] ${prev ? '' : 'invisible'}`} aria-label={t('prev')}>
           <ChevronLeft className="h-4 w-4" />
         </button>
         <span className="text-sm font-semibold text-[var(--app-text)]">
-          {month.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+          {month.toLocaleDateString(locale === 'th' ? 'th-TH' : 'en-GB', { month: 'long', year: 'numeric' })}
         </span>
-        <button type="button" onClick={next} className={`rounded-md p-1 hover:bg-[var(--app-faint)] ${next ? '' : 'invisible'}`} aria-label="Next month">
+        <button type="button" onClick={next} className={`rounded-md p-1 hover:bg-[var(--app-faint)] ${next ? '' : 'invisible'}`} aria-label={t('next')}>
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
       <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-[var(--app-muted)]">
-        {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((d) => <span key={d} className="py-1">{d}</span>)}
+        {weekdayInitials(locale).map((d, i) => <span key={i} className="py-1">{d}</span>)}
       </div>
       <div className="grid grid-cols-7 text-center text-sm">
         {cells.map((day, i) => {
@@ -233,6 +238,16 @@ function monthOf(s: string) {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
 
-function label(s: string) {
-  return s ? parse(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+function label(s: string, locale: string) {
+  return s
+    ? parse(s).toLocaleDateString(locale === 'th' ? 'th-TH' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '—';
+}
+
+/** Monday to Sunday: "Mo Tu …" in English, the narrow weekday names of the locale otherwise. */
+function weekdayInitials(locale: string): string[] {
+  if (locale !== 'th') return ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+  const narrow = new Intl.DateTimeFormat('th-TH', { weekday: 'narrow' });
+  // 2024-01-01 was a Monday.
+  return Array.from({ length: 7 }, (_, i) => narrow.format(new Date(2024, 0, 1 + i)));
 }

@@ -12,6 +12,7 @@
  * only the reporting period.
  */
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -41,7 +42,7 @@ function isoDate(daysAgo = 0): string {
  * "Zara L300 · Phase 1 (L3525…)": the customer is the group header, so it is stripped from
  * the site and the name; a name that only repeats model + site is dropped.
  */
-function optionLabel(u: RobotUnitResponse, customer: string): string {
+function optionLabel(u: RobotUnitResponse, customer: string, fallback: string): string {
   const strip = (s: string | null | undefined) =>
     (s ?? '').replace(customer, '').replace(/^[\s_·:,.\-–]+|[\s_·:,.\-–]+$/g, '').trim();
   const model = (u.model ?? '').trim();
@@ -49,19 +50,18 @@ function optionLabel(u: RobotUnitResponse, customer: string): string {
   let name = strip(u.name);
   if (name && [model, site, `${model} ${site}`].map((x) => x.trim()).includes(name)) name = '';
   const parts = [model || null, site || null, name || null].filter(Boolean);
-  return `${parts.join(' · ') || 'Robot'} (${u.serialNumber})`;
+  return `${parts.join(' · ') || fallback} (${u.serialNumber})`;
 }
 
-function errorMessage(e: unknown, fallback: string): string {
+function errorMessage(e: unknown, fallback: string, slow: string): string {
   const ax = e as { response?: { data?: { message?: string } }; code?: string };
   if (ax?.response?.data?.message) return ax.response.data.message;
-  if (ax?.code === 'ECONNABORTED' || !ax?.response) {
-    return 'This is taking longer than expected — it may still be running on the server. Wait a moment, then try again.';
-  }
+  if (ax?.code === 'ECONNABORTED' || !ax?.response) return slow;
   return fallback;
 }
 
 function Flag({ label, on }: { label: string; on: boolean | null }) {
+  const t = useTranslations('autoxingReport');
   if (on == null) return null;
   return (
     <span
@@ -71,13 +71,14 @@ function Flag({ label, on }: { label: string; on: boolean | null }) {
           : 'bg-[var(--app-faint)] text-[var(--app-muted)]'
       }`}
     >
-      {label}: {on ? 'Yes' : 'No'}
+      {label}: {on ? t('yes') : t('no')}
     </span>
   );
 }
 
 /** Live snapshot — operator context, intentionally excluded from the report. */
 function LiveStatusCard({ status }: { status: AutoxingLiveStatus }) {
+  const t = useTranslations('autoxingReport');
   const updated = status.timestamp ? new Date(status.timestamp).toLocaleString() : '—';
   const online = status.isOnline === true;
   return (
@@ -88,11 +89,11 @@ function LiveStatusCard({ status }: { status: AutoxingLiveStatus }) {
             {online ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
           </span>
           <div>
-            <p className="text-sm font-semibold text-[var(--app-text)]">Live robot status</p>
-            <p className="text-xs text-[var(--app-muted)]">Right now · not included in the report</p>
+            <p className="text-sm font-semibold text-[var(--app-text)]">{t('liveTitle')}</p>
+            <p className="text-xs text-[var(--app-muted)]">{t('liveSub')}</p>
           </div>
         </div>
-        <span className="text-xs text-[var(--app-muted)]">Updated {updated}</span>
+        <span className="text-xs text-[var(--app-muted)]">{t('updated', { time: updated })}</span>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -103,7 +104,7 @@ function LiveStatusCard({ status }: { status: AutoxingLiveStatus }) {
               : 'bg-[var(--app-faint)] text-[var(--app-muted)]'
           }`}
         >
-          {online ? 'Online' : 'Offline'}
+          {online ? t('online') : t('offline')}
         </span>
         {status.batteryPct != null && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--app-faint)] px-2.5 py-1 text-xs font-semibold text-[var(--app-text)]">
@@ -116,9 +117,9 @@ function LiveStatusCard({ status }: { status: AutoxingLiveStatus }) {
             {status.moveState}
           </span>
         )}
-        <Flag label="Charging" on={status.isCharging} />
-        <Flag label="E-stop" on={status.isEmergencyStop} />
-        <Flag label="Manual" on={status.isManualMode} />
+        <Flag label={t('flagCharging')} on={status.isCharging} />
+        <Flag label={t('flagEstop')} on={status.isEmergencyStop} />
+        <Flag label={t('flagManual')} on={status.isManualMode} />
       </div>
 
       {status.errors.length > 0 && (
@@ -136,6 +137,8 @@ function LiveStatusCard({ status }: { status: AutoxingLiveStatus }) {
 }
 
 export function AutoxingReportPanel() {
+  const t = useTranslations('autoxingReport');
+  const slow = t('slow');
   const [robotId, setRobotId] = useState('');
   const [robotName, setRobotName] = useState('');
   const [model, setModel] = useState('');
@@ -203,9 +206,9 @@ export function AutoxingReportPanel() {
           <Gauge className="h-4.5 w-4.5" />
         </span>
         <div>
-          <p className="text-sm font-semibold text-[var(--app-text)]">AutoXing delivery report</p>
+          <p className="text-sm font-semibold text-[var(--app-text)]">{t('title')}</p>
           <p className="text-xs text-[var(--app-muted)]">
-            Live pull for one robot — max 30-day range. Customer and site resolve automatically.
+            {t('description')}
           </p>
         </div>
       </div>
@@ -216,8 +219,8 @@ export function AutoxingReportPanel() {
           <div className="inline-flex rounded-lg border border-[var(--app-border)] p-0.5 text-sm">
             {(
               [
-                ['performance', 'Performance report (new)'],
-                ['summary', 'Delivery summary (current)'],
+                ['performance', t('layoutPerformance')],
+                ['summary', t('layoutSummary')],
               ] as const
             ).map(([id, text]) => (
               <button
@@ -242,16 +245,16 @@ export function AutoxingReportPanel() {
                 onChange={(e) => setIncludeServiceCases(e.target.checked)}
                 className="h-4 w-4 accent-[var(--app-brand)]"
               />
-              Include service cases
+              {t('includeCases')}
             </label>
           )}
           <span className="text-xs text-[var(--app-muted)]">
-            {layout === 'performance' ? 'Max 31 days — use a calendar month for the real report.' : 'Max 30 days.'}
+            {layout === 'performance' ? t('maxPerformance') : t('maxSummary')}
           </span>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex min-w-72 flex-1 flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
-            Registered robot
+            {t('registeredRobot')}
             <select
               value={(registered.data ?? []).some((u) => u.serialNumber === robotId) ? robotId : ''}
               onChange={(e) => pickRegistered(e.target.value)}
@@ -259,16 +262,16 @@ export function AutoxingReportPanel() {
             >
               <option value="">
                 {registered.isLoading
-                  ? 'Loading…'
+                  ? t('loading')
                   : (registered.data ?? []).length === 0
-                    ? 'No AutoXing robots registered yet'
-                    : 'Choose customer · robot…'}
+                    ? t('noneRegistered')
+                    : t('choose')}
               </option>
               {byCustomer.map(([customer, units]) => (
                 <optgroup key={customer} label={customer}>
                   {units.map((u) => (
                     <option key={u.serialNumber} value={u.serialNumber}>
-                      {optionLabel(u, customer)}
+                      {optionLabel(u, customer, t('robotFallback'))}
                     </option>
                   ))}
                 </optgroup>
@@ -277,28 +280,30 @@ export function AutoxingReportPanel() {
           </label>
           {registered.isSuccess && (registered.data ?? []).length === 0 && (
             <p className="pb-2 text-xs text-[var(--app-muted)]">
-              Register them in{' '}
-              <Link href="/tools?tab=robots" className="font-semibold text-[var(--app-brand-dark)] hover:underline">
-                Tools → Robots
-              </Link>{' '}
-              (brand AUTOXING), or type an ID below for a one-off report.
+              {t.rich('registerHint', {
+                link: (chunks) => (
+                  <Link href="/tools?tab=robots" className="font-semibold text-[var(--app-brand-dark)] hover:underline">
+                    {chunks}
+                  </Link>
+                ),
+              })}
             </p>
           )}
         </div>
 
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
-            Robot ID
+            {t('robotId')}
             <input
               type="text"
               value={robotId}
               onChange={(e) => setRobotId(e.target.value)}
-              placeholder="e.g. 2382310202332BC"
+              placeholder={t('idPlaceholder')}
               className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm font-normal text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
             />
           </label>
           <div className="flex flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
-            Period
+            {t('period')}
             <DateRangePicker
               from={from}
               to={to}
@@ -313,22 +318,22 @@ export function AutoxingReportPanel() {
 
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
-            Robot name <span className="font-normal">(optional)</span>
+            {t('robotName')} <span className="font-normal">{t('optional')}</span>
             <input
               type="text"
               value={robotName}
               onChange={(e) => setRobotName(e.target.value)}
-              placeholder="e.g. KUBOTA Line 1 Delivery"
+              placeholder={t('namePlaceholder')}
               className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm font-normal text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
             />
           </label>
           <label className="flex w-40 flex-col gap-1 text-xs font-semibold text-[var(--app-muted)]">
-            Model <span className="font-normal">(optional)</span>
+            {t('model')} <span className="font-normal">{t('optional')}</span>
             <input
               type="text"
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              placeholder="e.g. D-150"
+              placeholder={t('modelPlaceholder')}
               className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-alt)] px-3 text-sm font-normal text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
             />
           </label>
@@ -339,7 +344,7 @@ export function AutoxingReportPanel() {
             className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--app-brand)] px-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
           >
             {active.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gauge className="h-4 w-4" />}
-            {active.isPending ? 'Generating…' : 'Generate report'}
+            {active.isPending ? t('generating') : t('generate')}
           </button>
           {(report || performanceReport) && (
             <button
@@ -348,7 +353,7 @@ export function AutoxingReportPanel() {
               className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] px-3 text-sm font-semibold text-[var(--app-text)] transition hover:border-[var(--app-brand)]"
             >
               <Printer className="h-4 w-4" />
-              Print / PDF
+              {t('print')}
             </button>
           )}
         </div>
@@ -357,15 +362,13 @@ export function AutoxingReportPanel() {
       {active.isError && (
         <p className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          {errorMessage(active.error, 'Could not generate the report — check the robot ID, AutoXing credentials, and the date range.')}
+          {errorMessage(active.error, t('failed'), slow)}
         </p>
       )}
 
       {performanceReport && (
         <p className="px-1 text-xs text-[var(--app-muted)]">
-          {performanceReport.registered
-            ? 'Customer, site, robot name and model come from Tools → Robots; the period is clipped to the contract dates.'
-            : 'This robot is not registered in Tools → Robots, so the customer and site are AutoXing’s own names.'}
+          {performanceReport.registered ? t('registeredNote') : t('unregisteredNote')}
         </p>
       )}
 
@@ -377,9 +380,9 @@ export function AutoxingReportPanel() {
 
       {performanceReport && performanceReport.notes.length > 0 && (
         <p className="px-1 text-xs leading-5 text-[var(--app-muted)]">
-          {performanceReport.notes.includes('previous_period_unavailable') && 'The previous period could not be read, so there is no month-on-month comparison. '}
-          {performanceReport.notes.includes('service_cases_unavailable') && 'Service cases could not be read from the ticket data.'}
-          {performanceReport.notes.includes('faults_unavailable') && ' The recorded fault history could not be read.'}
+          {performanceReport.notes.includes('previous_period_unavailable') && `${t('previousUnavailable')} `}
+          {performanceReport.notes.includes('service_cases_unavailable') && `${t('serviceCasesUnavailable')} `}
+          {performanceReport.notes.includes('faults_unavailable') && t('faultsUnavailable')}
         </p>
       )}
 

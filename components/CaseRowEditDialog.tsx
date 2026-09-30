@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { AlertTriangle, Loader2, Trash2, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { CaseReportRow, CaseRowEdit, SlaStatus } from '@/types/api';
 
 /**
@@ -20,13 +21,8 @@ import type { CaseReportRow, CaseRowEdit, SlaStatus } from '@/types/api';
  * would be back on the next regeneration, so it has to be closed or moved on monday.
  */
 
-const SLA_CHOICES: { value: SlaStatus | ''; label: string }[] = [
-  { value: '', label: 'Work out from Open Date and Province' },
-  { value: 'WITHIN', label: 'Within SLA' },
-  { value: 'BREACHED', label: 'over SLA' },
-  { value: 'ON_HOLD', label: 'On Hold' },
-  { value: 'UNKNOWN', label: 'No verdict (blank)' },
-];
+/** The verdicts a row can be given; '' leaves the backend to work it out. */
+const SLA_CHOICES: (SlaStatus | '')[] = ['', 'WITHIN', 'BREACHED', 'ON_HOLD', 'UNKNOWN'];
 
 interface FormState {
   project: string;
@@ -115,6 +111,9 @@ interface Props {
 }
 
 export function CaseRowEditDialog({ row, newRow, saving, error, onSave, onRemove, onClose }: Props) {
+  const t = useTranslations('pendingCases');
+  const slaLabel = (value: SlaStatus | '') =>
+    value === '' ? t('edit.slaAuto') : value === 'UNKNOWN' ? t('edit.slaNone') : t(`sla.${value}`);
   const [form, setForm] = useState<FormState>(() => toForm(row, newRow));
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -137,18 +136,16 @@ export function CaseRowEditDialog({ row, newRow, saving, error, onSave, onRemove
           <div className="flex shrink-0 items-start justify-between gap-4 border-b border-[var(--app-border)] px-6 py-4">
             <div>
               <p id="case-row-edit-title" className="text-base font-bold text-[var(--app-text)]">
-                {adding ? 'Add a row' : `Edit row ${row.no}`}
+                {adding ? t('edit.addTitle') : t('edit.editTitle', { no: row.no })}
               </p>
               <p className="text-xs text-[var(--app-muted)]">
-                {adding
-                  ? 'For a case the board does not list. It goes at the bottom of this date’s report and is kept if the report is regenerated. Nothing is written to monday.'
-                  : 'Changes are saved into this date’s report and kept if it is regenerated. The monday ticket is not changed.'}
+                {adding ? t('edit.addHint') : t('edit.editHint')}
               </p>
             </div>
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close"
+              aria-label={t('edit.close')}
               className="rounded-lg p-1.5 text-[var(--app-muted)] transition hover:bg-[var(--app-faint)]"
             >
               <X className="h-4 w-4" />
@@ -205,7 +202,7 @@ export function CaseRowEditDialog({ row, newRow, saving, error, onSave, onRemove
                 <input
                   className={FIELD}
                   placeholder="Bangkok, ชลบุรี…"
-                  title="Decides the SLA threshold: 3 days in greater Bangkok, 5 elsewhere. Not printed."
+                  title={t('edit.provinceTitle')}
                   value={form.province}
                   onChange={(e) => set('province', e.target.value)}
                 />
@@ -216,7 +213,7 @@ export function CaseRowEditDialog({ row, newRow, saving, error, onSave, onRemove
                   type="number"
                   min={0}
                   className={FIELD}
-                  placeholder={row?.days == null ? 'Worked out from Open Date' : `Worked out from Open Date (now ${row.days})`}
+                  placeholder={row?.days == null ? t('edit.daysPlaceholder') : t('edit.daysPlaceholderNow', { days: row.days })}
                   value={form.days}
                   onChange={(e) => set('days', e.target.value)}
                 />
@@ -224,9 +221,9 @@ export function CaseRowEditDialog({ row, newRow, saving, error, onSave, onRemove
               <label className="flex flex-col gap-1.5 sm:col-span-2">
                 <span className={LABEL}>SLA</span>
                 <select className={FIELD} value={form.sla} onChange={(e) => set('sla', e.target.value as SlaStatus | '')}>
-                  {SLA_CHOICES.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
+                  {SLA_CHOICES.map((value) => (
+                    <option key={value} value={value}>
+                      {slaLabel(value)}
                     </option>
                   ))}
                 </select>
@@ -249,7 +246,7 @@ export function CaseRowEditDialog({ row, newRow, saving, error, onSave, onRemove
                   className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60 dark:text-red-300 dark:hover:bg-red-950/40"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Remove row
+                  {t('edit.removeRow')}
                 </button>
               )}
               <div className="ml-auto flex items-center gap-2">
@@ -259,7 +256,7 @@ export function CaseRowEditDialog({ row, newRow, saving, error, onSave, onRemove
                   disabled={saving}
                   className="rounded-lg border border-[var(--app-border)] px-4 py-2 text-sm font-semibold text-[var(--app-text)] transition hover:bg-[var(--app-faint)] disabled:opacity-60"
                 >
-                  Cancel
+                  {t('edit.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -267,7 +264,7 @@ export function CaseRowEditDialog({ row, newRow, saving, error, onSave, onRemove
                   className="inline-flex items-center gap-2 rounded-lg bg-[var(--app-brand)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:opacity-60"
                 >
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {saving ? 'Saving…' : adding ? 'Add row' : 'Save row'}
+                  {saving ? t('edit.saving') : adding ? t('edit.addRow') : t('edit.saveRow')}
                 </button>
               </div>
             </div>

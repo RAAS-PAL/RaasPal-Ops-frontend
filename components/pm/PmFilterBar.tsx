@@ -3,6 +3,9 @@
 import { useTranslations } from 'next-intl';
 import { X } from 'lucide-react';
 import { PmCompanyFilter } from '@/components/pm/PmCompanyFilter';
+import { geoLabel } from '@/lib/pm/geo';
+import { PM_STATUS_LABEL_KEY } from '@/lib/pm/status';
+import type { PmCellStatus } from '@/lib/pm/types';
 import { hasAnyFilter } from '@/lib/pm/params';
 import { EMPTY_PM_FILTERS, type PmFilterOptions, type PmFilters } from '@/lib/pm/types';
 
@@ -22,6 +25,7 @@ export function PmFilterBar({
   onChange: (next: PmFilters) => void;
 }) {
   const t = useTranslations('pmPlanning.filters');
+  const tp = useTranslations('pmPlanning');
   const set = (key: keyof PmFilters, value: string) => onChange({ ...filters, [key]: value });
 
   return (
@@ -37,6 +41,7 @@ export function PmFilterBar({
         label={t('region')}
         value={filters.region}
         options={options?.regions ?? []}
+        labelOf={(value) => geoLabel(tp, 'region', value)}
         onChange={(value) => set('region', value)}
         allLabel={t('all')}
       />
@@ -44,6 +49,7 @@ export function PmFilterBar({
         label={t('zone')}
         value={filters.zone}
         options={options?.zones ?? []}
+        labelOf={(value) => geoLabel(tp, 'zone', value)}
         onChange={(value) => set('zone', value)}
         allLabel={t('all')}
       />
@@ -58,6 +64,7 @@ export function PmFilterBar({
         label={t('status')}
         value={filters.status}
         options={options?.statuses ?? []}
+        labelOf={(value) => (value in PM_STATUS_LABEL_KEY ? tp(`status.${PM_STATUS_LABEL_KEY[value as PmCellStatus]}`) : value)}
         onChange={(value) => set('status', value)}
         allLabel={t('all')}
       />
@@ -95,12 +102,15 @@ function Select({
   options,
   onChange,
   allLabel,
+  labelOf,
 }: {
   label: string;
   value: string;
   options: string[];
   onChange: (value: string) => void;
   allLabel: string;
+  /** How an option reads; the raw value when omitted. */
+  labelOf?: (value: string) => string;
 }) {
   return (
     <label className="flex flex-col gap-1">
@@ -115,7 +125,7 @@ function Select({
         <option value="">{allLabel}</option>
         {options.map((option) => (
           <option key={option} value={option}>
-            {option}
+            {labelOf ? labelOf(option) : option}
           </option>
         ))}
       </select>
