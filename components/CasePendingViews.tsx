@@ -40,7 +40,7 @@ import { CardBand, CardError, CaseCountsCard, CasePendingSummary, LiveBadge, Rep
  */
 
 /** The customers' names; Internal is the one view with a word of its own to translate. */
-const CUSTOMER_TITLE = { pcs: 'PCS', makro: 'Makro', its: 'ITS' } as const;
+const CUSTOMER_TITLE = { pcs: 'PCS', makro: 'Makro', ifs: 'IFS' } as const;
 
 type T = ReturnType<typeof useTranslations>;
 

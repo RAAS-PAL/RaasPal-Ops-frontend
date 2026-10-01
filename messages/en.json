@@ -719,7 +719,7 @@
       "aot": "AOT",
       "pcs": "PCS",
       "makro": "Makro",
-      "its": "ITS",
+      "ifs": "IFS",
       "onHold": "On Hold"
     },
     "caseDetailsTitle": "{name} — case details",
@@ -1828,7 +1828,7 @@
     },
     "notes": {
       "unplaced": "{count, plural, one {# held case was} other {# held cases were}} frozen before the On Hold sheet recorded each case's board, so {count, plural, one {it is} other {they are}} left out here. They are on the On Hold tab.",
-      "itsEmpty": "No open case on either board names ISS or ITS in its project or branch. Tag ITS’s cases on monday with ISS or ITS in the Project column and they will appear here."
+      "ifsEmpty": "No open case on either board names IFS in its project or branch. Tag IFS’s cases on monday with IFS in the Project column and they will appear here."
     },
     "name": {
       "mk": "MK",

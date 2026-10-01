@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Building2, CalendarClock, CalendarX2, ClipboardList, FileSearch, Gauge, History, Layers, PauseCircle, Plane, Wrench } from 'lucide-react';
+import { Building2, CalendarClock, CalendarX2, ClipboardList, FileSearch, Gauge, History, Layers, PauseCircle, Wrench } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { ReportAutomationPanel } from '@/components/ReportAutomationPanel';
@@ -17,6 +17,7 @@ import { CasePendingSummary } from '@/components/CasePendingSummary';
 import { CaseAotPanel, CaseCustomerPanel } from '@/components/CasePendingViews';
 import { AotSheetStatusPill } from '@/components/AotSheetPanel';
 import { CasePeriodPicker } from '@/components/CasePeriodPicker';
+import { CustomerLogo } from '@/components/CustomerLogo';
 import { initialChoice, resolvePeriod, type PeriodChoice } from '@/lib/casePeriod';
 import type { CaseScope } from '@/lib/caseCustomerViews';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -35,7 +36,7 @@ const REPORT_TABS = [
   'case-aot',
   'case-pcs',
   'case-makro',
-  'case-its',
+  'case-ifs',
   'case-on-hold',
 ] as const;
 
@@ -63,7 +64,7 @@ const TAB_GROUP: Record<ReportTab, 'performance' | 'cm' | 'case'> = {
   'case-aot': 'case',
   'case-pcs': 'case',
   'case-makro': 'case',
-  'case-its': 'case',
+  'case-ifs': 'case',
   'case-on-hold': 'case',
 };
 
@@ -124,7 +125,7 @@ export function ReportsClient({
   const period = resolvePeriod(periodChoice, today, locale);
   // Both boards or one, on the tabs whose cases span both; kept across those tabs too.
   const [scope, setScope] = useState<CaseScope>('BOTH');
-  const scoped = tab === 'case-internal' || tab === 'case-pcs' || tab === 'case-its' || tab === 'case-on-hold';
+  const scoped = tab === 'case-internal' || tab === 'case-pcs' || tab === 'case-ifs' || tab === 'case-on-hold';
   const board = scope === 'BOTH' ? undefined : scope;
   const group = TAB_GROUP[tab];
   const brand = TAB_BRAND[tab];
@@ -172,11 +173,12 @@ export function ReportsClient({
     // customer the team reports to, and On Hold.
     case: [
       { id: 'case-internal', label: t('pendingTabs.internal'), icon: <Layers className="h-4 w-4" /> },
-      { id: 'case-mk', label: t('pendingTabs.mk'), icon: <ClipboardList className="h-4 w-4" /> },
-      { id: 'case-aot', label: t('pendingTabs.aot'), icon: <Plane className="h-4 w-4" /> },
-      { id: 'case-pcs', label: t('pendingTabs.pcs'), icon: <ClipboardList className="h-4 w-4" /> },
+      { id: 'case-mk', label: t('pendingTabs.mk'), icon: <CustomerLogo customer="mk" /> },
+      { id: 'case-aot', label: t('pendingTabs.aot'), icon: <CustomerLogo customer="aot" /> },
+      { id: 'case-pcs', label: t('pendingTabs.pcs'), icon: <CustomerLogo customer="pcs" /> },
+      // No logo supplied for Makro yet; it keeps the sheet icon.
       { id: 'case-makro', label: t('pendingTabs.makro'), icon: <ClipboardList className="h-4 w-4" /> },
-      { id: 'case-its', label: t('pendingTabs.its'), icon: <ClipboardList className="h-4 w-4" /> },
+      { id: 'case-ifs', label: t('pendingTabs.ifs'), icon: <CustomerLogo customer="ifs" /> },
       { id: 'case-on-hold', label: t('pendingTabs.onHold'), icon: <PauseCircle className="h-4 w-4" /> },
     ],
   };
@@ -293,7 +295,7 @@ export function ReportsClient({
             {tab === 'case-aot' && <CaseAotPanel period={period} />}
             {tab === 'case-pcs' && <CaseCustomerPanel view="pcs" period={period} scope={scope} />}
             {tab === 'case-makro' && <CaseCustomerPanel view="makro" period={period} />}
-            {tab === 'case-its' && <CaseCustomerPanel view="its" period={period} scope={scope} />}
+            {tab === 'case-ifs' && <CaseCustomerPanel view="ifs" period={period} scope={scope} />}
             {tab === 'case-on-hold' && (
               <CasePendingSummary
                 report={CASE_REPORTS['on-hold']}
