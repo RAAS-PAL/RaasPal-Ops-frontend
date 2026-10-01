@@ -15,6 +15,12 @@
  *
  *   `usePathname` (also from @/i18n/navigation) returns the pathname WITHOUT
  *   the locale prefix, so we can pass it straight into router.replace.
+ *
+ * WHAT a switch keeps: the query string and hash (the tab, the period, the filters
+ * - pathname alone dropped them, so every page reopened at its defaults), and the
+ *   reader's place: `scroll: false` stops the router jumping to the top, and the row
+ *   that was on screen is put back at the same height once the other language has
+ *   laid out (lib/keepPlace), since its text wraps differently above it.
  */
 
 import { useLocale, useTranslations } from 'next-intl';
@@ -23,6 +29,7 @@ import { routing, type Locale } from '@/i18n/routing';
 import { Globe, ChevronDown, Check } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { rememberPlace } from '@/lib/keepPlace';
 
 /* ─── Language metadata ──────────────────────────────────────────────────── */
 
@@ -63,8 +70,10 @@ export function LanguageSwitcher() {
 
   const switchLocale = (locale: Locale) => {
     if (locale === currentLocale) { setOpen(false); return; }
-    router.replace(pathname, { locale });
+    const rest = window.location.search + window.location.hash;
+    rememberPlace(pathname + window.location.search);
     setOpen(false);
+    router.replace(pathname + rest, { locale, scroll: false });
   };
 
   const current = LANGUAGES.find((l) => l.locale === currentLocale) ?? LANGUAGES[0];

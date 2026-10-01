@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { roleLabel } from '@/lib/roleLabel';
 import { Link, useRouter } from '@/i18n/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth';
 
 export function UserMenu() {
@@ -18,6 +19,7 @@ export function UserMenu() {
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { logout, user } = useAuthStore();
+  const queryClient = useQueryClient();
   const t = useTranslations('userMenu');
   const shellT = useTranslations('shell');
   const roleT = useTranslations('profile.account.roles');
@@ -38,9 +40,12 @@ export function UserMenu() {
 
   const handleLogout = useCallback(async () => {
     logout();
+    // The data cache lives as long as the browser tab (app/providers), so it goes with
+    // the session: the next person to sign in here must not see the last one's lists.
+    queryClient.clear();
     await fetch('/api/auth/session', { method: 'DELETE' });
     router.push('/login');
-  }, [logout, router]);
+  }, [logout, router, queryClient]);
 
   const handleClickOutside = useCallback((event: MouseEvent) => {
     if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
