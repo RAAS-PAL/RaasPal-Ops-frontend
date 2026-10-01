@@ -8,10 +8,11 @@ import { EMPTY_PM_FILTERS, type PmFilters } from './types';
  * button steps through what they were looking at rather than leaving the page.
  */
 
-export type PmView = 'year' | 'month';
+/** The 52-week grid, a date range as a list, or the visits with no plan date. */
+export type PmView = 'year' | 'month' | 'undated';
 
 export function resolveView(value: string | undefined): PmView {
-  return value === 'month' ? 'month' : 'year';
+  return value === 'month' || value === 'undated' ? value : 'year';
 }
 
 /** A four-digit year inside the range the backend accepts, else the current one. */

@@ -1254,7 +1254,8 @@
     "loadFailed": "Could not load the PM plan. Try again, or run a sync if this is a new environment.",
     "view": {
       "year": "52-Week",
-      "month": "Month"
+      "month": "Month",
+      "undated": "No date"
     },
     "lookAhead": {
       "label": "Look ahead",
@@ -1277,7 +1278,8 @@
       "completed": "Completed",
       "overdue": "Overdue",
       "undatedTitle": "{count} PM visits have no planned date",
-      "undatedHelp": "They appear in no week and no month. Set a Plan date on the monday subitem to bring them into the plan."
+      "undatedHelp": "They appear in no week and no month. Give them a date here or on monday to bring them into the plan.",
+      "planUndated": "Plan these visits"
     },
     "table": {
       "date": "Plan date",
@@ -1394,6 +1396,17 @@
       "confirmedTag": "Completed visit, confirmed",
       "movedAgain": "Moved again since",
       "loading": "Loading recent moves…"
+    },
+    "undated": {
+      "title": "{visits} visits at {sites} sites have no plan date.",
+      "help": "Pick a date and press Set date. The date is written to monday, the visit moves onto the 52-week grid, and Recent moves keeps a record you can undo.",
+      "setDate": "Set date",
+      "dated": "Set to {date}",
+      "alreadyDated": "monday already has a date: {date}",
+      "contractEnded": "Contract ended",
+      "siteCount": "{count} without a date",
+      "showing": "Showing {shown} of {total} sites",
+      "empty": "Every visit that matches these filters has a plan date."
     },
     "backToGrid": "Back to the 52-week grid"
   },

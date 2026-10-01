@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { AlertTriangle, CalendarOff } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CalendarOff } from 'lucide-react';
 import type { PmSummary } from '@/lib/pm/types';
 
 /**
@@ -16,7 +16,14 @@ import type { PmSummary } from '@/lib/pm/types';
  * the viewport and the grid takes what is left, so every pixel this row spends is
  * one fewer row of the plan on screen.
  */
-export function PmSummaryTiles({ summary }: { summary: PmSummary }) {
+export function PmSummaryTiles({
+  summary,
+  onPlanUndated,
+}: {
+  summary: PmSummary;
+  /** Opens the No-date list, where each of these visits can be given a date. */
+  onPlanUndated?: () => void;
+}) {
   const t = useTranslations('pmPlanning.tiles');
 
   return (
@@ -42,6 +49,16 @@ export function PmSummaryTiles({ summary }: { summary: PmSummary }) {
             {t('undatedTitle', { count: summary.undatedBacklog })}
           </span>
           <span>{t('undatedHelp')}</span>
+          {onPlanUndated && (
+            <button
+              type="button"
+              onClick={onPlanUndated}
+              className="ml-auto inline-flex items-center gap-1 self-center rounded-md bg-amber-400 px-2.5 py-1 text-xs font-semibold text-amber-950 transition hover:bg-amber-300 dark:bg-amber-500 dark:hover:bg-amber-400"
+            >
+              {t('planUndated')}
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          )}
         </p>
       )}
     </div>

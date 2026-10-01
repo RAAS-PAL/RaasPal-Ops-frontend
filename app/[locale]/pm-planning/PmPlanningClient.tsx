@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
-import { ArrowLeft, CalendarRange, History, LayoutGrid, RefreshCw, X } from 'lucide-react';
+import { ArrowLeft, CalendarOff, CalendarRange, History, LayoutGrid, RefreshCw, X } from 'lucide-react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppTopBar } from '@/components/AppTopBar';
 import { PmCellDialog } from '@/components/pm/PmCellDialog';
@@ -11,6 +11,7 @@ import { PmFilterBar } from '@/components/pm/PmFilterBar';
 import { PmPlanHistoryDialog, type UndoNotice } from '@/components/pm/PmPlanHistoryDialog';
 import { PmMonthView } from '@/components/pm/PmMonthView';
 import { PmSummaryTiles } from '@/components/pm/PmSummaryTiles';
+import { PmUndatedView } from '@/components/pm/PmUndatedView';
 import { PmYearGrid, type PmGridScroll } from '@/components/pm/PmYearGrid';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { ListSkeleton } from '@/components/ui/skeleton';
@@ -136,6 +137,8 @@ export function PmPlanningClient({
     params.set('view', view);
     if (view === 'year') {
       params.set('year', String(year));
+    } else if (view === 'undated') {
+      // No period: the list is every visit without a date.
     } else if (period.kind === 'month') {
       params.set('month', period.month);
     } else {
@@ -164,7 +167,15 @@ export function PmPlanningClient({
     enabled: view === 'month',
   });
 
-  const summary = view === 'year' ? yearQuery.data?.summary : monthQuery.data?.summary;
+  const undatedQuery = useQuery({
+    queryKey: ['pm-undated', query],
+    queryFn: () => pmApi.undated(query).then((response) => response.data.data),
+    enabled: view === 'undated',
+  });
+
+  // The No-date list has its own heading with its counts, so no tiles there.
+  const summary =
+    view === 'year' ? yearQuery.data?.summary : view === 'month' ? monthQuery.data?.summary : undefined;
 
   /* ─── Actions ───────────────────────────────────────────────────────────── */
 
@@ -290,11 +301,15 @@ export function PmPlanningClient({
    * moved stays in place with its result and Undo, and refreshes when next opened.
    */
   const refreshPlan = useCallback(
-    (keep?: 'range' | 'cell') => {
+    (keep?: 'range' | 'undated' | 'cell') => {
       void queryClient.invalidateQueries({ queryKey: ['pm-year'] });
       void queryClient.invalidateQueries({ queryKey: ['pm-cell'], refetchType: keep === 'cell' ? 'none' : 'active' });
       void queryClient.invalidateQueries({ queryKey: ['pm-range'], refetchType: keep === 'range' ? 'none' : 'active' });
       void queryClient.invalidateQueries({ queryKey: ['pm-plan-changes'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['pm-undated'],
+        refetchType: keep === 'undated' ? 'none' : 'active',
+      });
     },
     [queryClient],
   );
@@ -335,14 +350,14 @@ export function PmPlanningClient({
 
   /**
    * Undoes one move, asking first if monday shows the visit completed. Shared by the
-   * pop-up, the week list and Recent moves, which each show the answer where it was
-   * asked for; `keep` is the list it was asked from.
+   * week list, the No-date list and Recent moves, which each show the answer where it
+   * was asked for; `keep` is the list it was asked from.
    */
   const undoMove = useCallback(
     async (
       changeId: string,
       visitName: string | null,
-      keep?: 'range' | 'cell',
+      keep?: 'range' | 'undated' | 'cell',
     ): Promise<UndoNotice | null> => {
       const visit = visitName ?? '—';
       try {
@@ -434,6 +449,9 @@ export function PmPlanningClient({
                 </ViewTab>
                 <ViewTab active={view === 'month'} onClick={() => switchView('month')} icon={<CalendarRange className="h-4 w-4" />}>
                   {t('view.month')}
+                </ViewTab>
+                <ViewTab active={view === 'undated'} onClick={() => switchView('undated')} icon={<CalendarOff className="h-4 w-4" />}>
+                  {t('view.undated')}
                 </ViewTab>
               </div>
 
@@ -530,9 +548,23 @@ export function PmPlanningClient({
 
             <PmFilterBar filters={resolvedFilters} options={filterOptions.data} onChange={setFilters} />
 
-            {summary && <PmSummaryTiles summary={summary} />}
+            {summary && <PmSummaryTiles summary={summary} onPlanUndated={() => switchView('undated')} />}
 
-            {view === 'year' ? (
+            {view === 'undated' ? (
+              undatedQuery.isPending ? (
+                <ListSkeleton />
+              ) : undatedQuery.isError ? (
+                <ErrorNote message={t('loadFailed')} />
+              ) : undatedQuery.data ? (
+                <PmUndatedView
+                  data={undatedQuery.data}
+                  locale={locale}
+                  askCompleted={askCompleted}
+                  onDated={() => refreshPlan('undated')}
+                  onUndo={(changeId, visitName) => undoMove(changeId, visitName, 'undated')}
+                />
+              ) : null
+            ) : view === 'year' ? (
               yearQuery.isPending ? (
                 <ListSkeleton />
               ) : yearQuery.isError ? (
