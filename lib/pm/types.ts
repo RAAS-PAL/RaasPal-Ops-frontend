@@ -93,13 +93,54 @@ export interface PmMonthRow {
   robotModel: string | null;
   robotCount: number | null;
   contractType: string | null;
+  /** The monday group the contract sits in. */
+  contractGroup: string | null;
+  /** That group says the contract has ended (หมดสัญญา). Decided by the backend. */
+  contractEnded: boolean;
 }
 
 export interface PmMonthResponse {
-  from: string;
-  to: string;
+  /** Null on the No-date list, which has no period. */
+  from: string | null;
+  to: string | null;
   summary: PmSummary;
   rows: PmMonthRow[];
+}
+
+/**
+ * What happened to a move or an undo. Only MOVED wrote anything:
+ * - CHANGED_ON_MONDAY: someone changed the date on monday after the planner last
+ *   synced; `planDate` is monday's date.
+ * - NEEDS_CONFIRMATION: monday shows the visit as completed; send again with
+ *   `confirmCompleted` once the person has confirmed.
+ */
+export interface PmPlanDateChange {
+  visitId: string;
+  outcome: 'MOVED' | 'UNCHANGED' | 'CHANGED_ON_MONDAY' | 'NEEDS_CONFIRMATION';
+  previousPlanDate: string | null;
+  planDate: string | null;
+  /** The logged change, which an undo names. Null when nothing was written. */
+  changeId: string | null;
+}
+
+/** One row of "Recent moves": a move, or the undo of one. */
+export interface PmPlanChange {
+  id: string;
+  visitId: string;
+  /** Null when the visit is no longer in the mirror. */
+  visitName: string | null;
+  siteName: string | null;
+  serviceLine: PmServiceLine | null;
+  action: 'MOVE' | 'UNDO';
+  oldPlanDate: string | null;
+  newPlanDate: string | null;
+  /** The visit was completed on monday and the person confirmed changing it. */
+  confirmedCompleted: boolean;
+  changedBy: string;
+  changedAt: string;
+  undone: boolean;
+  /** The visit's latest change, a move, not undone. monday still has the last word when it is tried. */
+  undoable: boolean;
 }
 
 export interface PmCompanyOption {

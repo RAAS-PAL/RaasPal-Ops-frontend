@@ -487,3 +487,53 @@ html {
   --viz-grid:     #1e293b;
   --viz-hover:    rgba(226, 232, 240, 0.08);
 }
+
+/* ─── "You came from here" highlight (PM planner) ───────────────────────────
+   Marks where a person has just been taken: the week-list rows of the site they
+   clicked, and on the way back, that site's row on the 52-week grid and the square
+   itself. Rows fill with the brand colour and fade; the square gets a ring with a
+   gap in the panel colour - most squares are blue, and a blue ring straight on
+   them disappears - that pulses twice and fades. Added and removed by hand
+   (lib/pm/focus), so it plays once per arrival. Reduced motion: a still mark for
+   the same time instead. */
+@layer components {
+  @keyframes pm-focus-ring {
+    0%, 30%, 60% { box-shadow: 0 0 0 2px var(--app-panel), 0 0 0 5px var(--app-brand); transform: scale(1.15); }
+    15%, 45% { box-shadow: 0 0 0 2px var(--app-panel), 0 0 0 5px var(--app-brand); transform: scale(1); }
+    100% { box-shadow: 0 0 0 2px transparent, 0 0 0 5px transparent; transform: scale(1); }
+  }
+  @keyframes pm-focus-fill {
+    0%, 45% { background-color: color-mix(in srgb, var(--app-brand) 16%, transparent); }
+    100% { background-color: transparent; }
+  }
+  /* The grid's frozen site column must stay opaque, or the row scrolls through it. */
+  @keyframes pm-focus-fill-solid {
+    0%, 45% { background-color: color-mix(in srgb, var(--app-brand) 16%, var(--app-panel)); }
+    100% { background-color: var(--app-panel); }
+  }
+  .pm-focus-ring {
+    position: relative;
+    z-index: 1;
+    animation: pm-focus-ring 2.4s ease-out;
+  }
+  tr.pm-focus-row > td {
+    animation: pm-focus-fill 2.4s ease-out;
+  }
+  tr.pm-focus-row > th {
+    animation: pm-focus-fill-solid 2.4s ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pm-focus-ring {
+      animation: none;
+      box-shadow: 0 0 0 2px var(--app-panel), 0 0 0 5px var(--app-brand);
+    }
+    tr.pm-focus-row > td {
+      animation: none;
+      background-color: color-mix(in srgb, var(--app-brand) 16%, transparent);
+    }
+    tr.pm-focus-row > th {
+      animation: none;
+      background-color: color-mix(in srgb, var(--app-brand) 16%, var(--app-panel));
+    }
+  }
+}

@@ -143,6 +143,8 @@ import type {
 import type {
   PmFilterOptions,
   PmMonthResponse,
+  PmPlanChange,
+  PmPlanDateChange,
   PmYearResponse,
 } from '@/lib/pm/types';
 import type { MonthlyPerformanceReport } from '@/lib/reports/types';
@@ -1000,7 +1002,35 @@ export const pmApi = {
       params: { from, to, includeUndated: includeUndated || undefined, ...filters },
     }),
 
+  /** Visits still owed with no plan date, site by site in PM order: the No-date list. */
+  undated: (filters: Record<string, string> = {}) =>
+    api.get<ApiResponse<PmMonthResponse>>('/api/v1/pm/undated', { params: filters }),
+
   filters: () => api.get<ApiResponse<PmFilterOptions>>('/api/v1/pm/filters'),
+
+  /**
+   * Moves one visit to a new plan date, on monday first. `seenPlanDate` is the date
+   * the person was looking at: if monday holds another by now, nothing is written.
+   * No automatic retry, so a slow answer cannot turn into a second write.
+   */
+  movePlanDate: (visitId: string, planDate: string, seenPlanDate: string | null, confirmCompleted = false) =>
+    api.patch<ApiResponse<PmPlanDateChange>>(
+      `/api/v1/pm/visits/${visitId}/plan-date`,
+      { planDate, seenPlanDate, confirmCompleted },
+      { skipRetry: true },
+    ),
+
+  /** Who moved what from the planner, newest first. */
+  planChanges: (limit = 50) =>
+    api.get<ApiResponse<PmPlanChange[]>>('/api/v1/pm/plan-changes', { params: { limit } }),
+
+  /** Puts a moved visit back on its previous date, with the same checks as a move. */
+  undoPlanChange: (changeId: string, confirmCompleted = false) =>
+    api.post<ApiResponse<PmPlanDateChange>>(
+      `/api/v1/pm/plan-changes/${changeId}/undo`,
+      { confirmCompleted },
+      { skipRetry: true },
+    ),
 
   /**
    * Pulls both monday PM boards now. Reads a few thousand rows over the monday

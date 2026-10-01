@@ -156,3 +156,12 @@ export function weekRangeLabel(isoYear: number, week: number, locale: string): s
   const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' });
   return `${fmt.format(start)} – ${fmt.format(end)}`;
 }
+
+/** The ISO week-year and week a "YYYY-MM-DD" date falls in, matching the backend. */
+export function isoWeekOf(date: string): { year: number; week: number } {
+  const d = new Date(`${date}T00:00:00Z`);
+  // The Thursday of the same ISO week decides its year.
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return { year: d.getUTCFullYear(), week: Math.ceil(((d.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7) };
+}
