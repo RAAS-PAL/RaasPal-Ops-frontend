@@ -17,7 +17,8 @@ import { CasePendingSummary } from '@/components/CasePendingSummary';
 import { CaseAotPanel, CaseCustomerPanel } from '@/components/CasePendingViews';
 import { AotSheetStatusPill } from '@/components/AotSheetPanel';
 import { CasePeriodPicker } from '@/components/CasePeriodPicker';
-import { initialChoice, resolvePeriod, type PeriodChoice } from '@/lib/casePeriod';
+import { choiceFromParam, choiceToParam, resolvePeriod, type PeriodChoice } from '@/lib/casePeriod';
+import { setQueryParams } from '@/lib/url';
 import type { CaseScope } from '@/lib/caseCustomerViews';
 import { EmptyState } from '@/components/ui/empty-state';
 
@@ -108,10 +109,16 @@ const BRAND_DEFAULT_TAB: Record<ReportBrand, ReportTab> = {
 export function ReportsClient({
   initialTab = 'automation',
   initialCustomerId = null,
+  initialPeriod = null,
+  initialScope = null,
 }: {
   initialTab?: ReportTab;
   /** Company report tab only: the customer to open on arrival. */
   initialCustomerId?: string | null;
+  /** The pending-case period from the URL, as `choiceToParam` writes it. */
+  initialPeriod?: string | null;
+  /** The pending-case board scope from the URL: CLEANING or DELIVERY; anything else is both. */
+  initialScope?: string | null;
 }) {
   const t = useTranslations('reports');
   const tCases = useTranslations('pendingCases');
@@ -120,19 +127,32 @@ export function ReportsClient({
   // One period for every pending-case tab, so switching from Internal to MK keeps the
   // week or month being looked at.
   const today = todayInBangkok();
-  const [periodChoice, setPeriodChoice] = useState<PeriodChoice>(() => initialChoice(today));
+  const [periodChoice, setPeriodChoice] = useState<PeriodChoice>(() => choiceFromParam(initialPeriod, today));
   const period = resolvePeriod(periodChoice, today, locale);
   // Both boards or one, on the tabs whose cases span both; kept across those tabs too.
-  const [scope, setScope] = useState<CaseScope>('BOTH');
+  const [scope, setScope] = useState<CaseScope>(
+    initialScope === 'CLEANING' || initialScope === 'DELIVERY' ? initialScope : 'BOTH',
+  );
+  // The tab, the period and the scope all live in the URL, so a reload, a shared link
+  // or a language switch reopens the same view instead of the defaults.
+  const choosePeriod = (next: PeriodChoice) => {
+    setPeriodChoice(next);
+    setQueryParams({ period: choiceToParam(next, today) });
+  };
+  const chooseScope = (next: CaseScope) => {
+    setScope(next);
+    setQueryParams({ scope: next === 'BOTH' ? null : next });
+  };
   const scoped = tab === 'case-internal' || tab === 'case-pcs' || tab === 'case-its' || tab === 'case-on-hold';
   const board = scope === 'BOTH' ? undefined : scope;
   const group = TAB_GROUP[tab];
   const brand = TAB_BRAND[tab];
 
-  // Keep the active tab in the URL so a report view is shareable/bookmarkable.
+  // Keep the active tab in the URL so a report view is shareable/bookmarkable. The
+  // customer link opens one company report once; it does not follow to other tabs.
   const selectTab = (next: ReportTab) => {
     setTab(next);
-    window.history.replaceState(null, '', `?tab=${next}`);
+    setQueryParams({ tab: next, customer: null });
   };
 
   const groups: { id: ReportGroup; label: string; icon: React.ReactNode }[] = [
@@ -282,13 +302,13 @@ export function ReportsClient({
               <CasePeriodPicker
                 choice={periodChoice}
                 today={today}
-                onChange={setPeriodChoice}
+                onChange={choosePeriod}
                 scope={scoped ? scope : undefined}
-                onScopeChange={scoped ? setScope : undefined}
+                onScopeChange={scoped ? chooseScope : undefined}
                 leading={tab === 'case-aot' ? <AotSheetStatusPill /> : undefined}
               />
             )}
-            {tab === 'case-internal' && <CaseCustomerPanel view="internal" period={period} scope={scope} onScopeChange={setScope} />}
+            {tab === 'case-internal' && <CaseCustomerPanel view="internal" period={period} scope={scope} onScopeChange={chooseScope} />}
             {tab === 'case-mk' && <CasePendingSummary report={CASE_REPORTS.mk} title="MK" period={period} />}
             {tab === 'case-aot' && <CaseAotPanel period={period} />}
             {tab === 'case-pcs' && <CaseCustomerPanel view="pcs" period={period} scope={scope} />}

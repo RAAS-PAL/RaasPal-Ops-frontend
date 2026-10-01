@@ -36,9 +36,9 @@ export default async function ReportsPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ tab?: string; customer?: string }>;
+  searchParams: Promise<{ tab?: string; customer?: string; period?: string; scope?: string }>;
 }) {
-  const { tab, customer } = await searchParams;
+  const { tab, customer, period, scope } = await searchParams;
 
   // "Email customers" and "Contracts" both moved to Tools. Redirected rather than
   // dropped, so a bookmark or a pasted link lands on the panel instead of silently
@@ -51,5 +51,12 @@ export default async function ReportsPage({
   const initialTab: ReportTab = VALID_TABS.includes(wanted) ? (wanted as ReportTab) : 'automation';
   // `customer` opens that customer's company report straight away — the dashboard's
   // tracking list links each not-yet-sent customer here.
-  return <ReportsClient initialTab={initialTab} initialCustomerId={customer ?? null} />;
+  return (
+    <ReportsClient
+      initialTab={initialTab}
+      initialCustomerId={customer ?? null}
+      initialPeriod={period ?? null}
+      initialScope={scope ?? null}
+    />
+  );
 }

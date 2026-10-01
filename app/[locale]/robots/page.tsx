@@ -9,9 +9,9 @@ import { RobotsClient, type RobotsView } from './RobotsClient';
 export default async function RobotsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; type?: string; q?: string }>;
 }) {
-  const { view } = await searchParams;
+  const { view, type, q } = await searchParams;
   const initialView: RobotsView = view === 'specs' ? 'specs' : 'catalog';
-  return <RobotsClient initialView={initialView} />;
+  return <RobotsClient initialView={initialView} initialType={type ?? null} initialQuery={q ?? ''} />;
 }

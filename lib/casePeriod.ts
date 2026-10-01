@@ -161,6 +161,38 @@ export function initialChoice(today: string): PeriodChoice {
   return { cadence: 'DAILY', day: today, month: monthOf(today), weekStart: mondayOf(today) };
 }
 
+/**
+ * The choice as one URL parameter - `day:2026-10-01`, `week:2026-09-28`,
+ * `month:2026-09` - or null for the default (today), which keeps plain links short.
+ */
+export function choiceToParam(choice: PeriodChoice, today: string): string | null {
+  switch (choice.cadence) {
+    case 'DAILY':
+      return choice.day === today ? null : `day:${choice.day}`;
+    case 'WEEKLY':
+      return `week:${choice.weekStart}`;
+    case 'MONTHLY':
+      return `month:${choice.month}`;
+  }
+}
+
+/** Reads {@link choiceToParam} back; anything it does not recognise is today. */
+export function choiceFromParam(value: string | null | undefined, today: string): PeriodChoice {
+  const fallback = initialChoice(today);
+  const [kind, date] = (value ?? '').split(':');
+  if (kind === 'day' && /^\d{4}-\d{2}-\d{2}$/.test(date ?? '')) {
+    return { ...initialChoice(date), cadence: 'DAILY' };
+  }
+  if (kind === 'week' && /^\d{4}-\d{2}-\d{2}$/.test(date ?? '')) {
+    const start = mondayOf(date);
+    return { cadence: 'WEEKLY', day: start, month: weekMonth(start), weekStart: start };
+  }
+  if (kind === 'month' && /^\d{4}-(0[1-9]|1[0-2])$/.test(date ?? '')) {
+    return { cadence: 'MONTHLY', day: `${date}-01`, month: date, weekStart: mondayOf(`${date}-01`) };
+  }
+  return fallback;
+}
+
 export function resolvePeriod(choice: PeriodChoice, today: string, locale = 'en'): Period {
   const clamp = (start: string, end: string) => {
     const running = end > today;
