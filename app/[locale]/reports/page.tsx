@@ -15,7 +15,7 @@ const VALID_TABS: readonly string[] = [
   'case-aot',
   'case-pcs',
   'case-makro',
-  'case-its',
+  'case-ifs',
   'case-on-hold',
 ];
 
@@ -29,6 +29,8 @@ const RENAMED_TABS: Record<string, string> = {
   'case-delivery': 'case-internal',
   'case-aotga': 'case-aot',
   'case-summary': 'case-internal',
+  // The IFS tab was first built as "ITS"; links to it still land on IFS.
+  'case-its': 'case-ifs',
 };
 
 export default async function ReportsPage({

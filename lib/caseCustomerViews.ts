@@ -3,7 +3,7 @@ import type { CaseBoard, CaseReportRow } from '../types/api';
 
 /**
  * The pending cases per customer: Internal (everything, as Delivery and Cleaning), PCS,
- * Makro and ITS.
+ * Makro and IFS.
  *
  * <p>Nothing is read twice. These views recombine the six sheets already frozen for the
  * day, which slice the boards for daily review - MK apart from the rest of Delivery, the
@@ -16,21 +16,21 @@ import type { CaseBoard, CaseReportRow } from '../types/api';
  *   <li><b>Cleaning</b> = Cleaning + Makro + AOTGA + On Hold's cleaning rows.</li>
  *   <li><b>Makro</b> = Makro + On Hold's Makro rows.</li>
  *   <li><b>PCS</b> = Makro (PCS's customer) + any other case naming PCS.</li>
- *   <li><b>ITS</b> = any case naming ISS or ITS.</li>
+ *   <li><b>IFS</b> = any case naming IFS.</li>
  * </ul>
  *
  * <p>A row a reviewer took off a sheet stays off. Corrections are made on each sheet's
  * details page, linked from here.
  */
 
-export type CaseCustomerView = 'internal' | 'pcs' | 'makro' | 'its';
+export type CaseCustomerView = 'internal' | 'pcs' | 'makro' | 'ifs';
 
 /** The sheets each view is made of, so no other has to be read. */
 export const NEEDS: Record<CaseCustomerView, CaseReportSlug[]> = {
   internal: ['mk', 'delivery', 'cleaning', 'makro', 'aotga', 'on-hold'],
   pcs: ['mk', 'delivery', 'cleaning', 'makro', 'on-hold'],
   makro: ['makro', 'on-hold'],
-  its: ['mk', 'delivery', 'cleaning', 'on-hold'],
+  ifs: ['mk', 'delivery', 'cleaning', 'on-hold'],
 };
 
 /** Each sheet's name, as a key of `pendingCases`: `t(SHEET_LABEL[sheet])`. */
@@ -45,7 +45,9 @@ export const SHEET_LABEL: Record<CaseReportSlug, string> = {
 
 /** A name standing alone, not inside another word: "PCS : Makro" yes, "PCSX" no. */
 const PCS = /(^|[^a-z])pcs([^a-z]|$)/i;
-const ITS = /(^|[^a-z])(iss|its)([^a-z]|$)/i;
+// The customer is IFS. The view first looked for "ISS" or "ITS", which no ticket on
+// either board has ever said; 42 Cleaning tickets say IFS (2026-09-30).
+const IFS = /(^|[^a-z])ifs([^a-z]|$)/i;
 
 const mentions = (name: RegExp) => (r: CaseReportRow) =>
   (r.project != null && name.test(r.project)) || (r.branch != null && name.test(r.branch));
@@ -70,7 +72,7 @@ export interface Section {
 export type Sheets = Partial<Record<CaseReportSlug, CaseReportRow[]>>;
 
 /** Something to tell the reader about a view; the panel words it (`pendingCases.notes.*`). */
-export type CaseNote = { key: 'unplaced'; count: number } | { key: 'itsEmpty' };
+export type CaseNote = { key: 'unplaced'; count: number } | { key: 'ifsEmpty' };
 
 const live = (rows: CaseReportRow[] | undefined) => (rows ?? []).filter((r) => !r.removed);
 
@@ -146,19 +148,19 @@ export function compose(view: CaseCustomerView, sheets: Sheets): { sections: Sec
           },
         ],
       };
-    case 'its': {
-      const parts = [...only(otherCleaning, mentions(ITS)), ...only(delivery, mentions(ITS))];
+    case 'ifs': {
+      const parts = [...only(otherCleaning, mentions(IFS)), ...only(delivery, mentions(IFS))];
       if (parts.every((part) => part.rows.length === 0)) {
-        notes.push({ key: 'itsEmpty' });
+        notes.push({ key: 'ifsEmpty' });
       }
-      return { notes, sections: [{ key: 'its', title: 'ITS', holdOwner: 'ITS', parts }] };
+      return { notes, sections: [{ key: 'ifs', title: 'IFS', holdOwner: 'IFS', parts }] };
     }
   }
 }
 
 /**
  * The view narrowed to one board. A section left with no part of that board goes, so
- * Internal on Cleaning is the Cleaning section alone; a mixed one (PCS, ITS) keeps only
+ * Internal on Cleaning is the Cleaning section alone; a mixed one (PCS, IFS) keeps only
  * that board's parts.
  */
 export function inScope(sections: Section[], scope: CaseScope): Section[] {
