@@ -70,6 +70,9 @@ const TAB_GROUP: Record<ReportTab, 'performance' | 'cm' | 'case'> = {
 
 type ReportGroup = 'performance' | 'cm' | 'case';
 
+/** `logo` tabs show the mark alone. The name stays on the button for assistive tech. */
+type ReportTabItem = { id: ReportTab; label: string; icon: React.ReactNode; logo?: boolean };
+
 const GROUP_DEFAULT_TAB: Record<ReportGroup, ReportTab> = {
   performance: 'automation',
   cm: 'cm-new',
@@ -152,7 +155,7 @@ export function ReportsClient({
 
   // Per brand, not per group: the performance group's tabs depend on which brand's
   // reporting is being looked at. A brand with one tab shows no tab row at all.
-  const TABS_BY_BRAND: Record<ReportBrand, { id: ReportTab; label: string; icon: React.ReactNode }[]> = {
+  const TABS_BY_BRAND: Record<ReportBrand, ReportTabItem[]> = {
     gausium: [
       { id: 'automation', label: t('tabs.automation'), icon: <CalendarClock className="h-4 w-4" /> },
       { id: 'company', label: t('tabs.company'), icon: <Building2 className="h-4 w-4" /> },
@@ -163,22 +166,21 @@ export function ReportsClient({
     pudu: [],
   };
 
-  const TABS_BY_GROUP: Record<ReportGroup, { id: ReportTab; label: string; icon: React.ReactNode }[]> = {
+  const TABS_BY_GROUP: Record<ReportGroup, ReportTabItem[]> = {
     performance: brand ? TABS_BY_BRAND[brand] : [],
     cm: [
       { id: 'cm-new', label: t('tabs.cmNew'), icon: <Wrench className="h-4 w-4" /> },
       { id: 'cm-history', label: t('tabs.cmHistory'), icon: <History className="h-4 w-4" /> },
     ],
     // Internal first: it is every case, as Delivery and Cleaning. Then one tab per
-    // customer the team reports to, and On Hold.
+    // customer the team reports to, and On Hold. A logo stands in for the name.
     case: [
       { id: 'case-internal', label: t('pendingTabs.internal'), icon: <Layers className="h-4 w-4" /> },
-      { id: 'case-mk', label: t('pendingTabs.mk'), icon: <CustomerLogo customer="mk" /> },
-      { id: 'case-aot', label: t('pendingTabs.aot'), icon: <CustomerLogo customer="aot" /> },
-      { id: 'case-pcs', label: t('pendingTabs.pcs'), icon: <CustomerLogo customer="pcs" /> },
-      // No logo supplied for Makro yet; it keeps the sheet icon.
-      { id: 'case-makro', label: t('pendingTabs.makro'), icon: <ClipboardList className="h-4 w-4" /> },
-      { id: 'case-ifs', label: t('pendingTabs.ifs'), icon: <CustomerLogo customer="ifs" /> },
+      { id: 'case-mk', label: t('pendingTabs.mk'), icon: <CustomerLogo customer="mk" />, logo: true },
+      { id: 'case-aot', label: t('pendingTabs.aot'), icon: <CustomerLogo customer="aot" />, logo: true },
+      { id: 'case-pcs', label: t('pendingTabs.pcs'), icon: <CustomerLogo customer="pcs" />, logo: true },
+      { id: 'case-makro', label: t('pendingTabs.makro'), icon: <CustomerLogo customer="makro" />, logo: true },
+      { id: 'case-ifs', label: t('pendingTabs.ifs'), icon: <CustomerLogo customer="ifs" />, logo: true },
       { id: 'case-on-hold', label: t('pendingTabs.onHold'), icon: <PauseCircle className="h-4 w-4" /> },
     ],
   };
@@ -252,6 +254,7 @@ export function ReportsClient({
                     key={item.id}
                     type="button"
                     onClick={() => selectTab(item.id)}
+                    aria-label={item.logo ? item.label : undefined}
                     className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold transition ${
                       active
                         ? 'bg-[var(--app-brand)] text-white shadow-sm'
@@ -259,7 +262,7 @@ export function ReportsClient({
                     }`}
                   >
                     {item.icon}
-                    {item.label}
+                    {item.logo ? null : item.label}
                   </button>
                 );
               })}

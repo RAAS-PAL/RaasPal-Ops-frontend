@@ -1,7 +1,8 @@
 import Image from 'next/image';
 
 /**
- * A customer's logo, sized for a tab next to its name.
+ * A customer's logo, used as the tab itself. The button keeps the name in aria-label;
+ * the text is not drawn beside the mark.
  *
  * <p>The files in public/customer-logos are the customers' own logos on white, trimmed to
  * their edges and 64 px tall (sharp at the 20 px shown, on a 3x screen too). They sit on
@@ -12,12 +13,13 @@ const LOGOS = {
   mk: { src: '/customer-logos/mk.png', width: 108 },
   aot: { src: '/customer-logos/aot.png', width: 215 },
   pcs: { src: '/customer-logos/pcs.png', width: 87 },
+  makro: { src: '/customer-logos/makro.png', width: 209 },
   ifs: { src: '/customer-logos/ifs.png', width: 64 },
 } as const;
 
 export type CustomerLogoKey = keyof typeof LOGOS;
 
-/** Decorative: the tab's text label already names the customer, so alt is empty. */
+/** Decorative: the tab button's aria-label names the customer, so alt is empty. */
 export function CustomerLogo({ customer }: { customer: CustomerLogoKey }) {
   const logo = LOGOS[customer];
   return (
