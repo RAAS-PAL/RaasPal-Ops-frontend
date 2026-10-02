@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Bot, LayoutGrid, Plus, Table2 } from 'lucide-react';
@@ -15,6 +15,7 @@ import { RobotDetailModal } from '@/components/RobotDetailModal';
 import { ListSkeleton } from '@/components/ui/skeleton';
 import { StatusBadge, toneForStatus } from '@/components/ui/status-badge';
 import type { RobotResponse, RobotType } from '@/types/api';
+import { setQueryParams } from '@/lib/url';
 
 /**
  * Cards drawn before the reader scrolls, and the number added each time they reach the
@@ -151,10 +152,21 @@ const TYPE_KEYS: Array<RobotType | 'ALL'> = ['ALL', ...ROBOT_TYPES];
 
 /* ─── Main ────────────────────────────────────────────────────────────────── */
 
-export function RobotsClient({ initialView = 'catalog' }: { initialView?: RobotsView }) {
-  const [activeType, setActiveType] = useState<RobotType | 'ALL'>('ALL');
+export function RobotsClient({
+  initialView = 'catalog',
+  initialType = null,
+  initialQuery = '',
+}: {
+  initialView?: RobotsView;
+  /** The type filter from the URL; anything that is not a robot type shows them all. */
+  initialType?: string | null;
+  initialQuery?: string;
+}) {
+  const [activeType, setActiveType] = useState<RobotType | 'ALL'>(() =>
+    TYPE_KEYS.includes(initialType as RobotType) ? (initialType as RobotType) : 'ALL',
+  );
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedRobot, setSelectedRobot] = useState<RobotResponse | null>(null);
   const [view, setViewState] = useState<RobotsView>(initialView);
   const t = useTranslations('robots');
@@ -165,12 +177,15 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
   // boundary, since Next cannot prerender a component that reads the query string.
   function setView(next: RobotsView) {
     setViewState(next);
-    window.history.replaceState(
-      null,
-      '',
-      next === 'catalog' ? window.location.pathname : `?view=${next}`,
-    );
+    setQueryParams({ view: next === 'catalog' ? null : next });
   }
+
+  // The search reaches the URL once typing pauses: Safari refuses more than about
+  // a hundred history writes in thirty seconds, and a fast typist gets near that.
+  useEffect(() => {
+    const timer = setTimeout(() => setQueryParams({ q: searchQuery.trim() || null }), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // The catalogue is edited by hand a few times a week, so it is not worth re-reading
   // on every focus: the default 60s staleTime plus refetchOnWindowFocus meant clicking
@@ -210,6 +225,7 @@ export function RobotsClient({ initialView = 'catalog' }: { initialView?: Robots
   function handleTypeChange(type: RobotType | 'ALL') {
     setActiveType(type);
     setVisibleCount(PAGE_SIZE);
+    setQueryParams({ type: type === 'ALL' ? null : type });
   }
 
   function handleSearch(q: string) {

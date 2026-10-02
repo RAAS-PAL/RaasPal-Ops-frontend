@@ -6,6 +6,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { PM_CELL_CLASS, PM_STATUS_LABEL_KEY, PM_STATUS_ORDER, PM_SWATCH_CLASS } from '@/lib/pm/status';
 import { geoLabel } from '@/lib/pm/geo';
 import { isoWeekMonday, weekRangeLabel } from '@/lib/pm/params';
+import { bringIntoView, flash } from '@/lib/pm/focus';
 import type { PmCellStatus, PmYearResponse, PmYearRow } from '@/lib/pm/types';
 
 /**
@@ -30,10 +31,24 @@ import type { PmCellStatus, PmYearResponse, PmYearRow } from '@/lib/pm/types';
  * fighting the app's own sticky top bar.
  */
 
+/** Where the grid's own scroll box was, so "Back to the grid" can return to it. */
+export type PmGridScroll = { top: number; left: number };
+
 type Props = {
   data: PmYearResponse;
   locale: string;
-  onSelectWeek: (week: number) => void;
+  onSelectWeek: (week: number, scroll: PmGridScroll) => void;
+  /** A square: one site in one week. */
+  onSelectCell: (row: PmYearRow, week: number, scroll: PmGridScroll) => void;
+  /**
+   * Open where the person left the grid, instead of on the current week. Read once,
+   * when the grid opens; `onReturned` says it has been used.
+   */
+  returnTo?: PmGridScroll | null;
+  onReturned?: () => void;
+  /** A square to point at with the fading ring, scrolled into view if need be. */
+  focus?: { contractId: string; week: number } | null;
+  onFocused?: () => void;
 };
 
 type Group = { key: string; region: string; zone: string; rows: PmYearRow[] };
@@ -50,7 +65,16 @@ type WeekColumn = {
 const MONTH_ROW_H = 26;
 const WEEK_ROW_H = 26;
 
-export function PmYearGrid({ data, locale, onSelectWeek }: Props) {
+export function PmYearGrid({
+  data,
+  locale,
+  onSelectWeek,
+  onSelectCell,
+  returnTo,
+  onReturned,
+  focus,
+  onFocused,
+}: Props) {
   const t = useTranslations('pmPlanning');
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -68,13 +92,51 @@ export function PmYearGrid({ data, locale, onSelectWeek }: Props) {
    * read anything. Placed a third in from the left so the recent past stays
    * visible beside what is coming.
    */
+  // Coming Back from the week list overrides that: the box opens where it was left.
+  // Held from the first render, so clearing the prop afterwards cannot move the box,
+  // and dropped once the year changes, since that place belongs to the first year.
+  const openedFrom = useRef({ year: data.year, returnTo });
   useEffect(() => {
     const container = scrollRef.current;
-    if (!container || !currentWeek) return;
+    if (!container) return;
+    const opened = openedFrom.current;
+    if (opened.year !== data.year) {
+      opened.year = data.year;
+      opened.returnTo = null;
+    }
+    if (opened.returnTo) {
+      container.scrollTop = opened.returnTo.top;
+      container.scrollLeft = opened.returnTo.left;
+      onReturned?.();
+      return;
+    }
+    if (!currentWeek) return;
     const target = container.querySelector<HTMLElement>(`[data-week="${currentWeek}"]`);
     if (!target) return;
     container.scrollLeft = Math.max(0, target.offsetLeft - container.clientWidth / 3);
-  }, [currentWeek, data.year]);
+  }, [currentWeek, data.year, onReturned]);
+
+  // Points at the square the person came back to, once the data holding it is in.
+  useEffect(() => {
+    if (!focus) return;
+    const container = scrollRef.current;
+    const cell = container?.querySelector<HTMLElement>(
+      `tr[data-contract="${focus.contractId}"] td[data-week="${focus.week}"] button`,
+    );
+    if (container && cell) {
+      bringIntoView(container, cell);
+      // The row too, as the week list does, so the eye finds the line before the square.
+      const row = cell.closest('tr');
+      if (row) flash(row, 'pm-focus-row');
+      flash(cell, 'pm-focus-ring');
+    }
+    onFocused?.();
+  }, [focus, onFocused]);
+
+  const scrollPosition = (): PmGridScroll => ({
+    top: scrollRef.current?.scrollTop ?? 0,
+    left: scrollRef.current?.scrollLeft ?? 0,
+  });
   const monthSpans = useMemo(() => buildMonthSpans(columns, data.year, locale), [columns, data.year, locale]);
   const groups = useMemo(() => groupRows(data.rows), [data.rows]);
 
@@ -135,6 +197,8 @@ export function PmYearGrid({ data, locale, onSelectWeek }: Props) {
 
       <div
         ref={scrollRef}
+        // Its position survives a language switch (lib/keepPlace).
+        data-keep-scroll="pm-grid"
         className="min-h-0 flex-1 overflow-auto rounded-xl border border-[var(--app-border)]"
       >
         <div className="relative w-max" onMouseOver={trackColumn} onMouseLeave={hideColumn}>
@@ -199,7 +263,7 @@ export function PmYearGrid({ data, locale, onSelectWeek }: Props) {
                   />
                   <button
                     type="button"
-                    onClick={() => onSelectWeek(column.week)}
+                    onClick={() => onSelectWeek(column.week, scrollPosition())}
                     title={`${t('grid.week')} ${column.week} · ${weekRangeLabel(data.year, column.week, locale)}`}
                     className={`relative h-full w-8 text-[10px] font-bold transition ${
                       column.isCurrentWeek
@@ -266,7 +330,7 @@ export function PmYearGrid({ data, locale, onSelectWeek }: Props) {
                 onToggle={() =>
                   setCollapsed((current) => ({ ...current, [group.key]: !(current[group.key] ?? false) }))
                 }
-                onSelectWeek={onSelectWeek}
+                onSelectCell={(row, week) => onSelectCell(row, week, scrollPosition())}
               />
             ))}
           </tbody>
@@ -284,7 +348,7 @@ function GroupBlock({
   locale,
   collapsed,
   onToggle,
-  onSelectWeek,
+  onSelectCell,
 }: {
   group: Group;
   columns: WeekColumn[];
@@ -292,7 +356,7 @@ function GroupBlock({
   locale: string;
   collapsed: boolean;
   onToggle: () => void;
-  onSelectWeek: (week: number) => void;
+  onSelectCell: (row: PmYearRow, week: number) => void;
 }) {
   const t = useTranslations('pmPlanning');
   const visits = group.rows.reduce((sum, row) => sum + row.totalVisits, 0);
@@ -333,7 +397,7 @@ function GroupBlock({
 
       {!collapsed &&
         group.rows.map((row) => (
-          <tr key={row.contractId} className="group/row">
+          <tr key={row.contractId} data-contract={row.contractId} className="group/row">
             <th
               scope="row"
               className="sticky left-0 z-10 min-w-[16rem] max-w-[16rem] border-b border-r border-[var(--app-border)] bg-[var(--app-panel)] px-3 py-1.5 text-left font-normal group-hover/row:bg-[var(--app-panel-alt)]"
@@ -361,7 +425,7 @@ function GroupBlock({
                   {cell ? (
                     <button
                       type="button"
-                      onClick={() => onSelectWeek(column.week)}
+                      onClick={() => onSelectCell(row, column.week)}
                       title={`${weekRangeLabel(year, column.week, locale)} · ${describeCell(cell.byStatus, t)}`}
                       // Fills the column rather than floating inside it, so the
                       // colour maps to one week and not to the gap beside it.
