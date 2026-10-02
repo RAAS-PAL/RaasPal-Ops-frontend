@@ -138,7 +138,12 @@ export function PmPlanHistoryDialog({
                         </span>
                       </p>
                       <p className="mt-0.5 text-xs text-[var(--app-muted)]">
-                        {t('history.by', { who: change.changedBy, when: moment.format(new Date(change.changedAt)) })}
+                        {[
+                          t('history.by', { who: change.changedBy, when: moment.format(new Date(change.changedAt)) }),
+                          change.itemId && t('table.itemIdValue', { id: change.itemId }),
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
                       </p>
                       {change.confirmedCompleted && (
                         <span className="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">

@@ -28,7 +28,7 @@ import type { PmMonthResponse, PmMonthRow } from '@/lib/pm/types';
  * person came for stands out among the whole week.
  */
 
-const COLUMNS = 8;
+const COLUMNS = 9;
 
 export function PmMonthView({
   data,
@@ -75,11 +75,12 @@ export function PmMonthView({
 
   return (
     <div className="overflow-x-auto rounded-xl border border-[var(--app-border)]">
-      <table ref={tableRef} className="w-full min-w-[68rem] border-collapse text-sm">
+      <table ref={tableRef} className="w-full min-w-[74rem] border-collapse text-sm">
         <thead>
           <tr className="bg-[var(--app-panel-soft)] text-left text-xs uppercase text-[var(--app-muted)]">
             <th scope="col" className="px-3 py-2 font-semibold">{t('table.date')}</th>
             <th scope="col" className="px-3 py-2 font-semibold">{t('table.visit')}</th>
+            <th scope="col" className="px-3 py-2 font-semibold">{t('table.itemId')}</th>
             <th scope="col" className="px-3 py-2 font-semibold">{t('table.site')}</th>
             <th scope="col" className="px-3 py-2 font-semibold">{t('table.geography')}</th>
             <th scope="col" className="px-3 py-2 font-semibold">{t('table.robot')}</th>
@@ -228,6 +229,8 @@ function VisitRow({
           </span>
           <span className="text-xs text-[var(--app-muted)]">{row.serviceLine}</span>
         </td>
+
+        <td className="whitespace-nowrap px-3 py-2 text-xs tabular-nums select-all">{row.itemId ?? '—'}</td>
 
         <td className="px-3 py-2">
           <span className="block max-w-[18rem] truncate font-semibold" title={row.contractName ?? undefined}>

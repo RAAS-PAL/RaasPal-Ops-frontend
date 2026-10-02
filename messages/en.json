@@ -1284,6 +1284,8 @@
     "table": {
       "date": "Plan date",
       "visit": "Visit",
+      "itemId": "Item ID",
+      "itemIdValue": "Item ID {id}",
       "site": "Site",
       "geography": "Province / Region",
       "robot": "Robot",

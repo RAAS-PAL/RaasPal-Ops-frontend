@@ -207,7 +207,9 @@ function UndatedVisit({
         <p className="truncate text-sm text-[var(--app-text)]" title={visit.visitName ?? undefined}>
           {visit.visitName ?? '—'}
         </p>
-        {visit.ownerNames && <p className="truncate text-xs text-[var(--app-muted)]">{visit.ownerNames}</p>}
+        <p className="truncate text-xs text-[var(--app-muted)]">
+          {[visit.itemId && t('table.itemIdValue', { id: visit.itemId }), visit.ownerNames].filter(Boolean).join(' · ')}
+        </p>
       </div>
       <StatusBadge tone={PM_STATUS_TONE[status]}>{t(`status.${PM_STATUS_LABEL_KEY[status]}`)}</StatusBadge>
 

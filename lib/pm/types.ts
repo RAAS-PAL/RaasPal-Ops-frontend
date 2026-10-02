@@ -72,6 +72,8 @@ export interface PmYearResponse {
 
 export interface PmMonthRow {
   visitId: string;
+  /** The monday subitem's id: the number monday's "Item ID" column shows. Absent from a backend older than this field. */
+  itemId?: string;
   visitName: string | null;
   pmSequence: number | null;
   planDate: string | null;
@@ -127,6 +129,8 @@ export interface PmPlanDateChange {
 export interface PmPlanChange {
   id: string;
   visitId: string;
+  /** The monday subitem's id: the number monday's "Item ID" column shows. Absent from a backend older than this field. */
+  itemId?: string;
   /** Null when the visit is no longer in the mirror. */
   visitName: string | null;
   siteName: string | null;

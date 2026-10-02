@@ -1284,6 +1284,8 @@
     "table": {
       "date": "วันที่วางแผน",
       "visit": "งาน",
+      "itemId": "Item ID",
+      "itemIdValue": "Item ID {id}",
       "site": "ไซต์",
       "geography": "จังหวัด / ภาค",
       "robot": "หุ่นยนต์",

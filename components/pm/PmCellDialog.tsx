@@ -231,7 +231,9 @@ function CellVisit({
             {visitName}
           </p>
           <p className="text-xs text-[var(--app-muted)]">
-            {[formatDate(visit.planDate), visit.ownerNames].filter(Boolean).join(' · ')}
+            {[formatDate(visit.planDate), visit.itemId && t('table.itemIdValue', { id: visit.itemId }), visit.ownerNames]
+              .filter(Boolean)
+              .join(' · ')}
           </p>
         </div>
         <StatusBadge tone={PM_STATUS_TONE[status]}>{t(`status.${PM_STATUS_LABEL_KEY[status]}`)}</StatusBadge>
